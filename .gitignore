@@ -1,0 +1,40 @@
+# =============================================================================
+# GJ-Ecommerce — agentic workspace repository
+# =============================================================================
+# This repo tracks the agent/skill/docs setup, NOT the cloned platform code.
+# Each subdirectory of platform/<system>/ is its own independent git repo.
+
+# Cloned platform repositories — never commit their code here.
+# But keep platform/<system>/ directories visible via their own README.md.
+platform/*/*
+!platform/*/README.md
+
+# macOS noise
+.DS_Store
+**/.DS_Store
+
+# IDE configs (personal)
+.idea/
+.vscode/
+
+# Personal Claude Code approvals (machine-specific)
+.claude/settings.local.json
+
+# GSD installer state — has hardcoded absolute paths.
+# Regenerate after clone with: npx get-shit-done-cc@latest --claude --local --profile=core
+.claude/commands/gsd/
+.claude/get-shit-done/
+.claude/hooks/
+.claude/settings.json
+.claude/gsd-file-manifest.json
+.claude/gsd-install-state.json
+.claude/package.json
+.claude/.gsd-profile
+.claude/VERSION
+
+# GSD work-in-progress artifacts (per-task, often gitignored; uncomment to track)
+# .planning/
+
+# Secrets — never commit
+.env
+.env.local
