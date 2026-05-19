@@ -13,7 +13,8 @@ GJ-Ecommerce/
 │   ├── site/         — Frontend сайт: gj-ng-front (Angular 20 + Nx monorepo + NgRx + NestJS SSR)
 │   └── mobile-app/   — Мобильное приложение: gj-app (RN monorepo) + mobapp-api-types
 ├── docs/             — service-index, onboarding, architecture (ADRs)
-├── .claude/          — агенты, скиллы, команды, hooks (GSD + Superpowers + кастом)
+├── .claude/          — канон: agents/, skills/, rules/ (в git); GSD/hooks — локально
+├── .cursor/rules/    — симлинки на .claude/rules/ (для Cursor)
 └── CLAUDE.md         — этот файл
 ```
 

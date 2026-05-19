@@ -1,0 +1,36 @@
+---
+description: GJ-Ecommerce workspace — agents, skills, MCP, GSD, git boundaries (canonical rules)
+alwaysApply: true
+---
+
+# GJ-Ecommerce agent workspace
+
+## Canonical paths (do not duplicate elsewhere)
+
+- Orientation: `@CLAUDE.md`, `@docs/onboarding.md`, `@docs/service-index.md`
+- Subagents: `.claude/agents/` — invoke with `Task(subagent_type="<name>")` (e.g. `ensi-navigator`, `integration-engineer`)
+- Skills: `.claude/skills/` — load when the task matches skill `description` (ensi-*, oms-*, site-*, mobile-*, integration-*, gj-*)
+- Supplemental rules: `.claude/rules/` (this directory)
+
+## Cursor vs Claude Code
+
+| Concern | Claude Code | Cursor Agent |
+|---------|-------------|----------------|
+| Subagents | `Agent` / subagent | `Task(subagent_type=…)` |
+| GSD | `/gsd:new-project`, `/gsd:plan-phase`, … in `.claude/commands/gsd/` | optional local `gsd-*` skills under `.cursor/skills/` (gitignored) or ask to run `gsd-new-project` |
+| MCP Buddy | `mcp__gj-buddy__*` | `CallMcpTool` server `buddy-mcp` / `user-buddy-mcp`, tools `gitlab_*`, `data_logs_*`, `confluence_*`, … |
+
+## Repository boundaries
+
+- **No git** at workspace root `GJ-Ecommerce/` — only inside `platform/*/` clones
+- **No commit** of GSD installer output (`.claude/commands/`, `get-shit-done/`, `.cursor/get-shit-done/`, `.cursor/skills/gsd-*`)
+- **Do commit** changes under `.claude/agents/`, `.claude/skills/`, `.claude/rules/`, `docs/`, `CLAUDE.md`
+
+## Platform code
+
+- ENSI commands: `elc -w gj -c <service> exec …` — not host `composer`/`artisan`
+- Large grep: exclude `vendor/`, `node_modules/`, `target/`, `dist/`; prefer Buddy GitLab tools for remote files
+
+## Research output
+
+Cross-system investigations → `docs/research/YYYY-MM-DD-<topic>.md` (see `docs/research/README.md`).

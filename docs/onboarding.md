@@ -1,6 +1,6 @@
 # Onboarding — Как работать в GJ-Ecommerce
 
-Краткий гайд для следующих сессий Claude Code. Полный контекст — в `CLAUDE.md`.
+Краткий гайд для Claude Code и **Cursor**. Каноническая конфигурация агентов — в `.claude/`; полный контекст — в `CLAUDE.md`.
 
 ## Bootstrap после клонирования репозитория
 
@@ -16,18 +16,27 @@
 #      elc -w gj clone --tag=code     # клонирует apps + packages из workspace.yaml
 #    Остальные платформы — обычный git clone (см. README.md → Bootstrap)
 
-# 2. Установить GSD (повторно создаст .claude/commands/gsd/, get-shit-done/, hooks/, settings.json)
+# 2. Установить GSD для Claude Code (не коммитится)
 cd <workspace>
 npx get-shit-done-cc@latest --claude --local --profile=core
 
-# 3. Установить Superpowers плагин
-claude plugin install superpowers@claude-plugins-official --scope project
+# 2b. (опционально) GSD в Cursor — skills gsd-* в .cursor/, не в git
+# npx get-shit-done-cc@latest --cursor --local --profile=core
+
+# 3. Superpowers (опционально) — ставится ОТДЕЛЬНО в каждой IDE, не в git:
+#    Claude Code:
+#      claude plugin install superpowers@claude-plugins-official --scope project
+#    Cursor Agent chat:
+#      /add-plugin superpowers
+#    Codex CLI: /plugins → superpowers → Install Plugin
+#    Codex App: Plugins → Superpowers → +
+#    Прочее: https://github.com/obra/superpowers#installation
 
 # 4. (опционально) Зарегистрировать elc workspace для ENSI
 elc workspace add gj <workspace>/platform/ensi/workspace
 ```
 
-После этого все агенты, скиллы и команды `/gsd-*` готовы к работе.
+После этого: агенты и скиллы GJ из `.claude/` (в git); GSD — `/gsd:*` в Claude Code или `gsd-*` skills в Cursor (локально).
 
 ## Карта проекта (TL;DR)
 
@@ -43,11 +52,12 @@ GJ-Ecommerce/
 │   ├── service-index.md  — полный реестр сервисов всех платформ
 │   ├── onboarding.md     — этот файл
 │   └── architecture/     — ADR-документы (создаются `architect`-агентом)
-├── .claude/
-│   ├── agents/           — 21 кастомный агент
-│   ├── skills/           — 24 скилла
-│   ├── commands/gsd/     — 7 команд GSD
-│   └── hooks/            — GSD hooks (context monitor, prompt guard, etc.)
+├── .claude/              — канон: agents, skills, rules (в git)
+│   ├── agents/           — 21 сабагент (Cursor: Task)
+│   ├── skills/           — 24 скилла GJ
+│   ├── rules/            — project rules (.mdc)
+│   └── commands/gsd/     — GSD slash-команды (локально, не в git)
+├── .cursor/rules/        — симлинки → .claude/rules/ (для Cursor UI)
 └── CLAUDE.md             — top-level orientation, автозагрузка
 ```
 
@@ -126,7 +136,10 @@ Findings сохраняются в `docs/research/<YYYY-MM-DD>-<topic>.md` (см
 `gj-multirepo-navigation` — поиск по 6+ GB кода
 `gj-buddy-mcp-mastery` — когда какой MCP-инструмент
 
-### Superpowers (плагин, ~14)
+### Superpowers (плагин, ~14; не в git)
+
+Устанавливается **отдельно в каждой IDE** — см. [README → Superpowers](../README.md#superpowers-install). Не путать со скиллами GJ в `.claude/skills/`.
+
 `brainstorming`, `writing-plans`, `executing-plans`, `test-driven-development`, `systematic-debugging`, `verification-before-completion`, `subagent-driven-development`, `dispatching-parallel-agents`, `using-git-worktrees`, `requesting-code-review`, `receiving-code-review`, `writing-skills`, и др.
 
 ## Команды GSD (`.claude/commands/gsd/`)
