@@ -15,7 +15,7 @@
 | **Mobile** / **Mobile App** | Мобильное приложение. React Native 0.74. `platform/mobile-app/gj-app/`. |
 | **BFF** | Backend-for-Frontend. У нас два разных BFF — ENSI `customers-api-web` (OpenAPI-first) и Integration. |
 | **WMS** | Warehouse Management System. Внешняя, не в нашем monorepo. Получает picking-задания из OMS. |
-| **OTS** | Order Tracking System. Внешний оперативный трекер статусов магазинов. |
+| **OTS** | Order Transport System (`gloriaots/gloriaots`). Оперативная транспортно-логистическая система: заказы, статусы складов/магазинов, WMS, ТК. Интегрируется с OMS (export/status) и Integration (export, stock, Kafka). В части legacy-доков встречается расшифровка «Order Tracking System». |
 | **1C-RETAIL / 1C-ECOM / 1C-CBR** | Корпоративные системы 1С: розница, e-commerce учёт, бухгалтерия. |
 | **DWH** | Data Warehouse. Аналитическая БД. |
 | **ATOL** / **ОФД** | Сервис фискализации чеков → Оператор Фискальных Данных → налоговая. |
@@ -48,7 +48,7 @@
 | **Pre-checkout** | Этап **до** /order/create: запросы general-data + delivery quote + payment methods. |
 | **General-data** | Endpoint Integration, агрегирующий всё нужное для рендера формы чекаута. |
 | **Delivery quote** | Расчёт интервалов и тарифов доставки. |
-| **Interval ID** | Идентификатор интервала доставки. **Rolling hash** в OMS Settings — non-idempotent (см. [`../research/2026-05-16-checkout-flow.md`](../research/2026-05-16-checkout-flow.md)). |
+| **Interval ID** | Идентификатор интервала доставки. **Rolling hash** в OMS Settings — non-idempotent (см. [`../research/2026-05-20-checkout-order-creation.md`](../research/2026-05-20-checkout-order-creation.md)). |
 | **Carrier** | Перевозчик: CDEK, 5post, RPost, Yandex, DPD, IML и ещё ≈11. |
 | **Tariff** | Конкретный тариф перевозчика. |
 | **Waybill** | Транспортная накладная, выдаётся carrier при регистрации отгрузки. |

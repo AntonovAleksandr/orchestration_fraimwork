@@ -5,7 +5,7 @@
 **Источники:**
 - [`source/ensi-processes.md`](source/ensi-processes.md) разделы 4, 5
 - [`source/integration-processes.md`](source/integration-processes.md) разделы BP-INT-01, BP-INT-02, BP-INT-07
-- [`../research/2026-05-16-checkout-flow.md`](../research/2026-05-16-checkout-flow.md) — **опорный артефакт** для pre-checkout
+- [`../research/2026-05-20-checkout-order-creation.md`](../research/2026-05-20-checkout-order-creation.md) — **опорный артефакт** для pre-checkout
 - Confluence: BP-2 (Корзина), OMS-3 (Чекаут)
 
 ---
@@ -142,7 +142,7 @@
 
 **Endpoint:** `GET /general-data` (через Integration), агрегирует всё нужное для рендера формы чекаута.
 
-> Подробное описание pre-checkout — в [`../research/2026-05-16-checkout-flow.md`](../research/2026-05-16-checkout-flow.md). Здесь — оркестрация L1.
+> Подробное описание pre-checkout — в [`../research/2026-05-20-checkout-order-creation.md`](../research/2026-05-20-checkout-order-creation.md). Здесь — оркестрация L1.
 
 ### Шаги (сокращённо)
 
@@ -193,7 +193,7 @@ sequenceDiagram
 
 ### Split-shipment
 
-Фича «комплектации 2 из 3, 4 из 5» **существует только в pre-checkout**. На `/order/create` Integration **собирает всё обратно в один package** (см. `04-checkout-order-creation.md`). См. detail в [`../research/2026-05-16-checkout-flow.md`](../research/2026-05-16-checkout-flow.md) → «Структурное несоответствие — split-shipment».
+Фича «комплектации 2 из 3, 4 из 5» **существует только в pre-checkout**. На `/order/create` Integration **собирает всё обратно в один package** (см. `04-checkout-order-creation.md`). См. detail в [`../research/2026-05-20-checkout-order-creation.md`](../research/2026-05-20-checkout-order-creation.md) → «Структурное несоответствие — split-shipment».
 
 ---
 
@@ -249,7 +249,7 @@ sequenceDiagram
 
 ## Системные quirks (доменные)
 
-1. **Interval-id non-idempotency** — главный риск checkout-flow. Подробное расследование — [`../research/2026-05-16-checkout-flow.md`](../research/2026-05-16-checkout-flow.md).
+1. **Interval-id non-idempotency** — главный риск checkout-flow. Подробное расследование — [`../research/2026-05-20-checkout-order-creation.md`](../research/2026-05-20-checkout-order-creation.md).
 2. **V1 / V4 одновременно** — site/mobile на старых билдах гоняют V1; новые — V4. Бизнес-правила должны быть симметричны.
 3. **Двойной промо-расчёт** — на корзине и на /order/create.
 4. **split-shipment**: видимость на pre-checkout ≠ реальное разделение поставки в OMS.

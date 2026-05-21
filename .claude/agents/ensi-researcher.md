@@ -116,7 +116,7 @@ Findings document, scaled to complexity:
 - <action 2> — needs architectural decision: `architect`
 ```
 
-For large investigations, save to `docs/research/<YYYY-MM-DD>-<topic>.md` and reference in chat.
+For large investigations: **summary** in `docs/research/<YYYY-MM-DD>-<topic>.md` (extend existing file if topic exists); **long autopsy** in `logs/research/` (gitignored). See `docs/research/README.md`.
 
 ## Anti-patterns
 

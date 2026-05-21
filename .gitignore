@@ -2,7 +2,7 @@
 # GJ-Ecommerce — agentic workspace repository
 # =============================================================================
 # Tracked: CLAUDE.md, docs/, .claude/{agents,skills,rules}/, .cursor/rules/ (symlinks)
-# Not tracked: platform clones, GSD installer output, .cursor autogen, secrets
+# Not tracked: platform clones, GSD installer output, .cursor autogen, secrets, logs/* (except logs/README.md)
 
 # Cloned platform repositories — each platform/<system>/* is its own git repo.
 platform/*/*
@@ -53,3 +53,7 @@ platform/*/*
 # Secrets
 .env
 .env.local
+
+# Local investigation dumps (long log/code autopsy — not for git)
+logs/*
+!logs/README.md

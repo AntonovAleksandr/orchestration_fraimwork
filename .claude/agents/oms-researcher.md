@@ -131,7 +131,7 @@ Start → ValidateOrder (worker) → [gateway: isB2B?] → ...
 - <action> — owner: `oms-java-engineer` / `camunda-bpm-engineer` / `oms-go-expert-coder`
 ```
 
-For large research, save to `docs/research/<YYYY-MM-DD>-<topic>.md`.
+For large research: summary → `docs/research/<YYYY-MM-DD>-<topic>.md`; details → `logs/research/` (gitignored). See `docs/research/README.md`.
 
 ## Anti-patterns
 

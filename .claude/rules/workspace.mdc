@@ -9,7 +9,7 @@ alwaysApply: true
 
 - Orientation: `@CLAUDE.md`, `@docs/onboarding.md`, `@docs/service-index.md`
 - Subagents: `.claude/agents/` — invoke with `Task(subagent_type="<name>")` (e.g. `ensi-navigator`, `integration-engineer`)
-- Skills: `.claude/skills/` — load when the task matches skill `description` (ensi-*, oms-*, site-*, mobile-*, integration-*, gj-*)
+- Skills: `.claude/skills/` — load when the task matches skill `description` (ensi-*, oms-*, site-*, mobile-*, integration-*, gloriaots-*, gj-*)
 - Supplemental rules: `.claude/rules/` (this directory)
 
 ## Cursor vs Claude Code
@@ -28,9 +28,13 @@ alwaysApply: true
 
 ## Platform code
 
+- **Local first:** all platforms cloned in `platform/` — read/search via local tools after `./scripts/sync-platform-repos.sh` (see `@.claude/rules/local-code-first.mdc`)
 - ENSI commands: `elc -w gj -c <service> exec …` — not host `composer`/`artisan`
-- Large grep: exclude `vendor/`, `node_modules/`, `target/`, `dist/`; prefer Buddy GitLab tools for remote files
+- Large grep: exclude `vendor/`, `node_modules/`, `target/`, `dist/`; GitLab MCP only when repo is missing locally or for MR/CI (not for reading source)
 
 ## Research output
 
-Cross-system investigations → `docs/research/YYYY-MM-DD-<topic>.md` (see `docs/research/README.md`).
+- **Tracked (short):** `docs/research/YYYY-MM-DD-<topic>.md` — summary, priorities, next steps (~1–2 screens). See `docs/research/README.md`.
+- **Local only (long):** `logs/research/` — autopsy, exception catalogs, log dumps. **`logs/README.md` is tracked**; everything else under `logs/` is gitignored.
+- Prefer **one summary file per topic**; extend it instead of adding parallel research md files.
+- Checkout / order creation index: `docs/research/2026-05-20-checkout-order-creation.md`.

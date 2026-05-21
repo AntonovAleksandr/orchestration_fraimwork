@@ -1,6 +1,6 @@
 # GJ-Ecommerce — Agentic Workspace для Gloria Jeans
 
-Workspace для разработки **e-commerce платформы Gloria Jeans**. Платформа состоит из 5 независимых систем — каждая в своём подкаталоге `platform/<system>/`. Все 5 настроены: **ENSI**, **Mobile App**, **Integration**, **Site**, **Starfish (OMS)**.
+Workspace для разработки **e-commerce платформы Gloria Jeans** и смежных логистических систем. Код организован в 6 независимых платформ — каждая в своём подкаталоге `platform/<system>/`. Настроены: **ENSI**, **Mobile App**, **Integration**, **Site**, **Starfish (OMS)**, **Gloria OTS** (логистика, тесно связана с e-commerce).
 
 ## Структура корня
 
@@ -11,7 +11,8 @@ GJ-Ecommerce/
 │   ├── starfish24/   — OMS (Starfish): 32 репо — Java Spring Boot + 1 Go (logistics) + Camunda BPM + GJ overlay (awg/)
 │   ├── integration/  — Integration Service: integration (Lumen) + logger/msq-client/health (PHP libs)
 │   ├── site/         — Frontend сайт: gj-ng-front (Angular 20 + Nx monorepo + NgRx + NestJS SSR)
-│   └── mobile-app/   — Мобильное приложение: gj-app (RN monorepo) + mobapp-api-types
+│   ├── mobile-app/   — Мобильное приложение: gj-app (RN monorepo) + mobapp-api-types
+│   └── gloriaots/    — Gloria OTS: Order Transport System (.NET 10, SQL Server, RabbitMQ)
 ├── docs/             — service-index, onboarding, architecture (ADRs)
 ├── .claude/          — канон: agents/, skills/, rules/ (в git); GSD/hooks — локально
 ├── .cursor/rules/    — симлинки на .claude/rules/ (для Cursor)
@@ -168,9 +169,45 @@ yarn lint && yarn gj:ts       # проверки
 
 Подробнее: `.claude/skills/mobile-build-commands/SKILL.md`, `.claude/skills/mobile-stack-anatomy/SKILL.md`, `.claude/skills/mobile-rn-conventions/SKILL.md`.
 
-## Заготовок не осталось
+## Платформа Gloria OTS (`platform/gloriaots/`)
 
-Все 5 платформ настроены. При расширении (например, новый сервис в OMS или новая платформа) — клонировать в соответствующий `platform/<name>/` и обновить `CLAUDE.md` + `docs/service-index.md`.
+```
+platform/gloriaots/
+└── gloriaots/                              # monorepo (GitLab: gloriaots/gloriaots, branch master)
+    ├── src/
+    │   ├── GloriaOTS.Web/                  # ASP.NET Core API, Hangfire, React/Vite admin SPA
+    │   ├── GloriaOTS.ApplicationCore/      # домен, контракты, OTSModels
+    │   ├── GloriaOTS.Infrastructure/       # EF Core, ShipmentServices, WmsServices, handlers
+    │   ├── GloriaOTS.EventBus/             # RabbitMQ
+    │   └── Workers/
+    │       ├── GloriaOTS.OrderTracking/    # трекинг заказов, cancel flow
+    │       └── GloriaOTS.WmsSync/          # WMS/TGW/1C — отдельный процесс на склад (NSK, MSK, …)
+    ├── Database/                           # SQL Server (SqlDeploy, migrations)
+    └── Docs/                               # документация интеграций с ТК
+```
+
+**Стек:** **.NET 10** + ASP.NET Core · **SQL Server** · **RabbitMQ** (internal/external bus) · **Redis** · **Hangfire** · **React + Vite** (admin UI) · Docker Compose + GitLab CI.
+
+**Домен:** логистика Gloria Jeans — **Order Transport System (OTS)**. Не ядро e-commerce, но критична для исполнения заказов: экспорт из OMS, статусы в магазины/склады, синхронизация остатков, интеграции с ТК (CDEK, DPD, Почта России, …) и WMS.
+
+**Связи с e-commerce:**
+- **OMS** → OTS: выгрузка заказов через `Adapter` / BPMN (`orderExportWithFeedbackActivity`)
+- **Integration** ↔ OTS: `OtsClient`, export mutators, Kafka daemons (статусы BP-INT-30, stock BP-INT-25)
+- **OTS** → WMS/1C/ТК: workers и `ShipmentServices`
+
+**Команды (из `platform/gloriaots/gloriaots/`):**
+```bash
+docker compose -f docker-compose.yml up -d rabbitmq redis aspire-dashboard
+dotnet run --project src/GloriaOTS.Web
+dotnet run --project src/Workers/GloriaOTS.OrderTracking
+# WmsSync: Warehouse=NSK dotnet run --project src/Workers/GloriaOTS.WmsSync
+```
+
+Подробнее: `.claude/skills/gloriaots-stack-anatomy/SKILL.md`, README внутри клонированного репо.
+
+## Расширение workspace
+
+Все 6 платформ описаны. При расширении (новый сервис в OMS, новая платформа) — клонировать в `platform/<name>/` и обновить `CLAUDE.md` + `docs/service-index.md`.
 
 ## Методологии
 
@@ -203,6 +240,9 @@ yarn lint && yarn gj:ts       # проверки
 | `gitlab-investigator` | MR/pipelines/файлы из любого GitLab-репо через `mcp__gj-buddy__gitlab_*` |
 | `logs-detective` | Инциденты, трассировка через `mcp__gj-buddy__logs_*` |
 | `architect` | Cross-service дизайн, ADR в `docs/architecture/` |
+| `gloriaots-navigator` | "Где в Gloria OTS X?" — handlers, TK/WMS, workers, API |
+| `gloriaots-researcher` | "Почему OTS ведёт себя так?" — read-only, интеграции OMS/Integration |
+| `gloriaots-engineer` | Писать/менять .NET/C# код Gloria OTS с `gloriaots-stack-anatomy` |
 
 ## Ключевые инструменты
 
@@ -228,8 +268,8 @@ elc -w gj stop
 
 1. **Платформа ↔ путь:** код каждой платформы строго в `platform/<system>/`. Не валить ничего в корень. При добавлении новой системы — отдельный `platform/<name>/`.
 2. **Не делать git-операции на верхнем уровне** — это не git-репо, а набор клонов. Каждый репозиторий внутри `platform/*/` — свой git с собственной историей и веткой.
-3. **Перед grep по 6+ GB** — спроси gj-buddy (`gitlab_list_repository_tree`, `gitlab_get_repository_file`). Локально grep'ить можно с exclude `vendor/`, `node_modules/`, `target/`, `dist/`.
-4. **Использовать domain-skills:** работая с ENSI — `ensi-*` скиллы; с OMS — `oms-*` + `camunda-bpm`; с Site — `site-*`; с Mobile — `mobile-*`; с Integration — `integration-*`.
+3. **Перед grep по platform/** — при новой сессии или code task сначала `./scripts/sync-platform-repos.sh [filter]`, затем локальный `Grep`/`Read`. GitLab MCP — для MR/CI и репо без локального клона, не для чтения исходников.
+4. **Использовать domain-skills:** ENSI — `ensi-*`; OMS — `oms-*` + `camunda-bpm`; Site — `site-*`; Mobile — `mobile-*`; Integration — `integration-*`; Gloria OTS — `gloriaots-stack-anatomy`.
 5. **OpenAPI-first в ENSI** — менять спеку перед PHP-кодом, клиенты регенерируются.
 6. **Spring Cloud Config в OMS** — per-env values в `platform/starfish24/awg/cloud-configs/`, не в `application.yml`. Обновлять для всех envs (staging/preprod/prod).
 7. **Nx module boundaries в Site** — не суппрессить ESLint error; либо лифтить shared код в `libs/shared/`, либо пересмотреть направление зависимости.

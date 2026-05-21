@@ -1,11 +1,13 @@
 ---
 name: gj-multirepo-navigation
-description: Use when you need to find code/configs across the ~25 ENSI services in GJ-Ecommerce. Triggers on questions like "which service does X", "find all uses of Y", "search across catalog". Explains how to efficiently navigate platform/ensi/{apps,packages,devops} without scanning 5.9GB unnecessarily. Also when to query non-cloned platforms (starfish24/integration/site/mobile-app) via gj-buddy gitlab tools instead.
+description: Use when you need to find code/configs across ENSI and other GJ-Ecommerce platforms. Triggers on questions like "which service does X", "find all uses of Y", "search across catalog". Explains how to efficiently navigate local clones under platform/ without scanning vendor unnecessarily. GitLab MCP only for MR/CI or repos missing locally.
 ---
 
 # Multi-Repo Navigation in GJ-Ecommerce
 
-Workspace разделён по платформам — каждая в `platform/<system>/`. ENSI занимает ~5.9GB и содержит ~25 git-репозиториев. Остальные платформы не клонированы локально.
+Workspace разделён по платформам — каждая в `platform/<system>/`. **Все 6 платформ клонированы локально** (~63 git-репозитория). ENSI — ~5.9GB, ~25 сервисов.
+
+**Перед чтением/правкой кода:** `./scripts/sync-platform-repos.sh [filter]` — pull свежих изменений (см. `.claude/rules/local-code-first.mdc`).
 
 ## Иерархия
 
@@ -27,10 +29,11 @@ GJ-Ecommerce/
 │   │   ├── workspace/               (elc workspace.yaml)
 │   │   ├── devops/                  (elc-workspace, helm-*, gitlab-ci, ms-helm-chart, ...)
 │   │   └── internal/
-│   ├── starfish24/                  # НЕ клонировано → gitlab MCP
-│   ├── integration/                 # НЕ клонировано → gitlab MCP
-│   ├── site/                        # НЕ клонировано → gitlab MCP
-│   └── mobile-app/                  # НЕ клонировано → gitlab MCP
+│   ├── starfish24/                  # клонировано (~32 репо: awg/ + core/)
+│   ├── integration/                 # клонировано (integration + logger, msq-client, health)
+│   ├── site/                        # клонировано (gj-ng-front)
+│   ├── mobile-app/                  # клонировано (gj-app + mobapp-api-types)
+│   └── gloriaots/                   # клонировано (gloriaots monorepo)
 ```
 
 ## Стратегии поиска (от дешёвой к дорогой)
@@ -66,10 +69,10 @@ grep -rln --include="*.php" --exclude-dir=vendor --exclude-dir=node_modules \
 rg "RocketDataFeed" platform/ensi/apps/ platform/ensi/packages/
 ```
 
-### 6. **Для НЕ-ENSI платформ (starfish24, integration, site, mobile-app)** — НЕ клонируй, используй gj-buddy MCP:
+### 6. **GitLab MCP — только если локального клона нет** (или MR/CI/логи):
 ```
-mcp__gj-buddy__gitlab_list_repository_tree(projectId="starfish-oms/cloud/<svc>", path="...")
-mcp__gj-buddy__gitlab_get_repository_file(projectId="starfish-oms/cloud/<svc>", file_path="...", ref="master")
+mcp__gj-buddy__gitlab_list_merge_requests(projectId="...", state="opened")
+mcp__gj-buddy__gitlab_get_repository_file(...)  # fallback when platform/ path missing
 ```
 
 GitLab-группы:
@@ -77,7 +80,8 @@ GitLab-группы:
 - OMS → `starfish-oms/cloud/*` (заготовка `platform/starfish24/`)
 - Integration → `avg-integration-service/*` (заготовка `platform/integration/`)
 - Site → `site-front/gj-ng-front` (заготовка `platform/site/`)
-- Mobile → `mobapp/gj-app` (заготовка `platform/mobile-app/`)
+- Mobile → `mobapp/*` (`platform/mobile-app/`)
+- Gloria OTS → `gloriaots/gloriaots` (`platform/gloriaots/gloriaots/`)
 
 ## Обязательные exclude при grep по platform/ensi/
 
@@ -101,5 +105,6 @@ GitLab-группы:
 
 - `find <workspace> -name "*.php"` — сканирует node_modules/vendor/.git → минуты.
 - `grep -r "x" .` от корня — то же самое.
-- Клонировать OMS/Integration/site/mobile-app локально, чтобы прочитать один файл — используй `gitlab_get_repository_file`.
-- Искать в `platform/site/` локально — он пустой; иди через gj-buddy.
+- **`gitlab_get_repository_file` для кода, который уже есть в `platform/`** — читай локально после sync.
+- Начинать code task без `./scripts/sync-platform-repos.sh` — локальный код может быть устаревшим.
+- GitLab MCP для «где определён класс X» в клонированном сервисе — используй `Grep`/`SemanticSearch` локально.

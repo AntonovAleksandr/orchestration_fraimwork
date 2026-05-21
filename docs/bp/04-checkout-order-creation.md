@@ -5,7 +5,7 @@
 **Источники:**
 - [`source/integration-processes.md`](source/integration-processes.md) разделы BP-INT-03..05, 08, 15
 - [`source/oms-processes.md`](source/oms-processes.md) BP-OMS-01, BP-OMS-02
-- [`../research/2026-05-16-checkout-flow.md`](../research/2026-05-16-checkout-flow.md) — глубокий разбор submit-пути
+- [`../research/2026-05-20-checkout-order-creation.md`](../research/2026-05-20-checkout-order-creation.md) — глубокий разбор submit-пути
 - Confluence: OMS-3 «Чекаут», OMS-4 «Модель заказа» (`60695933`), `confirmationProcess.bpmn`
 
 ---
@@ -267,7 +267,7 @@ flowchart TD
 - [`06-fulfillment-and-delivery.md`](06-fulfillment-and-delivery.md) — pickingProcess после confirmation.
 - [`07-post-order-and-comms.md`](07-post-order-and-comms.md) — notifications и статусы.
 - [`e2e-happy-path.md`](e2e-happy-path.md) — сквозной сценарий.
-- [`../research/2026-05-16-checkout-flow.md`](../research/2026-05-16-checkout-flow.md) — глубокий разбор.
+- [`../research/2026-05-20-checkout-order-creation.md`](../research/2026-05-20-checkout-order-creation.md) — глубокий разбор.
 
 ---
 

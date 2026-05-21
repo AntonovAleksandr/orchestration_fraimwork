@@ -1,7 +1,7 @@
 # OMS / Starfish — Business Processes
 
 > Read-only research artefact for the OMS (`platform/starfish24/`) part of GJ e-commerce.
-> Complements `docs/research/2026-05-16-checkout-flow.md` (pre-checkout, intervals, capacity, Settings). This document focuses on what happens **after** an order has been created in OMS: BPMN flows, fulfilment, carrier integrations, payment lifecycle, notifications, reports.
+> Complements `do../research/2026-05-20-checkout-order-creation.md` (pre-checkout, intervals, capacity, Settings). This document focuses on what happens **after** an order has been created in OMS: BPMN flows, fulfilment, carrier integrations, payment lifecycle, notifications, reports.
 >
 > Date: 2026-05-16. Tenant context: `gloriajeans` (GJ overlay in `awg/`).
 
@@ -594,7 +594,7 @@ Primary sources (all under `/Users/zak/Projects/GJ-Ecommerce/platform/starfish24
 - Reports: `core/reports/src/main/java/com/starfish24/controllers/`
 - Notifications gateway: `core/Cloud-Message-Gateway/`
 - Per-env configs: `awg/cloud-configs/<svc>-gj-<env>.{yml,yaml}`
-- Related: `docs/research/2026-05-16-checkout-flow.md` (pre-checkout, intervals, capacity).
+- Related: `do../research/2026-05-20-checkout-order-creation.md` (pre-checkout, intervals, capacity).
 
 ---
 

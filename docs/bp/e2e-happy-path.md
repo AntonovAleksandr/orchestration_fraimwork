@@ -144,7 +144,7 @@ sequenceDiagram
 - Site/Mobile запрашивает у Integration `general-data` — он агрегирует basket + addresses + intervals + payment methods.
 - Integration зовёт OMS Settings (`/delivery/intervals`) → получает `inventories[]` со списком интервалов.
 - ⚠️ Здесь работает «interval-id rolling hash» (см. ниже).
-- См. [`03-browse-cart-precheckout.md`](03-browse-cart-precheckout.md) BP-CHK-PRE-01, BP-CHK-PRE-02, и [`../research/2026-05-16-checkout-flow.md`](../research/2026-05-16-checkout-flow.md).
+- См. [`03-browse-cart-precheckout.md`](03-browse-cart-precheckout.md) BP-CHK-PRE-01, BP-CHK-PRE-02, и [`../research/2026-05-20-checkout-order-creation.md`](../research/2026-05-20-checkout-order-creation.md).
 
 ### ⑤ Submit (POST /order/create)
 
@@ -187,7 +187,7 @@ sequenceDiagram
 
 | Точка | Риск | Подробнее |
 |---|---|---|
-| ④ Pre-checkout | Stale interval-id (non-idempotent hash) | [`../research/2026-05-16-checkout-flow.md`](../research/2026-05-16-checkout-flow.md) |
+| ④ Pre-checkout | Stale interval-id (non-idempotent hash) | [`../research/2026-05-20-checkout-order-creation.md`](../research/2026-05-20-checkout-order-creation.md) |
 | ⑤ Submit | 4 версии endpoint'а; не идемпотентный submit (двойной POST = двойной заказ) | `04-checkout-order-creation.md` |
 | ⑥ Платёж | Lock-in на YooKassa; webhook idempotency | `05-payment.md` |
 | ⑦ Dispatch | `russian-post-api-sdk` пустой; Yandex-NDD на test endpoint | `06-fulfillment-and-delivery.md` |

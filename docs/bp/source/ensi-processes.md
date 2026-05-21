@@ -2,7 +2,7 @@
 
 **Скоуп**: домены, владельцем которых выступает ENSI: catalog (PIM, offers, feed, catalog-cache), customers (customers, customer-auth), orders/baskets, customers-api-web (BFF). Связанные сервисы — audit, cdn-adapter, event-dispatcher (PHP + Go), bu — упомянуты кратко.
 
-**Что НЕ покрыто**: чекаут-flow (см. `docs/research/2026-05-16-checkout-flow.md`), сам Integration, OMS, Site, Mobile.
+**Что НЕ покрыто**: чекаут-flow (см. `do../research/2026-05-20-checkout-order-creation.md`), сам Integration, OMS, Site, Mobile.
 
 **Дата**: 2026-05-16. Ветки PIM/offers/customers — `master`/`dev-master`/`dev-release-26.06`; customers-api-web — `release-26.06`.
 
@@ -729,7 +729,7 @@ ALLOWED_CODE_SEND_COUNT_PER_DAY = 5        // 5 отправок в сутки
 
 ## 5. Customer-facing BFF — `customers-api-web`
 
-**Контекст**: BFF (backend-for-frontend) для сайта и мобайла. Чекаут уже описан в `docs/research/2026-05-16-checkout-flow.md` — здесь только остальные группы.
+**Контекст**: BFF (backend-for-frontend) для сайта и мобайла. Чекаут уже описан в `do../research/2026-05-20-checkout-order-creation.md` — здесь только остальные группы.
 
 **HTTP versions**:
 - `ApiV1`, `ApiV2`, `ApiV3` — web (apiV2/V3 — модули `Auth`, `Baskets`, `Catalog`, `Cms`, `Customers`, `Orders`)
@@ -1002,7 +1002,7 @@ ALLOWED_CODE_SEND_COUNT_PER_DAY = 5        // 5 отправок в сутки
 
 | Вопрос | Делегировать к |
 |---|---|
-| Чекаут-flow целиком | `docs/research/2026-05-16-checkout-flow.md` (готов) |
+| Чекаут-flow целиком | `do../research/2026-05-20-checkout-order-creation.md` (готов) |
 | Что Integration делает с корзиной/чекаутом? | `integration-researcher` |
 | Что OMS делает с order'ом после `POST /order/create`? | `oms-researcher` |
 | Как сайт показывает результаты ENSI? | `site-researcher` |

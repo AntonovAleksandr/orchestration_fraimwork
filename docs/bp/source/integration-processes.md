@@ -1,7 +1,7 @@
 # Integration Service — Business Process Catalog
 
 **Scope:** PHP/Lumen monorepo `platform/integration/integration/` plus libs `logger`, `msq-client`, `health`. Branch reference: `dev` (and `release-26.06` per checkout cross-system report).
-**Companion artifact (referenced, not duplicated):** `docs/research/2026-05-16-checkout-flow.md` — full cross-system autopsy for `/v4/order/create` + `/delivery/summary` checkout slice.
+**Companion artifact (referenced, not duplicated):** `do../research/2026-05-20-checkout-order-creation.md` — full cross-system autopsy for `/v4/order/create` + `/delivery/summary` checkout slice.
 **Authored for:** `docs/bp/` business-process map.
 
 This document catalogs the business processes that **live inside Integration** as a Lumen monorepo. Integration is the BFF/glue tier that the site/mobile/ENSI and various 1C/DWH/OMS partners go through. Most processes are synchronous HTTP (deploy `integration-api`) with a parallel async tier of Kafka daemons and DWH/1C exports (deploy `integration-cron`).
@@ -99,7 +99,7 @@ The remainder of this document enumerates the processes. Identifiers `BP-INT-NN`
 - Code path `V1/Delivery/DeliveryService.php:2306-2329` uses `V2OmsClient` (i.e. `OmsClientV2`) for some pickup point/store interval calls (an in-flight migration; both clients coexist).
 - `OPSOMN-9747` introduced `calculateDaysLimit:1` to OMS interval calls to keep response payload small.
 
-> Full sequence-with-OMS detail for this path lives in the checkout-flow autopsy. See `docs/research/2026-05-16-checkout-flow.md` (Phase 1, "Per-system findings → Integration Service" table).
+> Full sequence-with-OMS detail for this path lives in the checkout-flow autopsy. See `do../research/2026-05-20-checkout-order-creation.md` (Phase 1, "Per-system findings → Integration Service" table).
 
 ---
 
@@ -700,7 +700,7 @@ Integration's only return-adjacent function is `returnLoyalty` (BP-INT-16), whic
 | Returns initiation flow | ENSI + OMS | `ensi-researcher` + `oms-researcher` |
 | YooKassa webhook handling | OMS `core/pay-service` | `oms-researcher` |
 | Camunda BPM order processes | OMS `core/Camunda` + `awg/bpmn-process` | `oms-researcher` + `camunda-bpm-engineer` |
-| Interval generation root cause | OMS `core/Settings` `DeliveryIntervalsByLogisticGroups.java` | covered in `docs/research/2026-05-16-checkout-flow.md` |
+| Interval generation root cause | OMS `core/Settings` `DeliveryIntervalsByLogisticGroups.java` | covered in `do../research/2026-05-20-checkout-order-creation.md` |
 | Carrier integrations (CDEK, Russian Post, 5post, Dalli) | OMS `core/Delivery` + SDK libs | `oms-researcher` |
 | Customer-auth JWT minting | ENSI `customer-auth` / `admin-auth` | `ensi-researcher` |
 | Basket recalc on login (merge guest+user) | ENSI baskets + customer-auth | `ensi-researcher` |
@@ -753,7 +753,7 @@ Console commands:
 - `platform/integration/integration/www/app/Service/Exchange/Console/Daemons/V1/*/...DaemonCommand.php`
 
 Companion artifact (deeper for checkout):
-- `docs/research/2026-05-16-checkout-flow.md`
+- `do../research/2026-05-20-checkout-order-creation.md`
 
 ---
 
@@ -761,7 +761,7 @@ Companion artifact (deeper for checkout):
 
 1. **Field-level data shapes** of OMS requests/responses — read OMS researcher artifacts or the `OmsClient/Clients/Client.php` method signatures directly.
 2. **ENSI customers-api-web internals** — that BFF is a separate process catalog (`ensi-researcher`).
-3. **Mobile / site state machines** during checkout — covered in `docs/research/2026-05-16-checkout-flow.md` (Site, Mobile sections).
+3. **Mobile / site state machines** during checkout — covered in `do../research/2026-05-20-checkout-order-creation.md` (Site, Mobile sections).
 4. **Camunda BPM processes** (post-order-create) — owned by `oms-researcher` + `camunda-bpm-engineer`.
 5. **YooKassa SDK / RN bridge level** — owned by `mobile-researcher`.
 6. **DBT / DWH semantics** of exported orders — beyond Integration's responsibility.

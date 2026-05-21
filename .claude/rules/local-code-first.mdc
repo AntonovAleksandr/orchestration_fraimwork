@@ -1,0 +1,40 @@
+---
+description: Prefer local platform clones over GitLab MCP; pull before reading or editing code
+alwaysApply: true
+---
+
+# Local code first + fresh clones
+
+All six platforms are cloned under `platform/*/` (~63 git repos). **Read and search code locally** — not via `gitlab_get_repository_file`.
+
+## Before code work (every session / task)
+
+1. **Sync** affected platform(s) before Read/Grep/edit on `platform/`:
+   ```bash
+   ./scripts/sync-platform-repos.sh              # all platforms
+   ./scripts/sync-platform-repos.sh ensi         # one platform
+   ./scripts/sync-platform-repos.sh starfish24/core/Order   # one repo
+   ```
+2. If sync fails (dirty tree, merge conflict) — **stop and report**; do not silently use stale code or switch to GitLab as workaround.
+3. After sync, use local tools: `Read`, `Grep`, `SemanticSearch`, `Glob` on `platform/`.
+
+ENSI only: run commands inside containers via `elc -w gj -c <svc> exec …` — still use **local** source under `platform/ensi/`.
+
+## Local vs GitLab MCP
+
+| Need | Tool |
+|------|------|
+| Read/search/implement in cloned code | Local `platform/` (after sync) |
+| MRs, pipelines, job logs, approvals | `gitlab_*` MCP |
+| Jira, Confluence, prod logs, k8s | Buddy MCP (non-GitLab tools) |
+| Repo **not** present under `platform/` | `gitlab_get_repository_file` / clone first |
+| Compare with remote branch without checkout | GitLab MCP (exception) |
+
+## Anti-patterns
+
+- `gitlab_get_repository_file` when `platform/<system>/…` exists locally
+- Starting code investigation without sync/pull
+- `gitlab_*` for “find where X is defined” in a cloned service
+- Assuming `platform/site/` or `platform/starfish24/` is empty — they are populated
+
+Details: `@.claude/skills/gj-multirepo-navigation/SKILL.md`, sync script `@scripts/sync-platform-repos.sh`.

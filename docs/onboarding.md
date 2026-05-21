@@ -38,6 +38,18 @@ elc workspace add gj <workspace>/platform/ensi/workspace
 
 После этого: агенты и скиллы GJ из `.claude/` (в git); GSD — `/gsd:*` в Claude Code или `gsd-*` skills в Cursor (локально).
 
+### Обновление клонов platform/
+
+Перед code-задачей агент должен подтянуть свежий код:
+
+```bash
+./scripts/sync-platform-repos.sh              # все ~63 репо
+./scripts/sync-platform-repos.sh ensi         # только ENSI
+./scripts/sync-platform-repos.sh integration/integration
+```
+
+Репозитории с uncommitted changes пропускаются (`SKIP`). Правило для агентов: `.claude/rules/local-code-first.mdc`.
+
 ## Карта проекта (TL;DR)
 
 ```
@@ -47,21 +59,22 @@ GJ-Ecommerce/
 │   ├── starfish24/   — OMS (Starfish): 32 репо (Java + 1 Go + Camunda) — 455 MB
 │   ├── site/         — gj-ng-front (Angular 20 + Nx + NgRx + NestJS SSR) — 129 MB
 │   ├── mobile-app/   — gj-app + mobapp-api-types (React Native)         — 67 MB
-│   └── integration/  — integration + 3 libs (PHP/Lumen)                 — 49 MB
+│   ├── integration/  — integration + 3 libs (PHP/Lumen)                 — 49 MB
+│   └── gloriaots/    — Gloria OTS (.NET 10, SQL Server, RabbitMQ)      — ~44 MB
 ├── docs/
 │   ├── service-index.md  — полный реестр сервисов всех платформ
 │   ├── onboarding.md     — этот файл
 │   └── architecture/     — ADR-документы (создаются `architect`-агентом)
 ├── .claude/              — канон: agents, skills, rules (в git)
-│   ├── agents/           — 21 сабагент (Cursor: Task)
-│   ├── skills/           — 24 скилла GJ
+│   ├── agents/           — 24 сабагента (Cursor: Task)
+│   ├── skills/           — 25 скиллов GJ
 │   ├── rules/            — project rules (.mdc)
 │   └── commands/gsd/     — GSD slash-команды (локально, не в git)
 ├── .cursor/rules/        — симлинки → .claude/rules/ (для Cursor UI)
 └── CLAUDE.md             — top-level orientation, автозагрузка
 ```
 
-## Агенты (21)
+## Агенты (24)
 
 Вызываются через `Agent` tool с `subagent_type=<name>`.
 
@@ -73,6 +86,7 @@ GJ-Ecommerce/
 | `site-navigator` | Site — Nx-monorepo `platform/site/gj-ng-front/` |
 | `mobile-navigator` | Mobile — RN-monorepo `platform/mobile-app/gj-app/` |
 | `integration-navigator` | Integration — `platform/integration/integration/www/` |
+| `gloriaots-navigator` | Gloria OTS — `platform/gloriaots/gloriaots/` |
 
 ### Per-platform researchers (read-only, "почему так работает?")
 Расследуют поведение, ищут workarounds и legacy-костыли, трассируют данные через систему. **НЕ пишут код** — на выходе findings-документ. Делегируют друг другу для cross-system флоу.
@@ -84,6 +98,7 @@ GJ-Ecommerce/
 | `integration-researcher` | Checkout BFF, Lumen vs Laravel gaps, outbox via msq-client, two-deploy diffs (api vs cron) |
 | `site-researcher` | NgRx state flow, SSR vs CSR, locale drift (ru/en/kz), `deprecated/`, GrowthBook flags |
 | `mobile-researcher` | iOS/Android divergence, patch-package patches, env-flavors, YooKassa native bridge |
+| `gloriaots-researcher` | Order/T K/WMS flows, RabbitMQ events, OMS/Integration handoffs |
 
 Findings сохраняются в `docs/research/<YYYY-MM-DD>-<topic>.md` (см. `docs/research/README.md`).
 
@@ -96,6 +111,7 @@ Findings сохраняются в `docs/research/<YYYY-MM-DD>-<topic>.md` (см
 | `site-engineer` | Angular 20 + NgRx + NestJS SSR + Nx |
 | `mobile-engineer` | React Native + TS + styled-components |
 | `integration-engineer` | PHP + Lumen + composer |
+| `gloriaots-engineer` | .NET 10 + ASP.NET Core + EF Core + C# workers |
 
 ### Go-агенты для OMS (импортированы из `logistics/.claude/`, имеют logistics-контекст)
 - `oms-go-expert-coder` — concurrency, perf, idioms
@@ -115,7 +131,7 @@ Findings сохраняются в `docs/research/<YYYY-MM-DD>-<topic>.md` (см
 | `logs-detective` | Инциденты, trace, ошибки через `mcp__gj-buddy__logs_*` |
 | `architect` | Cross-system дизайн, ADR в `docs/architecture/<YYYY-MM-DD>-<topic>.md` |
 
-## Скиллы (24) — авто-активируются по описанию
+## Скиллы (25) — авто-активируются по описанию
 
 ### ENSI (9, из ensi-platform/skills + кастом)
 `ensi-api-design`, `ensi-code-style`, `ensi-models`, `ensi-openapi`, `ensi-meta`, `ensi-query-builder`, `ensi-kafka`, `ensi-tests`, `ensi-elc-operations`, плюс `ansible-component`
@@ -131,6 +147,9 @@ Findings сохраняются в `docs/research/<YYYY-MM-DD>-<topic>.md` (см
 
 ### Integration (3)
 `integration-stack-anatomy`, `integration-deployment`, `integration-php-conventions`
+
+### Gloria OTS (1)
+`gloriaots-stack-anatomy`
 
 ### Cross-cutting (2)
 `gj-multirepo-navigation` — поиск по 6+ GB кода
@@ -254,6 +273,16 @@ make run-local                 # docker-compose из deployments/docker/
 ```
 В этом каталоге есть собственный `CLAUDE.md` с богатой спецификой.
 
+### Gloria OTS (.NET)
+```bash
+cd platform/gloriaots/gloriaots
+docker compose -f docker-compose.yml up -d rabbitmq redis aspire-dashboard
+dotnet run --project src/GloriaOTS.Web
+dotnet run --project src/Workers/GloriaOTS.OrderTracking
+# Warehouse=NSK dotnet run --project src/Workers/GloriaOTS.WmsSync
+```
+См. `.claude/skills/gloriaots-stack-anatomy/SKILL.md` и README внутри репо.
+
 ## Разрешения / hooks
 
 - **`settings.json`** — авто-allow для read-only MCP-инструментов gj-buddy и безопасных Bash (git status/log/diff, ls, grep, rg, find, elc workspace list/show)
@@ -264,7 +293,7 @@ make run-local                 # docker-compose из deployments/docker/
 
 Использовать вместо ручного `gh`/`curl`/`kubectl`:
 
-- `mcp__gj-buddy__gitlab_*` — MR, issues, pipelines, jobs, файлы (для нелокальных репо или конкретных файлов)
+- `mcp__gj-buddy__gitlab_*` — MR, issues, pipelines, jobs (не для чтения исходников — код в `platform/`, см. `./scripts/sync-platform-repos.sh`)
 - `mcp__gj-buddy__jira_*` — задачи, проекты
 - `mcp__gj-buddy__confluence_*` — страницы, поиск
 - `mcp__gj-buddy__logs_*` — `logs_search_trace` (распределённый trace), `logs_search_message`, `logs_recent`
@@ -308,12 +337,14 @@ make run-local                 # docker-compose из deployments/docker/
         │ (~25 services)     │                  │ (Java + 1 Go)      │
         └────────────────────┘                  └─────────┬──────────┘
                                                           │
-                                                          ▼
-                                              ┌────────────────────┐
-                                              │ Carriers, payments │
-                                              │ (СДЭК, Поч.России, │
-                                              │  5post, YooKassa)  │
-                                              └────────────────────┘
+                              ┌───────────────────────────┼───────────────┐
+                              ▼                           ▼               ▼
+                    ┌─────────────────┐         ┌──────────────┐  ┌─────────────┐
+                    │   Gloria OTS    │◀───────▶│ WMS / 1C     │  │ Carriers    │
+                    │ (.NET, RabbitMQ)│         │ (TGW sync)   │  │ CDEK,DPD,…  │
+                    └────────▲────────┘         └──────────────┘  └─────────────┘
+                             │
+                    Integration (export, stock, Kafka status)
 ```
 
 Подробный реестр сервисов по каждой платформе — `docs/service-index.md`.
@@ -321,6 +352,6 @@ make run-local                 # docker-compose из deployments/docker/
 ## Расширение
 
 - **Новый сервис в существующую платформу:** клонировать в правильное место (`platform/ensi/apps/<group>/`, `platform/starfish24/core/`, и т.д.), обновить `docs/service-index.md`. Если стек новый — добавить агента/скилл.
-- **Новая платформа:** создать `platform/<name>/`, обновить `CLAUDE.md` (новая секция) + `docs/service-index.md` + 2-3 агента + 2-3 скилла + memory entry.
+- **Новая платформа:** создать `platform/<name>/`, обновить `CLAUDE.md` (новая секция) + `docs/service-index.md` + агенты/скилл при необходимости.
 - **Полный GSD** (66 skills вместо 7): `cd <workspace> && npx get-shit-done-cc@latest --claude --local --profile=full`
 - **Новый агент / скилл:** файл с frontmatter `---\nname: ...\ndescription: ...\n---`. Описание `description` должно быть детальным — по нему Claude решает когда активировать.

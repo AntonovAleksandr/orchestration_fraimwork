@@ -383,3 +383,83 @@ integration/
 - Backend API: интеграция через `platform/integration/` + `platform/ensi/apps/customers-api-web/`.
 - API типы: `mobapp-api-types/` (вероятно, генерируются из OpenAPI ENSI / Integration).
 - Платежи: `rn-yookassa-sdk` → YooKassa native.
+
+---
+
+## Платформа Gloria OTS (`platform/gloriaots/`)
+
+**Статус:** клонировано (1 репо из группы `gloriaots/`).
+
+**GitLab группа:** `gloriaots/*`
+
+**GitLab репо:** https://gitlab.gloria.aaanet.ru/gloriaots/gloriaots
+
+**Домен:** логистика Gloria Jeans — **Order Transport System (OTS)**. Не ядро e-commerce, но участвует в исполнении заказов интернет-магазина (экспорт из OMS, статусы, остатки, WMS, ТК).
+
+### Клонированный репозиторий
+
+| Репо | Путь | Branch | Назначение |
+|------|------|--------|-----------|
+| gloriaots | `platform/gloriaots/gloriaots/` | `master` | Главный monorepo: Web + workers + Database |
+
+### Смежный репозиторий группы (не клонирован по умолчанию)
+
+| Репо | GitLab | Назначение |
+|------|--------|-----------|
+| wmsinserter-2.0 | `gloriaots/wmsinserter-2.0` | WMS inserter |
+
+### Структура monorepo
+
+```
+gloriaots/
+├── src/
+│   ├── GloriaOTS.Web/                 # HTTP API (v1–v3 order/balance), admin API, Swagger, Hangfire, React SPA
+│   ├── GloriaOTS.ApplicationCore/       # домен, DTO, interfaces, OTSModels, events
+│   ├── GloriaOTS.Infrastructure/        # EF Core, ShipmentServices (ТК), WmsServices, order handlers, jobs
+│   ├── GloriaOTS.EventBus/              # RabbitMQ bus
+│   └── Workers/
+│       ├── GloriaOTS.OrderTracking/     # фоновый трекинг, cancel, FORWARD_STATUS
+│       └── GloriaOTS.WmsSync/           # WMS/TGW/1C; env Warehouse=NSK|MSK|…
+├── Database/                          # SQL Server: SqlDeploy, MigrationScripts, DDL
+├── Docs/                              # заметки по интеграциям ТК (CDEK, DPD, ПР, …)
+├── docker-compose*.yml                  # local / stage / prod (RND, NSK, MSK)
+└── GloriaOTS.sln
+```
+
+### Runtime-сервисы (деploy targets)
+
+| Сервис | Проект | Роль |
+|--------|--------|------|
+| web | `GloriaOTS.Web` | API + admin SPA + Hangfire dashboard |
+| order-tracking | `GloriaOTS.OrderTracking` | Статусы ТК/WMS, уведомления |
+| wms-sync | `GloriaOTS.WmsSync` | Отдельный инстанс на склад |
+
+### Стек
+
+- **.NET 10**, ASP.NET Core, EF Core, Hangfire
+- **SQL Server** (Ordering + Hangfire; колляция `Cyrillic_General_CI_AS`)
+- **RabbitMQ** (internal + external event bus)
+- **Redis**
+- **React + Vite** (`ClientApp/`)
+- **Docker Compose** + **GitLab CI** (stage; prod по площадкам RND/NSK/MSK)
+
+### Зависимости (e-commerce)
+
+- **OMS ← → OTS:** выгрузка заказов (`core/Adapter`, BPMN export); статусы обратно (`DELIVERING (OTS)`, BP-OMS-11)
+- **Integration ↔ OTS:** `OtsClient`, `OrderExportOtsMutator`, cron stock init/delta (BP-INT-25), Kafka daemons статусов (BP-INT-30/31)
+- **OTS → WMS/1C:** `GloriaOTS.WmsSync` (TGW telegram, реестры 1C)
+- **OTS → carriers:** `Infrastructure/Services/ShipmentServices/*` (CDEK, DPD, Russian Post, Yandex, Own, …)
+
+См. также `docs/bp/08-master-data-sync.md`, Confluence INT 132.65.x (OMS ↔ OTS).
+
+### Агенты / скилл
+
+- `gloriaots-navigator`, `gloriaots-researcher`, `gloriaots-engineer`
+- `gloriaots-stack-anatomy`
+
+### Bootstrap
+
+```bash
+mkdir -p platform/gloriaots && cd platform/gloriaots
+git clone git@gitlab.gloria.aaanet.ru:gloriaots/gloriaots.git
+```

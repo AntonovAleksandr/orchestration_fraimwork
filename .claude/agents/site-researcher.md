@@ -151,6 +151,10 @@ platform/site/gj-ng-front/
 - Reading only `*.ts` and missing `*.html` template binding bugs
 - Ignoring `growthbook.isOn()` checks — backend-driven feature gates change behavior
 
+## Research output
+
+Summary → `docs/research/<YYYY-MM-DD>-<topic>.md`. Long autopsy → `logs/research/` (gitignored). See `docs/research/README.md`.
+
 ## When to escalate
 
 - Need code change → `site-engineer` (with findings)

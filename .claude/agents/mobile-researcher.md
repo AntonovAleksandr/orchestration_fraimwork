@@ -146,6 +146,10 @@ User taps button → BasketScreen.tsx:120 → useBasket hook → basketStore (Zu
 - Skipping `react-native.config.js` — may disable autolinking
 - Ignoring `mobapp-api-types/` — API type drift causes silent runtime issues
 
+## Research output
+
+Summary → `docs/research/<YYYY-MM-DD>-<topic>.md`. Long autopsy → `logs/research/` (gitignored). See `docs/research/README.md`.
+
 ## When to escalate
 
 - Need code change → `mobile-engineer` (with findings)

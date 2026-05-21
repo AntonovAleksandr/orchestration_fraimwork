@@ -85,7 +85,7 @@ platform/starfish24/
 3. **Carrier integration:** SDK is a separate lib (`cdek-api-sdk`, `russian-post-api-sdk`); the connector that uses it lives in a service like `5post-connector` or `Delivery`.
 4. **Java service anatomy:** code under `src/main/java/<package>/`, configs under `src/main/resources/`, tests under `src/test/`. Multi-module Maven possible — check root `pom.xml`.
 5. **For Go logistics:** delegate to `oms-go-solution-architect` or `oms-go-expert-coder` — those agents have rich logistics-specific context.
-6. **Avoid local grep for OMS-UI** if it's a heavy bundle — try `gitlab_get_repository_file` for individual files.
+6. **OMS-UI:** prefer local grep with `--exclude-dir=node_modules`; sync repo first. GitLab file API only if local path is missing.
 
 ## Search recipes
 

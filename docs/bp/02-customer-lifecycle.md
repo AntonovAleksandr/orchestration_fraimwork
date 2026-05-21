@@ -165,7 +165,7 @@ sequenceDiagram
 
 ### Quirks
 
-- См. checkout-flow research [`docs/research/2026-05-16-checkout-flow.md`](../research/2026-05-16-checkout-flow.md): `customerDeliveryPreferences` не содержит `selectedIntervalId` — только carrier. Это **намеренно**, чтобы избежать stale interval-id (см. там же).
+- См. checkout-flow research [`do../research/2026-05-20-checkout-order-creation.md`](../research/2026-05-20-checkout-order-creation.md): `customerDeliveryPreferences` не содержит `selectedIntervalId` — только carrier. Это **намеренно**, чтобы избежать stale interval-id (см. там же).
 
 ---
 

@@ -5,7 +5,7 @@ description: Use when working with anything in Gloria Jeans's external systems �
 
 # gj-buddy MCP Mastery
 
-`gj-buddy` is Gloria Jeans's internal MCP server that wraps GitLab, Jira, Confluence, logs and Context Engine. **Prefer it over manual tooling** — it knows our auth, schema, and conventions.
+`gj-buddy` is Gloria Jeans's internal MCP server that wraps GitLab, Jira, Confluence, logs and Context Engine. **Prefer it over manual gh/curl/kubectl** for corporate systems — but **do not use GitLab file APIs when code exists locally** under `platform/` (sync first via `./scripts/sync-platform-repos.sh`).
 
 ## Tool families
 
@@ -16,9 +16,9 @@ description: Use when working with anything in Gloria Jeans's external systems �
 - `gitlab_get_project(projectId)` — project details
 - `gitlab_list_groups`, `gitlab_list_subgroups`, `gitlab_list_group_projects`
 
-**Files without cloning:**
-- `gitlab_get_repository_file(projectId, file_path, ref)` — read a single file from a remote repo
-- `gitlab_list_repository_tree(projectId, path, ref)` — list files at path
+**Files without cloning (fallback only):**
+- `gitlab_get_repository_file(projectId, file_path, ref)` — when `platform/` has no local clone
+- `gitlab_list_repository_tree(projectId, path, ref)` — same
 
 **Commits:**
 - `gitlab_get_commit`, `gitlab_list_commits`, `gitlab_list_all_commits`
@@ -74,7 +74,7 @@ description: Use when working with anything in Gloria Jeans's external systems �
 
 | Question | Tool |
 |----------|------|
-| "What does file X in OMS look like?" | `gitlab_get_repository_file` (don't clone) |
+| "What does file X in OMS look like?" | Local `platform/starfish24/...` after sync — **not** `gitlab_get_repository_file` |
 | "Recent MRs in catalog/pim" | `gitlab_list_merge_requests(state=opened)` |
 | "Why does pipeline fail?" | `gitlab_list_pipeline_jobs` → `gitlab_get_job_log` |
 | "Find a ticket about offer pricing" | `jira_search_issues(jql='text ~ "offer pricing"')` |
@@ -86,7 +86,8 @@ description: Use when working with anything in Gloria Jeans's external systems �
 
 ## Anti-patterns
 
-- Cloning a 1GB repo when you need 1 file → use `gitlab_get_repository_file`
+- **`gitlab_get_repository_file` when `platform/<system>/` already has the repo** — sync + local Read/Grep
+- Cloning a repo you don't have yet when you need one file — OK to use `gitlab_get_repository_file` once, then consider adding to bootstrap
 - Manual `gh` CLI — it's GitHub, ours is GitLab
 - Running `kubectl logs` to investigate prod — use `logs_*` tools (they're aggregated)
 - Confluence search via WebFetch — auth fails; use the MCP

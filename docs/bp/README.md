@@ -1,6 +1,6 @@
 # Карта бизнес-процессов GJ E-commerce
 
-**Назначение:** единый каталог сквозных бизнес-процессов e-commerce платформы Gloria Jeans — от заведения карточки товара до доставки и возврата. Документ привязан к коду 5 платформ (ENSI / Integration / OMS / Site / Mobile) и параллельно ссылается на бизнес-описания в Confluence.
+**Назначение:** единый каталог сквозных бизнес-процессов e-commerce платформы Gloria Jeans — от заведения карточки товара до доставки и возврата. Документ привязан к коду платформ (ENSI / Integration / OMS / Site / Mobile / Gloria OTS) и параллельно ссылается на бизнес-описания в Confluence.
 
 **Аудитория:** product, аналитики, инженеры всех платформ, новые сотрудники, архитекторы.
 
@@ -137,7 +137,7 @@
 
 ### Существующие артефакты
 
-- [`../research/2026-05-16-checkout-flow.md`](../research/2026-05-16-checkout-flow.md) (668 строк) — глубокое расследование pre-checkout / interval-id non-idempotency (5 ресёрчеров параллельно). Опорный артефакт для L1 03–04.
+- [`../research/2026-05-20-checkout-order-creation.md`](../research/2026-05-20-checkout-order-creation.md) — **сводка** чекаута / commit / P0 (prod logs). Длинный autopsy — локально `logs/research/`. L1: 03–04.
 - [`../service-index.md`](../service-index.md) — реестр всех сервисов с владельцами и стеком.
 - [`../architecture/`](../architecture/) — ADR (когда появятся).
 

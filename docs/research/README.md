@@ -1,48 +1,46 @@
 # Research Findings
 
-Per-investigation findings produced by `*-researcher` агентами (`ensi-researcher`, `oms-researcher`, `integration-researcher`, `site-researcher`, `mobile-researcher`).
+Краткие выводы cross-system расследований — в **git** (`docs/research/`). Длинные autopsy — в **`logs/research/`** (gitignored). Описание каталога: tracked [`logs/README.md`](../../logs/README.md).
 
-## Naming
+## Naming (tracked summary)
 
-Файлы — `<YYYY-MM-DD>-<topic>.md`:
-- `2026-05-16-checkout-fails-with-promo.md`
-- `2026-05-20-stock-drift-between-ensi-and-oms.md`
+`docs/research/<YYYY-MM-DD>-<topic>.md` — **один файл на тему**, ~1–2 экрана: Summary, приоритеты, traceId, «куда копать», ссылки на BP.
 
-## Структура findings документа
+Пример: [`2026-05-20-checkout-order-creation.md`](2026-05-20-checkout-order-creation.md) — чекаут / commit / P0.
+
+## Naming (local long-form)
+
+`logs/research/<YYYY-MM-DD>-<topic>.md` — полный разбор. **Не коммитить** (gitignored). См. tracked [`logs/README.md`](../../logs/README.md).
+
+## Структура summary (tracked)
 
 ```markdown
 # <topic>
 
-**Investigated by:** <list of researchers used (e.g. integration-researcher → ensi-researcher → oms-researcher)>
-**Date:** YYYY-MM-DD
+**Дата:** YYYY-MM-DD · **Статус:** prod ref / ограничения
 
-## Question
-<the exact thing being investigated>
+## Summary (1 абзац)
 
-## Summary
-<TL;DR — 1-2 sentences>
+## Приоритеты / findings (таблица)
 
-## Cross-system flow
-<ASCII или текстовая диаграмма куда заходит запрос/данные>
+## Логи / инструменты (коротко)
 
-## Evidence trail
-<numbered list of file:line, commits, MRs, logs, Jira>
+## Дальше (numbered list)
 
-## Workarounds / legacy in play
-<list of non-obvious code patterns relevant to the issue>
-
-## Root cause
-<the actual answer>
-
-## Suggested next steps
-<actions, with owner agent indicated>
+**Локально:** logs/research/…
 ```
 
-## Когда сохранять
+## Когда что писать
 
-- Если research занял > 5 минут или включал > 1 систему — сохранять
-- Если research быстрый одно-системный — может остаться в чате
-- Финдинги переиспользуются: при похожей проблеме в будущем — researcher сначала grep'ит `docs/research/`
+| Объём | Куда |
+|-------|------|
+| Итог для команды, ссылки на trace | `docs/research/` — **обновить или один файл на тему** |
+| > ~150 строк, autopsy, duplicate BP | `logs/research/` |
+| L1 процессы | `docs/bp/` — не дублировать research |
+
+## Агенты
+
+`*-researcher`: итог в `docs/research/`; детали — `logs/research/`. Сначала grep `docs/research/` по теме; не плодить новые md без необходимости — **дополнять существующий summary**.
 
 ## Лицензия
 

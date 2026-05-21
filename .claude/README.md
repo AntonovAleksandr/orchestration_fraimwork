@@ -6,8 +6,8 @@
 
 | Путь | Назначение |
 |------|------------|
-| `agents/` | 21 сабагент (`ensi-navigator`, `oms-java-engineer`, …) — Cursor: `Task(subagent_type=…)` |
-| `skills/` | 24 доменных скилла GJ (`ensi-*`, `gj-buddy-*`, …) — подхватываются обоими IDE |
+| `agents/` | 24 сабагента (`ensi-navigator`, `gloriaots-engineer`, …) — Cursor: `Task(subagent_type=…)` |
+| `skills/` | 25 доменных скилла GJ (`ensi-*`, `gloriaots-*`, `gj-buddy-*`, …) — подхватываются обоими IDE |
 | `rules/` | Проектные rules (`.mdc`) — в Cursor через симлинки в `.cursor/rules/` |
 
 Корневой **`CLAUDE.md`** — главная карта workspace (читается Claude Code и Cursor).

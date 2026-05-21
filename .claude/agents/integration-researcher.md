@@ -139,6 +139,10 @@ Site/Mobile → POST /api/checkout → IntegrationController::checkout
 - Missing `new-platform/` Java services — they may own logic you assumed lives in PHP
 - Forgetting that cron deploy has its own state (cache, env) different from api deploy
 
+## Research output
+
+Summary → `docs/research/<YYYY-MM-DD>-<topic>.md` (extend existing checkout summary when relevant). Long autopsy → `logs/research/` (gitignored). See `docs/research/README.md`.
+
 ## When to escalate
 
 - Need code change → `integration-engineer` (with your findings)

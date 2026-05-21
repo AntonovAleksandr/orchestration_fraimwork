@@ -1,6 +1,6 @@
 # GJ-Ecommerce — Agentic Workspace
 
-**Agentic workspace** для e-commerce платформы **Gloria Jeans**: одна среда, в которой ИИ-агенты помогают на всём пути — от понимания ландшафта до выката и разбора инцидентов. Это не «репозиторий только для кодинга», а **операционная база знаний и ролей** поверх пяти платформ (`ENSI`, `OMS`, `Integration`, `Site`, `Mobile`).
+**Agentic workspace** для e-commerce платформы **Gloria Jeans** и смежной логистики: одна среда, в которой ИИ-агенты помогают на всём пути — от понимания ландшафта до выката и разбора инцидентов. Это не «репозиторий только для кодинга», а **операционная база знаний и ролей** поверх шести платформ (`ENSI`, `OMS`, `Integration`, `Site`, `Mobile`, `Gloria OTS`).
 
 | Направление | Примеры задач | Чем закрываем в workspace |
 |-------------|---------------|---------------------------|
@@ -15,15 +15,15 @@
 Проект **изначально собран под [Claude Code](https://docs.anthropic.com/en/docs/claude-code)** (GSD, slash-команды, hooks, плагины), но конфигурация агентов спроектирована **agent-agnostic**: один канонический слой в `.claude/` + `CLAUDE.md`, который без дублирования подхватывают Cursor и другие IDE с поддержкой тех же форматов.
 
 Репозиторий трекает только **нашу интеллектуальную собственность**:
-- `.claude/agents/` — 21 сабагент
-- `.claude/skills/` — 24 доменных скилла
+- `.claude/agents/` — 24 сабагента
+- `.claude/skills/` — 25 доменных скиллов
 - `.claude/rules/` — project rules (Cursor подключает через `.cursor/rules/` → симлинки)
 - `docs/` и корневой `CLAUDE.md`
 
 **Claude Code и Cursor** читают агентов и скиллы из `.claude/`; отдельно копировать в `.cursor/skills/` не нужно.
 
 **Не трекается** (восстанавливается локально):
-- `platform/` — клоны 5 платформ (каждый — свой git-репозиторий)
+- `platform/` — клоны 6 платформ (каждый — свой git-репозиторий)
 - GSD: `.claude/commands/`, `get-shit-done/`, `hooks/`, `settings.json` — `npx get-shit-done-cc --claude --local --profile=core`
 - Опционально GSD для Cursor: `.cursor/get-shit-done/`, `.cursor/skills/gsd-*` — `--cursor --local` (см. `.claude/README.md`)
 - `.claude/settings.local.json` — личные approve команды
@@ -60,8 +60,8 @@ GJ-Ecommerce/
 
 | Задача | Куда | Не делать |
 |--------|------|-----------|
-| Карта платформ, «где что искать», стек, 5 `platform/*` | `CLAUDE.md` | Не раздувать rules повтором таблиц из `docs/service-index.md` |
-| Короткие обязательные ограничения для **любого** агента (git root, elc, MCP, сабагенты) | `.claude/rules/*.mdc` | Не писать второй раз в `.cursor/rules/` — только симлинк |
+| Карта платформ, «где что искать», стек, 6 `platform/*` | `CLAUDE.md` | Не раздувать rules повтором таблиц из `docs/service-index.md` |
+| Короткие обязательные ограничения для **любого** агента (git root, elc, MCP, сабагенты, local-first + sync) | `.claude/rules/*.mdc` | Не писать второй раз в `.cursor/rules/` — только симлинк |
 | Правила для **типа файлов** (PHP ENSI, Java OMS, Angular site) | `.claude/rules/<topic>.mdc` с `globs:` + симлинк в `.cursor/rules/` | Не смешивать с автогеном GSD |
 | Новая роль «найди / напиши код» | `.claude/agents/<name>.md` | Не форкать промпт в `.cursor/` |
 | Исследование «почему так работает» (без правок кода) | `docs/research/YYYY-MM-DD-<topic>.md` + `*-researcher` | Не путать с ADR — research = facts, architecture = decision |
@@ -158,7 +158,8 @@ OpenCode, Gemini CLI, GitHub Copilot CLI, Factory Droid — см. [Installation]
 ├── starfish24/          # OMS / Starfish: 32 репо (Java Spring Boot + Go + Camunda)
 ├── integration/         # Integration: Lumen monorepo + 3 PHP libs
 ├── site/                # gj-ng-front (Angular 20 + Nx + NgRx + NestJS SSR)
-└── mobile-app/          # gj-app + mobapp-api-types (React Native)
+├── mobile-app/          # gj-app + mobapp-api-types (React Native)
+└── gloriaots/           # Gloria OTS (.NET 10, SQL Server, RabbitMQ)
 ```
 
 #### ENSI (через ELC — клонирует за вас)
@@ -226,6 +227,12 @@ git clone git@gitlab.gloria.aaanet.ru:mobapp/gj-app.git
 git clone git@gitlab.gloria.aaanet.ru:mobapp/mobapp-api-types.git
 ```
 
+#### Gloria OTS
+```bash
+mkdir -p platform/gloriaots && cd platform/gloriaots
+git clone git@gitlab.gloria.aaanet.ru:gloriaots/gloriaots.git
+```
+
 ### 4. (Опционально) Разрешения для удобства
 
 `.claude/settings.json` после GSD-инсталлятора содержит дефолтные хуки, но без allowlist разрешений. Чтобы автоматически разрешить read-only MCP-инструменты (gj-buddy gitlab/jira/confluence/logs) и безопасные Bash (git status/log/diff, ls, grep, rg), добавь блок `permissions.allow` — пример из предыдущей настройки в [docs/onboarding.md](docs/onboarding.md).
@@ -237,7 +244,7 @@ git clone git@gitlab.gloria.aaanet.ru:mobapp/mobapp-api-types.git
 | [CLAUDE.md](CLAUDE.md) | Карта workspace (agent-agnostic; читается Claude Code, Cursor, …) |
 | [.claude/README.md](.claude/README.md) | Что в git в `.claude/` vs что регенерировать локально |
 | [.claude/rules/](.claude/rules/) | Project rules; в Cursor — симлинки из `.cursor/rules/` |
-| [docs/service-index.md](docs/service-index.md) | Полный реестр сервисов всех 5 платформ + GitLab URLs |
+| [docs/service-index.md](docs/service-index.md) | Полный реестр сервисов всех 6 платформ + GitLab URLs |
 | [docs/bp/](docs/bp/) | Бизнес-процессы и e2e-флоу (аналитика, онбординг в домен) |
 | [docs/research/](docs/research/) | Findings расследований (`*-researcher`) |
 | [docs/architecture/](docs/architecture/) | ADR и архитектурные решения (`architect`) |
@@ -252,15 +259,16 @@ git clone git@gitlab.gloria.aaanet.ru:mobapp/mobapp-api-types.git
 | Integration | PHP + Lumen, PHP-FPM + nginx + supervisor + filebeat (ELK) |
 | Site | Angular 20 + Nx + NgRx + NestJS SSR + Transloco + Storybook |
 | Mobile App | React Native 0.74 + TypeScript + yarn workspaces + styled-components + YooKassa |
+| Gloria OTS | .NET 10 + ASP.NET Core + SQL Server + RabbitMQ + Hangfire + React/Vite admin |
 
-## Агенты (21)
+## Агенты (24)
 
 Роли сгруппированы по **типу работы**, а не только по платформе:
 
 | Тип | Агенты | Режим |
 |-----|--------|--------|
-| **Навигация** («где X в коде?») | `*-navigator` (5 платформ) | read-only |
-| **Исследование** («почему так?», legacy, трассировка) | `*-researcher` (5 платформ) | read-only → `docs/research/` |
+| **Навигация** («где X в коде?») | `*-navigator` (6 платформ) | read-only |
+| **Исследование** («почему так?», legacy, трассировка) | `*-researcher` (6 платформ) | read-only → `docs/research/` |
 | **Реализация** | `*-engineer`, `camunda-bpm-engineer` | write code |
 | **Архитектура** | `architect`, `oms-go-solution-architect` | ADR / design |
 | **Качество и тесты** | `oms-go-quality-analyzer`, `oms-go-test-automation`, `oms-go-test-strategist` | review / tests |
