@@ -8,6 +8,10 @@
 platform/*/*
 !platform/*/README.md
 
+# New e-commerce platform — clients / gateway / checkout + go-pkg libs.
+# Each subdir is its own git repo (e-commerce/platform/*, go-pkg/*); never tracked here.
+platform-new/
+
 # macOS / IDE noise
 .DS_Store
 **/.DS_Store
@@ -57,3 +61,5 @@ platform/*/*
 # Local investigation dumps (long log/code autopsy — not for git)
 logs/*
 !logs/README.md
+
+.superpowers
