@@ -71,7 +71,7 @@ runtime `env.js` (рабочий, но тянет CORS-allowlist на движк
 |---|---|
 | Удалить `frontend/` | Целиком, включая `package-lock.json`, `.playwright-cli`. |
 | `.gitlab-ci.yml` | Заменить самописные backend/frontend стадии на include `greensight/gj/devops/gitlab-ci → golang-backend-pipeline.yml` (как у `intgateway`), `variables: DOMAIN_SERVICE: "go"`. |
-| `Dockerfile` | Оставить как есть (CGO+`debian-bookworm-slim` из-за `mattn/go-sqlite3` для локалки). Выравнивание на `CGO_ENABLED=0`/distroless — **опционально** (требует убрать sqlite за build-tag), не блокер. |
+| `Dockerfile` | Оставить как есть (CGO+`debian-bookworm-slim`). CGO требуется, потому что **sqlite — действующий драйвер тестов и локалки**, не мёртвый код: `internal/testutil/db.go` гоняет юнит-тесты на SQLite в temp-каталоге, есть ветка `initSQLite`, слой трансляции диалекта `rewriteSQLiteJSON`, отдельные SQLite-миграции и parity-тесты SQLite↔Postgres. Прод — только Postgres. Удаление sqlite ⇒ `CGO_ENABLED=0`/distroless — **отдельный follow-up** (см. ниже), не часть сплита. |
 | `Makefile` | Убрать цели `frontend-install` / `frontend-dev` / `frontend-build`; почистить `.PHONY`. |
 | `docker-compose.yml` | Проверить — фронт-сервиса там нет, правок по сути не требуется. |
 | `README.md` / `AGENTS.md` | Выкинуть раздел фронта; добавить ссылку на репо GUI; чеклист агента — убрать шаги 3/5 про frontend. |
@@ -109,7 +109,11 @@ runtime `env.js` (рабочий, но тянет CORS-allowlist на движк
    параметром через `envsubst` в entrypoint. — *согласование с devops*
 3. **npm-registry внутри Kaniko-сборки GUI.** По аналогии с `GOPROXY`-nexus у go-сборок, возможно
    понадобится `.npmrc` на nexus-прокси, чтобы `npm ci` достучался до реестра в CI. — *уточнить у devops*
-4. **Переименование Go-модуля** `gj-similar` → `gitlab.gloria.aaanet.ru/greensight/gj/go/recomendationengine`
+4. **Удаление sqlite + CGO-free сборка.** Перевести тест-харнесс на Postgres (testcontainers /
+   `INTEGRATION_DATABASE_URL`), снести диалект-слой `rewriteSQLiteJSON`, SQLite-миграции и parity-тесты,
+   убрать `mattn/go-sqlite3` → `CGO_ENABLED=0` + distroless как у флота (checkout/intgateway). Заметный
+   рефактор кода Михаила, ортогонален сплиту. — *отдельный follow-up*
+5. **Переименование Go-модуля** `gj-similar` → `gitlab.gloria.aaanet.ru/greensight/gj/go/recomendationengine`
    для единообразия с флотом. Не требуется для интеграции (общение по HTTP), косметика. — *опционально*
 
 ## Верификация
