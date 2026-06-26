@@ -2,6 +2,8 @@
 
 Workspace для разработки **e-commerce платформы Gloria Jeans** и смежных логистических систем. Код организован в независимые платформенные зоны: основные e-commerce платформы живут в `platform/<system>/`, а новые/экспериментальные контуры — в `platform-new/` и `platform-next/`. Настроены: **ENSI**, **Mobile App**, **Integration**, **Site**, **Starfish (OMS)**, **Gloria OTS**, плюс смежные зоны **ARM**, **1C**, **Data Analytics**, **DevOps** и **Non-Platform**.
 
+В документах `$WORKSPACE` означает локальный корень этого клона (`GJ-Ecommerce/`). Не подставляй абсолютный путь конкретного разработчика в tracked файлы.
+
 ## Структура корня
 
 ```

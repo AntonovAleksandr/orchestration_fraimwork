@@ -337,8 +337,8 @@ Both should pass. Note: `go build ./...` will still FAIL until M3 and M4 because
 ### Step 11 — Commit M2
 
 ```bash
-git -C /Users/zak/Projects/GJ-Ecommerce/platform-new/ecom-gateway add internal/reqctx/ internal/httpx/ internal/observability/
-git -C /Users/zak/Projects/GJ-Ecommerce/platform-new/ecom-gateway commit -m "refactor(chi): migrate foundational layers (reqctx, httpx, observability) to net/http"
+git -C $WORKSPACE/platform-new/ecom-gateway add internal/reqctx/ internal/httpx/ internal/observability/
+git -C $WORKSPACE/platform-new/ecom-gateway commit -m "refactor(chi): migrate foundational layers (reqctx, httpx, observability) to net/http"
 ```
 
 ---
@@ -652,8 +652,8 @@ Note: still expect `go build ./...` to fail because `internal/http` and `interna
 ### Step 8 — Commit M3
 
 ```bash
-git -C /Users/zak/Projects/GJ-Ecommerce/platform-new/ecom-gateway add internal/health/ internal/recommendations/
-git -C /Users/zak/Projects/GJ-Ecommerce/platform-new/ecom-gateway commit -m "refactor(chi): migrate recommendations + health to net/http"
+git -C $WORKSPACE/platform-new/ecom-gateway add internal/health/ internal/recommendations/
+git -C $WORKSPACE/platform-new/ecom-gateway commit -m "refactor(chi): migrate recommendations + health to net/http"
 ```
 
 ---
@@ -914,8 +914,8 @@ git diff HEAD~10 -- internal/recommendations/openapi.gen.go | head
 ### Step 10 — Commit M4
 
 ```bash
-git -C /Users/zak/Projects/GJ-Ecommerce/platform-new/ecom-gateway add internal/http/ internal/app/ cmd/ go.mod go.sum
-git -C /Users/zak/Projects/GJ-Ecommerce/platform-new/ecom-gateway commit -m "refactor(chi): migrate transport + wiring; drop Fiber from go.mod"
+git -C $WORKSPACE/platform-new/ecom-gateway add internal/http/ internal/app/ cmd/ go.mod go.sum
+git -C $WORKSPACE/platform-new/ecom-gateway commit -m "refactor(chi): migrate transport + wiring; drop Fiber from go.mod"
 ```
 
 ---
@@ -949,8 +949,8 @@ Anything remaining that refers to Fiber as the *current* framework (not history)
 ### Step 4 — Commit doc fixes if any
 
 ```bash
-git -C /Users/zak/Projects/GJ-Ecommerce/platform-new/ecom-gateway add -A
-git -C /Users/zak/Projects/GJ-Ecommerce/platform-new/ecom-gateway commit -m "docs: scrub stale Fiber references post-migration"
+git -C $WORKSPACE/platform-new/ecom-gateway add -A
+git -C $WORKSPACE/platform-new/ecom-gateway commit -m "docs: scrub stale Fiber references post-migration"
 ```
 
 ### Step 5 — Final code-quality review

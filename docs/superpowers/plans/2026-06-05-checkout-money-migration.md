@@ -10,11 +10,11 @@
 
 | Что | Абсолютный путь (локально) | Go-модуль | Git remote |
 |---|---|---|---|
-| **checkout** (правим ЗДЕСЬ) | `/Users/zak/Projects/GJ-Ecommerce/platform-new/checkout/` | `gitlab.gloria.aaanet.ru/greensight/gj/go/checkout` | `git@gitlab.gloria.aaanet.ru:greensight/gj/go/checkout.git` |
-| **gj-go-money** (зависимость, ОПУБЛИКОВАН, НЕ менять) | `/Users/zak/Projects/GJ-Ecommerce/platform-new/gj-go-money/` | `gitlab.gloria.aaanet.ru/go-pkg/gj-go-money` (тег `v0.1.0`) | `git@gitlab.gloria.aaanet.ru:go-pkg/gj-go-money.git` |
-| go.work (workspace) | `/Users/zak/Projects/GJ-Ecommerce/platform-new/go.work` (уже `use ./gj-go-money`) | — | — |
+| **checkout** (правим ЗДЕСЬ) | `$WORKSPACE/platform-new/checkout/` | `gitlab.gloria.aaanet.ru/greensight/gj/go/checkout` | `git@gitlab.gloria.aaanet.ru:greensight/gj/go/checkout.git` |
+| **gj-go-money** (зависимость, ОПУБЛИКОВАН, НЕ менять) | `$WORKSPACE/platform-new/gj-go-money/` | `gitlab.gloria.aaanet.ru/go-pkg/gj-go-money` (тег `v0.1.0`) | `git@gitlab.gloria.aaanet.ru:go-pkg/gj-go-money.git` |
+| go.work (workspace) | `$WORKSPACE/platform-new/go.work` (уже `use ./gj-go-money`) | — | — |
 
-> **`ROOT` = `/Users/zak/Projects/GJ-Ecommerce/platform-new/checkout`.** Все пути ниже — абсолютные или от `ROOT`. Все `git`/`go` — из `ROOT`. НЕ трогать другие репозитории, НЕ трогать `/Users/zak/Projects/GJ-Ecommerce/platform-new/gj-go-money/`, НЕ коммитить в workspace-репо `/Users/zak/Projects/GJ-Ecommerce`.
+> **`ROOT` = `$WORKSPACE/platform-new/checkout`.** Все пути ниже — абсолютные или от `ROOT`. Все `git`/`go` — из `ROOT`. НЕ трогать другие репозитории, НЕ трогать `$WORKSPACE/platform-new/gj-go-money/`, НЕ коммитить в workspace-репо `$WORKSPACE`.
 
 - **Ветка:** в `ROOT` создать `feat/money-migration`, коммитить туда.
 - **Зависимость:** в `$ROOT/go.mod` — `require gitlab.gloria.aaanet.ru/go-pkg/gj-go-money v0.1.0`. Тег `v0.1.0` **опубликован** в GitLab → `go get gitlab.gloria.aaanet.ru/go-pkg/gj-go-money@v0.1.0` резолвится без `replace`. **НЕ добавляй `replace`.** Выполни `go get …@v0.1.0` (или `go mod tidy`), убедись что go.sum получил хэш.
@@ -52,11 +52,11 @@ func (Money) Add(Money) Money; Sub; MulQty(int)
 ## 3. Внутренние типы → `money.Money`
 
 Файлы (абсолютные):
-- `/Users/zak/Projects/GJ-Ecommerce/platform-new/checkout/internal/domains/session/types.go`
+- `$WORKSPACE/platform-new/checkout/internal/domains/session/types.go`
   поля: `CartItem.PriceKopecks`, `Selection.DeliveryCostKopecks`, `Totals.{ItemsKopecks,DiscountKopecks,DeliveryKopecks,GrandTotalKopecks}`, `DeliveryView.{MinCostKopecks,FreeThresholdKopecks}`, `TotalsView.{TotalKopecks,DeliveryCostKopecks,DiscountKopecks}` (и любые другие `*Kopecks int64` в файле) → `money.Money`.
-- `/Users/zak/Projects/GJ-Ecommerce/platform-new/checkout/internal/domains/pricing/types.go`
+- `$WORKSPACE/platform-new/checkout/internal/domains/pricing/types.go`
   `Totals.{TotalKopecks,DeliveryCostKopecks,DiscountKopecks}` → `money.Money`; интерфейс `Quoter.Quote(ctx, deliveryCostKopecks int64, …)` → `deliveryCostKopecks money.Money` (и реализации/стаб).
-- `/Users/zak/Projects/GJ-Ecommerce/platform-new/checkout/internal/domains/delivery/types.go`
+- `$WORKSPACE/platform-new/checkout/internal/domains/delivery/types.go`
   `*.DeliveryCostKopecks`, `MinCostKopecks`, `FreeThresholdKopecks`, `Komplektaciya.PriceKopecks` (и пр. `*Kopecks int64`) → `money.Money`.
 - Сопутствующее использование в `internal/domains/delivery/service.go`, `cluster.go`, `internal/domains/pricing/service.go`: арифметику над деньгами вести через `money.Money` (`Add`/`Sub`/`MulQty`), сравнения — `a.Kopecks() < b.Kopecks()` или напрямую (`Money` — int64, операторы сравнения работают).
 
@@ -67,23 +67,23 @@ func (Money) Add(Money) Money; Sub; MulQty(int)
 ## 4. Границы (ingress / egress)
 
 ### ingress — cart (offers/baskets копейки)
-`/Users/zak/Projects/GJ-Ecommerce/platform-new/checkout/internal/adapters/cart/resolver.go`
+`$WORKSPACE/platform-new/checkout/internal/adapters/cart/resolver.go`
 - цены позиций из offers/baskets (копейки) → `money.FromKopecks(int64(...))` в `CartItem.PriceKopecks`.
 
 ### ingress — OMS rubles-decimal (СОХРАНИТЬ толерантный парсер)
-`/Users/zak/Projects/GJ-Ecommerce/platform-new/checkout/internal/adapters/delivery/kopecks.go`
+`$WORKSPACE/platform-new/checkout/internal/adapters/delivery/kopecks.go`
 - Функция `rublesToKopecks(json.Number) int64` — **оставить как есть** (round half-up на 2-м знаке, без float; gj-go-money.FromRublesString строгий и для OMS-quirk'ов не годится).
 - На местах вызова (в `internal/adapters/delivery/oms.go`, `raw.go`, `resolver.go`) оборачивать результат: `money.FromKopecks(rublesToKopecks(n))`. То есть `rublesToKopecks` остаётся приватным OMS-парсером, а наружу из адаптера отдаём уже `money.Money`.
 
 ### egress — публичные totals/delivery (УБРАТЬ float)
-`/Users/zak/Projects/GJ-Ecommerce/platform-new/checkout/internal/domains/session/assembler.go`
+`$WORKSPACE/platform-new/checkout/internal/domains/session/assembler.go`
 - Удалить `kopecksToRubles(k int64) float32 { return float32(k)/100 }` (float-деньги — нарушение политики).
 - DTO `apiv1`-поля рублёвые `float32` (`CheckoutTotals.{Items,Discount,Delivery,GrandTotal}`, `DeliveryView.{MinCost,FreeThreshold}`, item `Price`) заполнять `float32(m.Rubles())` (целые рубли, ceil, канон-фронт). Хелпер: `func rublesF32(m money.Money) float32 { return float32(m.Rubles()) }`.
 - DTO `apiv1`-поля `*_kopecks int64` (`delivery_cost_kopecks`, `min_cost_kopecks`, `free_threshold_kopecks`) заполнять `m.Kopecks()`.
 - ⚠️ Поведение для дробных рублей меняется (`float32(k)/100` отдавал дробь → теперь целые рубли ceil). Для целочисленных рублёвых сумм (реальный GJ) — идентично. Это канон-выравнивание, см. §5.
 
 ### egress — OMS (order create / logistics req) (truncate → canon 2dp)
-`/Users/zak/Projects/GJ-Ecommerce/platform-new/checkout/internal/adapters/delivery/oms.go`
+`$WORKSPACE/platform-new/checkout/internal/adapters/delivery/oms.go`
 - Заменить `rub := int(l.PriceKopecks / 100); item.Price = &rub` (целочисленный truncate) на канон: рубли.2знака через `m.RublesDecimal()` в `json.Number` — **если** поле в OMS-DTO `json.Number`. Если текущее поле `*int` (целые рубли) — привести к канону контракта OMS: деньги в OMS идут `json.Number` рубли.2знака (OPSOMN-12987). Проверь тип поля в starfish-OMS request DTO (`gitlab.gloria.aaanet.ru/greensight/gj/go/clients/starfishclient`); money-поля там должны быть `json.Number`. Если в текущем коде стоит `*int` — это баг truncate, заменить на `json.Number(m.RublesDecimal())`.
   - На каждый money-вызов: `m := money.FromKopecks(l.PriceKopecks-как-Money)` → уже `money.Money` после §3; `omsItem.Price = jsonNumberPtr(m.RublesDecimal())`.
 - Если в этом файле есть обратный разбор money из OMS-ответа — через `money.FromKopecks(rublesToKopecks(n))` (§4 ingress).
@@ -111,7 +111,7 @@ func (Money) Add(Money) Money; Sub; MulQty(int)
 
 ## 7. Проверка
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/checkout
+cd $WORKSPACE/platform-new/checkout
 go get gitlab.gloria.aaanet.ru/go-pkg/gj-go-money@v0.1.0   # резолв тега
 go build ./... && go test ./... -count=1 && go vet ./...
 # нет ручной money-арифметики / float-денег (non-test):

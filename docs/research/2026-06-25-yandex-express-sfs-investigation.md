@@ -137,7 +137,7 @@ Integration для express‑тарифа возвращает интервал�
 ## Команды для следующей сессии (ecom‑контур)
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce
+cd $WORKSPACE
 ./scripts/sync-platform-repos.sh ensi
 ./scripts/sync-platform-repos.sh integration
 

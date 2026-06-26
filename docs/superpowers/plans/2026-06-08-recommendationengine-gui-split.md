@@ -14,7 +14,7 @@
 
 ## Pre-flight: контекст для исполнителя (прочитать целиком до начала)
 
-**Рабочее окружение.** Все пути ниже — относительно корня workspace `/Users/zak/Projects/GJ-Ecommerce`. Два целевых репозитория — это **отдельные git-клоны** внутри `platform-new/`:
+**Рабочее окружение.** Все пути ниже — относительно корня workspace `$WORKSPACE`. Два целевых репозитория — это **отдельные git-клоны** внутри `platform-new/`:
 
 - Движок: `platform-new/recomendationengine` — модуль `gj-similar`, default-ветка `master`.
 - Админка: `platform-new/recomendationenginegui` — сейчас **пустой** (только `.git`), default-ветка `master`.
@@ -69,7 +69,7 @@ cd platform-new/recomendationengine && GOWORK=off go build ./...
 - [ ] **Step 1: Создать рабочую ветку в GUI-репо**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationenginegui
+cd $WORKSPACE/platform-new/recomendationenginegui
 git checkout -b task-gui-split
 ```
 Expected: `Switched to a new branch 'task-gui-split'` (репо пустой — это первая ветка поверх дефолтной `master`; если `master` ещё не существует как локальная ветка, команда всё равно создаст `task-gui-split`).
@@ -77,7 +77,7 @@ Expected: `Switched to a new branch 'task-gui-split'` (репо пустой —
 - [ ] **Step 2: Скопировать фронт в корень, исключив скрэтч-каталог `.playwright-cli`**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce
+cd $WORKSPACE
 cp -R platform-new/recomendationengine/frontend/. platform-new/recomendationenginegui/
 rm -rf platform-new/recomendationenginegui/.playwright-cli
 ```
@@ -85,7 +85,7 @@ rm -rf platform-new/recomendationenginegui/.playwright-cli
 - [ ] **Step 3: Проверить, что перенеслось ожидаемое (и НЕ перенеслось лишнее)**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationenginegui
+cd $WORKSPACE/platform-new/recomendationenginegui
 ls -A
 ```
 Expected: присутствуют `package.json`, `package-lock.json`, `postcss.config.js`, `tailwind.config.js`, `tsconfig.json`, `public/`, `src/`, `README.md`, `.git/`. **Отсутствуют** `.playwright-cli/`, `node_modules/`, `build/`.
@@ -282,7 +282,7 @@ per-env. Helm-чарты, Service/Ingress и имя upstream-Service движк�
 - [ ] **Step 1: Установить зависимости**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationenginegui
+cd $WORKSPACE/platform-new/recomendationenginegui
 npm ci
 ```
 Expected: установка без ошибок (нужен Node 20; `npm ci` использует `package-lock.json`).
@@ -315,7 +315,7 @@ Expected: `build OK`.
 - [ ] **Step 1: Собрать образ**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationenginegui
+cd $WORKSPACE/platform-new/recomendationenginegui
 docker build -t recomendationenginegui:test .
 ```
 Expected: образ собирается, оба стейджа проходят.
@@ -350,7 +350,7 @@ docker rm -f regui-test
 - [ ] **Step 1: Закоммитить**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationenginegui
+cd $WORKSPACE/platform-new/recomendationenginegui
 git add -A
 git status
 ```
@@ -385,7 +385,7 @@ Expected: ветка создана в origin; в GitLab стартует пай
 - [ ] **Step 1: Создать ветку**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationengine
+cd $WORKSPACE/platform-new/recomendationengine
 git checkout -b task-drop-frontend
 ```
 Expected: `Switched to a new branch 'task-drop-frontend'`.
@@ -445,7 +445,7 @@ frontend-build: ## Собрать production-бандл админки
 - [ ] **Step 3: Проверить, что в Makefile не осталось frontend**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationengine
+cd $WORKSPACE/platform-new/recomendationengine
 grep -n frontend Makefile; echo "exit=$?"
 ```
 Expected: нет совпадений (`exit=1`).
@@ -517,7 +517,7 @@ cd frontend && npx tsc --noEmit
 - [ ] **Step 5: Проверить README**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationengine
+cd $WORKSPACE/platform-new/recomendationengine
 grep -n "frontend\|make frontend\|:3000" README.md; echo "exit=$?"
 ```
 Expected: единственное допустимое совпадение — ссылка на репозиторий `recomendationenginegui`. Никаких `make frontend-*`, `cd frontend`, `:3000`.
@@ -586,7 +586,7 @@ Expected: упоминаний `frontend/`-путей и `:3000` не остал
 - [ ] **Step 1: Build**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationengine
+cd $WORKSPACE/platform-new/recomendationengine
 GOWORK=off go build ./...
 ```
 Expected: без ошибок (удаление `frontend/` не влияет на Go — фронт не эмбедился).
@@ -639,7 +639,7 @@ Expected: `health=200`. (Шаг можно пропустить, если нет
 - [ ] **Step 1: Закоммитить**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationengine
+cd $WORKSPACE/platform-new/recomendationengine
 git add -A
 git status
 ```

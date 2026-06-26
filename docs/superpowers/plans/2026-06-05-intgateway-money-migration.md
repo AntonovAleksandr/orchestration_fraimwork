@@ -41,11 +41,11 @@ func (Money) MulQty(qty int) Money
 
 | Что | Абсолютный путь (локально) | Go-модуль | Git remote |
 |---|---|---|---|
-| **intgateway** (правим ЗДЕСЬ) | `/Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway/` | `gitlab.gloria.aaanet.ru/greensight/gj/go/intgateway` | `git@gitlab.gloria.aaanet.ru:greensight/gj/go/intgateway.git` |
-| **gj-go-money** (зависимость, НЕ менять) | `/Users/zak/Projects/GJ-Ecommerce/platform-new/gj-go-money/` | `gitlab.gloria.aaanet.ru/go-pkg/gj-go-money` | `git@gitlab.gloria.aaanet.ru:go-pkg/gj-go-money.git` |
-| go.work (workspace) | `/Users/zak/Projects/GJ-Ecommerce/platform-new/go.work` | — | — |
+| **intgateway** (правим ЗДЕСЬ) | `$WORKSPACE/platform-new/intgateway/` | `gitlab.gloria.aaanet.ru/greensight/gj/go/intgateway` | `git@gitlab.gloria.aaanet.ru:greensight/gj/go/intgateway.git` |
+| **gj-go-money** (зависимость, НЕ менять) | `$WORKSPACE/platform-new/gj-go-money/` | `gitlab.gloria.aaanet.ru/go-pkg/gj-go-money` | `git@gitlab.gloria.aaanet.ru:go-pkg/gj-go-money.git` |
+| go.work (workspace) | `$WORKSPACE/platform-new/go.work` | — | — |
 
-> **`ROOT` = `/Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway`.** Все пути файлов ниже даны абсолютно от `ROOT`. Все `git`/`go` команды — из `ROOT` (`cd "$ROOT"` первым делом). НЕ коммить в другие репозитории, НЕ редактировать `/Users/zak/Projects/GJ-Ecommerce/platform-new/gj-go-money/`, НЕ трогать workspace-репо `/Users/zak/Projects/GJ-Ecommerce` (это набор клонов, не один git).
+> **`ROOT` = `$WORKSPACE/platform-new/intgateway`.** Все пути файлов ниже даны абсолютно от `ROOT`. Все `git`/`go` команды — из `ROOT` (`cd "$ROOT"` первым делом). НЕ коммить в другие репозитории, НЕ редактировать `$WORKSPACE/platform-new/gj-go-money/`, НЕ трогать workspace-репо `$WORKSPACE` (это набор клонов, не один git).
 
 - **Ветка:** в `ROOT` создать `feat/money-migration`, коммитить туда.
 - **Зависимость:** в `$ROOT/go.mod` добавить `require gitlab.gloria.aaanet.ru/go-pkg/gj-go-money v0.1.0`. Локально резолвится через `go.work` (там уже `use ./gj-go-money`). Если `go mod tidy` ругается на отсутствие тега в remote — ожидаемо (тег ставит ревьюер); сборка/тесты в workspace проходят. **НЕ** добавляй `replace`.
@@ -57,10 +57,10 @@ func (Money) MulQty(qty int) Money
 ## 2. Часть A — basket (главное)
 
 Файлы (абсолютные пути):
-- `/Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway/internal/domains/basket/types.go`
-- `/Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway/internal/adapters/basket/manager.go`
-- `/Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway/internal/adapters/basket/mapping.go`
-- `/Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway/internal/domains/basket/handler.go`
+- `$WORKSPACE/platform-new/intgateway/internal/domains/basket/types.go`
+- `$WORKSPACE/platform-new/intgateway/internal/adapters/basket/manager.go`
+- `$WORKSPACE/platform-new/intgateway/internal/adapters/basket/mapping.go`
+- `$WORKSPACE/platform-new/intgateway/internal/domains/basket/handler.go`
 - тесты: `…/internal/adapters/basket/mapping_test.go`, `…/internal/adapters/basket/manager_test.go`, `…/internal/domains/basket/handler_test.go` (под тем же `ROOT`)
 
 ## 2. Часть A — basket (главное)
@@ -109,9 +109,9 @@ func (Money) MulQty(qty int) Money
 ## 3. Часть B — recommendations (убрать float-деньги)
 
 Файлы (абсолютные пути, тот же `ROOT`):
-- `/Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway/internal/domains/recommendations/types.go`
-- `/Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway/internal/adapters/recommendations/mapping.go`
-- `/Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway/internal/domains/recommendations/handler.go`
+- `$WORKSPACE/platform-new/intgateway/internal/domains/recommendations/types.go`
+- `$WORKSPACE/platform-new/intgateway/internal/adapters/recommendations/mapping.go`
+- `$WORKSPACE/platform-new/intgateway/internal/domains/recommendations/handler.go`
 - тесты: `…/internal/domains/recommendations/*_test.go`, `…/internal/app/wire/recommendations_test.go`
 
 **Цель:** внутри домена/адаптера денег-`float64` больше нет — только `money.Money`. **DTO-контракт НЕ меняем** (остаётся `apiv1` `Price float32` / `OldPrice *float32`) — рендерим из `Money`. Поведение для целочисленных рублёвых цен (реальный случай GJ) не меняется.
@@ -149,7 +149,7 @@ func (Money) MulQty(qty int) Money
 ## 5. Проверка
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway
+cd $WORKSPACE/platform-new/intgateway
 go build ./... && go test ./... -count=1     # всё зелёное
 go vet ./...
 # нет ручной money-арифметики:

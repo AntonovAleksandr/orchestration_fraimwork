@@ -59,7 +59,7 @@
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new
+cd $WORKSPACE/platform-new
 for r in checkout ecom-gateway clients/baskets clients/bu clients/catalog-cache clients/customers clients/discount clients/offers clients/starfish-oms; do
   printf '%-28s %s\n' "$r" "$(git -C "$r" status --porcelain | wc -l | tr -d ' ') dirty files"
 done
@@ -70,7 +70,7 @@ Expected: every repo `0 dirty files`. If any are dirty, STOP and resolve (commit
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new
+cd $WORKSPACE/platform-new
 mkdir -p /tmp/gj-migration-backup
 for r in checkout ecom-gateway clients/baskets clients/bu clients/catalog-cache clients/customers clients/discount clients/offers clients/starfish-oms; do
   name=$(echo "$r" | tr '/' '-')
@@ -92,7 +92,7 @@ Expected: a "Welcome"/authenticated message (not "Permission denied"). If denied
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new
+cd $WORKSPACE/platform-new
 go build ./... 2>&1 | tail -20 ; echo "exit=$?"
 ```
 Expected: `exit=0`. This is the reference state — the same command must stay green after each repo migration.
@@ -118,7 +118,7 @@ For this task:
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/clients/baskets
+cd $WORKSPACE/platform-new/clients/baskets
 OLD='gitlab.gloria.aaanet.ru/e-commerce/platform/clients/baskets'
 NEW='gitlab.gloria.aaanet.ru/greensight/gj/go/clients/basketclient'
 git grep -lF "$OLD" | while read -r f; do
@@ -131,7 +131,7 @@ Note: `sed -i ''` is the BSD/macOS form. On Linux use `sed -i`.
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/clients/baskets
+cd $WORKSPACE/platform-new/clients/baskets
 git grep -nF 'e-commerce/platform/clients/baskets' ; echo "matches above (want none)"
 head -1 go.mod
 ```
@@ -141,7 +141,7 @@ Expected: no matches; `head -1 go.mod` shows `module gitlab.gloria.aaanet.ru/gre
 
 Run from inside the client dir with the workspace disabled — this works for ALL clients regardless of `go.work` membership (bu/customers/discount/offers are NOT in go.work) and matches standalone resolution. go-pkg deps are fetched from GitLab (published versions exist).
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/clients/baskets
+cd $WORKSPACE/platform-new/clients/baskets
 out=$(GOWORK=off go build ./... 2>&1); rc=$?; echo "$out" | tail -10; echo "exit=$rc"
 ```
 Expected: `exit=0`. (Do NOT use `go build ./clients/<dir>/...` from the workspace root — for the 4 non-workspace clients it fails with "directory prefix … does not contain modules listed in go.work", a false negative.)
@@ -150,7 +150,7 @@ Expected: `exit=0`. (Do NOT use `go build ./clients/<dir>/...` from the workspac
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/clients/baskets
+cd $WORKSPACE/platform-new/clients/baskets
 git add -A
 git commit -m "chore: rehome module to greensight/gj/go/clients/basketclient
 
@@ -163,7 +163,7 @@ Expected: a new commit on `main`.
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/clients/baskets
+cd $WORKSPACE/platform-new/clients/baskets
 git remote set-url origin git@gitlab.gloria.aaanet.ru:greensight/gj/go/clients/basketclient.git
 git remote -v
 ```
@@ -173,7 +173,7 @@ Expected: origin fetch+push both show the basketclient.git URL.
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/clients/baskets
+cd $WORKSPACE/platform-new/clients/baskets
 git push origin --all
 git push origin --tags
 ```
@@ -183,7 +183,7 @@ Expected: new branch `main` created on the empty target; old tags `v0.1.0`,`v0.1
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/clients/baskets
+cd $WORKSPACE/platform-new/clients/baskets
 git tag -a v0.2.0 -m "First release under greensight/gj/go/clients/basketclient module path"
 git push origin v0.2.0
 git tag --sort=-v:refname | head -3
@@ -233,7 +233,7 @@ Apply the **exact same 7-step procedure as Task 1**, substituting the three valu
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new
+cd $WORKSPACE/platform-new
 for r in baskets bu catalog-cache customers discount offers starfish-oms; do
   printf '%-16s origin=%s  v0.2.0=%s\n' "$r" \
     "$(git -C clients/$r remote get-url origin)" \
@@ -254,7 +254,7 @@ The `go.work` `use` paths are unchanged (local dirs kept their names), so no edi
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new
+cd $WORKSPACE/platform-new
 go list -m all 2>&1 | grep -E 'greensight/gj/go/clients' | sort
 ```
 Expected: the renamed client modules (`basketclient`, `catalogcacheclient`, `starfishclient`, …) appear, resolved to local dirs. If a module is missing, ensure its dir is listed in `go.work use(...)`.
@@ -274,7 +274,7 @@ Expected: the renamed client modules (`basketclient`, `catalogcacheclient`, `sta
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/checkout
+cd $WORKSPACE/platform-new/checkout
 NEWSELF='gitlab.gloria.aaanet.ru/greensight/gj/go/checkout'
 # module line
 LC_ALL=C sed -i '' "s#^module gj-checkout#module $NEWSELF#" go.mod
@@ -288,7 +288,7 @@ done
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/checkout
+cd $WORKSPACE/platform-new/checkout
 declare -a MAP=(
   "gitlab.gloria.aaanet.ru/e-commerce/platform/clients/baskets|gitlab.gloria.aaanet.ru/greensight/gj/go/clients/basketclient"
   "gitlab.gloria.aaanet.ru/e-commerce/platform/clients/catalog-cache|gitlab.gloria.aaanet.ru/greensight/gj/go/clients/catalogcacheclient"
@@ -304,7 +304,7 @@ done
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/checkout
+cd $WORKSPACE/platform-new/checkout
 LC_ALL=C sed -i '' -E 's#(greensight/gj/go/clients/(basketclient|catalogcacheclient|starfishclient)) v[0-9].*#\1 v0.2.0#' go.mod
 grep -nE 'greensight/gj/go/clients|module ' go.mod
 ```
@@ -314,7 +314,7 @@ Expected: module line is the canonical checkout path; the 3 client requires read
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/checkout
+cd $WORKSPACE/platform-new/checkout
 git grep -nE 'gj-checkout|e-commerce/platform' ; echo "matches above (want none)"
 ```
 Expected: no matches.
@@ -323,7 +323,7 @@ Expected: no matches.
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new
+cd $WORKSPACE/platform-new
 go build ./checkout/... 2>&1 | tail -20 ; echo "exit=$?"
 go vet ./checkout/... 2>&1 | tail -10 ; echo "vet=$?"
 ```
@@ -333,7 +333,7 @@ Expected: `exit=0` and `vet=0`. (go.work resolves the clients locally even thoug
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/checkout
+cd $WORKSPACE/platform-new/checkout
 git add -A
 git commit -m "chore: rehome module to greensight/gj/go/checkout
 
@@ -346,7 +346,7 @@ Part of Go fleet migration to greensight/gj/go group."
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/checkout
+cd $WORKSPACE/platform-new/checkout
 git remote set-url origin git@gitlab.gloria.aaanet.ru:greensight/gj/go/checkout.git
 git push origin --all
 git push origin --tags
@@ -369,7 +369,7 @@ Expected: origin = checkout.git; `main` + existing tags (`v0.1.0`, `v0.0.x-*`) p
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/ecom-gateway
+cd $WORKSPACE/platform-new/ecom-gateway
 NEWSELF='gitlab.gloria.aaanet.ru/greensight/gj/go/intgateway'
 LC_ALL=C sed -i '' "s#^module gj-ecom-gateway#module $NEWSELF#" go.mod
 git grep -lF 'gj-ecom-gateway/' | while read -r f; do
@@ -381,7 +381,7 @@ done
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/ecom-gateway
+cd $WORKSPACE/platform-new/ecom-gateway
 declare -a MAP=(
   "gitlab.gloria.aaanet.ru/e-commerce/platform/clients/baskets|gitlab.gloria.aaanet.ru/greensight/gj/go/clients/basketclient"
   "gitlab.gloria.aaanet.ru/e-commerce/platform/clients/catalog-cache|gitlab.gloria.aaanet.ru/greensight/gj/go/clients/catalogcacheclient"
@@ -396,7 +396,7 @@ done
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/ecom-gateway
+cd $WORKSPACE/platform-new/ecom-gateway
 # drop every replace line that points to a relative ../ path
 LC_ALL=C sed -i '' '/^replace .*=> \.\..*/d' go.mod
 # pin the 2 migrated client requires to v0.2.0
@@ -411,7 +411,7 @@ Expected: no `replace` lines remain; `basketclient`/`catalogcacheclient` require
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/ecom-gateway
+cd $WORKSPACE/platform-new/ecom-gateway
 git grep -nE 'gj-ecom-gateway|e-commerce/platform' ; echo "matches above (want none)"
 ```
 Expected: no matches.
@@ -420,7 +420,7 @@ Expected: no matches.
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new
+cd $WORKSPACE/platform-new
 go build ./ecom-gateway/... 2>&1 | tail -20 ; echo "exit=$?"
 go vet ./ecom-gateway/... 2>&1 | tail -10 ; echo "vet=$?"
 ```
@@ -430,7 +430,7 @@ Expected: `exit=0`, `vet=0`.
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/ecom-gateway
+cd $WORKSPACE/platform-new/ecom-gateway
 git add -A
 git commit -m "chore: rename module to greensight/gj/go/intgateway
 
@@ -444,7 +444,7 @@ Part of Go fleet migration to greensight/gj/go group."
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/ecom-gateway
+cd $WORKSPACE/platform-new/ecom-gateway
 git remote set-url origin git@gitlab.gloria.aaanet.ru:greensight/gj/go/intgateway.git
 git push origin --all
 git push origin --tags
@@ -460,7 +460,7 @@ Expected: origin = intgateway.git; `main` pushed (ecom-gateway had no tags).
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new
+cd $WORKSPACE/platform-new
 go build ./... 2>&1 | tail -20 ; echo "exit=$?"
 ```
 Expected: `exit=0` — matches the Task 0 baseline.
@@ -469,7 +469,7 @@ Expected: `exit=0` — matches the Task 0 baseline.
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new
+cd $WORKSPACE/platform-new
 git -C ecom-gateway rev-parse --is-inside-work-tree >/dev/null && mv ecom-gateway intgateway
 LC_ALL=C sed -i '' 's#\./ecom-gateway#./intgateway#' go.work
 go build ./... 2>&1 | tail -5 ; echo "exit=$?"
@@ -488,7 +488,7 @@ This is the real test that the `v0.2.0` tags + new module paths resolve WITHOUT 
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/checkout
+cd $WORKSPACE/platform-new/checkout
 GOWORK=off GOFLAGS=-mod=mod go mod download 2>&1 | tail -20 ; echo "exit=$?"
 GOWORK=off go build ./... 2>&1 | tail -20 ; echo "build=$?"
 ```
@@ -498,7 +498,7 @@ Expected: `exit=0`, `build=0`. Go fetches `…/clients/basketclient@v0.2.0` etc.
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/checkout
+cd $WORKSPACE/platform-new/checkout
 git status --porcelain go.sum
 # if go.sum changed (new tag hashes), commit it:
 git add go.sum && git commit -m "chore: update go.sum for greensight client v0.2.0 modules" || echo "no go.sum change"
@@ -509,7 +509,7 @@ git push origin HEAD
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway 2>/dev/null || cd /Users/zak/Projects/GJ-Ecommerce/platform-new/ecom-gateway
+cd $WORKSPACE/platform-new/intgateway 2>/dev/null || cd $WORKSPACE/platform-new/ecom-gateway
 GOWORK=off GOFLAGS=-mod=mod go mod download 2>&1 | tail -20 ; echo "exit=$?"
 GOWORK=off go build ./... 2>&1 | tail -20 ; echo "build=$?"
 git add go.sum 2>/dev/null && git commit -m "chore: update go.sum for greensight client v0.2.0 modules" 2>/dev/null && git push origin HEAD || echo "no go.sum change"
@@ -535,7 +535,7 @@ Expected: each project's default branch is `main`.
 
 Run:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new
+cd $WORKSPACE/platform-new
 for r in checkout ecom-gateway clients/baskets clients/bu clients/catalog-cache clients/customers clients/discount clients/offers clients/starfish-oms; do
   d="$r"; [ -d intgateway ] && [ "$r" = ecom-gateway ] && d=intgateway
   printf '%-26s -> %s\n' "$d" "$(git -C "$d" remote get-url origin 2>/dev/null)"

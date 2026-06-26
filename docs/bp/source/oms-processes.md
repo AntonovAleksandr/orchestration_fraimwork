@@ -579,7 +579,7 @@ Throw / catch events ("BPMN signals" colloquially, but technically messages):
 
 ## File references
 
-Primary sources (all under `/Users/zak/Projects/GJ-Ecommerce/platform/starfish24/`):
+Primary sources (all under `$WORKSPACE/platform/starfish24/`):
 
 - BPMNs: `awg/bpmn-process/process/gloriajeans/*.bpmn`
 - External task handlers: `core/camunda-worker/src/main/java/com/starfish24/handlers/`

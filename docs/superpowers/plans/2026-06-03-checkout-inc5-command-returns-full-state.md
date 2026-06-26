@@ -1157,7 +1157,7 @@ Expected: PASS for delivery/recipient/payment/pricing/session (the `any`-port ke
 - [ ] **Step 3: Live run against stage (real OMS + cart).**
 
 ```bash
-make port-forward          # checkout/scripts/dev-port-forward.sh (stage; needs KUBECONFIG=/Users/zak/.kube/ecom.yaml current-context)
+make port-forward          # checkout/scripts/dev-port-forward.sh (stage; needs KUBECONFIG=<path-to-ecom-kubeconfig> current-context)
 # in another shell, with checkout/.env loaded:
 make migrate-up
 make run                   # :8090 (per memory live-session notes)

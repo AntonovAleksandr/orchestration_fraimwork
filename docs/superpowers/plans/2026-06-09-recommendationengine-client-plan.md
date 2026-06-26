@@ -12,7 +12,7 @@
 
 ## Pre-flight: контекст (прочитать целиком)
 
-**Рабочее окружение.** Всё под `/Users/zak/Projects/GJ-Ecommerce/platform-new/`. Это **go.work-воркспейс** (`platform-new/go.work`) — Go-команды запускать **без** `GOWORK=off` (наоборот, нужен go.work, чтобы локальные клиенты резолвились). Релевантные модули:
+**Рабочее окружение.** Всё под `$WORKSPACE/platform-new/`. Это **go.work-воркспейс** (`platform-new/go.work`) — Go-команды запускать **без** `GOWORK=off` (наоборот, нужен go.work, чтобы локальные клиенты резолвились). Релевантные модули:
 - `gj-go-httpclient/` — сабстрат (модуль `gitlab.gloria.aaanet.ru/go-pkg/gj-go-httpclient`).
 - `clients/catalog-cache/` — **эталон** клиента (модуль `…/greensight/gj/go/clients/catalogcacheclient`, package `catalogcache`).
 - `intgateway/` — BFF (модуль `…/greensight/gj/go/intgateway`).
@@ -106,7 +106,7 @@ Modify `platform-new/go.work` — добавить строку в блок `use
 
 - [ ] **Step 4: Commit**
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new
+cd $WORKSPACE/platform-new
 git -C clients/recommendation-engine init 2>/dev/null; true   # если нужен отдельный git — иначе пропустить
 git add go.work
 git commit -m "build: scaffold recommendationengineclient module + go.work entry"
@@ -155,7 +155,7 @@ func TestSimilar_ReturnsIDsAndBuildsRequest(t *testing.T) {
 
 - [ ] **Step 2: Run — fails to compile (New/Similar/SimilarOpts undefined)**
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/clients/recommendation-engine && go test ./...
+cd $WORKSPACE/platform-new/clients/recommendation-engine && go test ./...
 ```
 Expected: build error `undefined: New` / `SimilarOpts`.
 
@@ -230,14 +230,14 @@ func (c *Client) Similar(ctx context.Context, article string, opts SimilarOpts) 
 
 - [ ] **Step 2: Run test — passes**
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/clients/recommendation-engine && go test ./...
+cd $WORKSPACE/platform-new/clients/recommendation-engine && go test ./...
 ```
 Expected: `ok  …/recommendationengineclient`. (Если go.work не подхватил — `cd platform-new && go work sync`.)
 
 - [ ] **Step 3: Commit**
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/clients/recommendation-engine
-git add . 2>/dev/null; cd /Users/zak/Projects/GJ-Ecommerce/platform-new && git add go.work.sum 2>/dev/null
+cd $WORKSPACE/platform-new/clients/recommendation-engine
+git add . 2>/dev/null; cd $WORKSPACE/platform-new && git add go.work.sum 2>/dev/null
 git commit -m "feat(recommendationengineclient): thin Similar(article, opts) -> []id over gj-go-httpclient"
 ```
 
@@ -266,7 +266,7 @@ ids, err := c.Similar(ctx, "GKT028479-2", recommendationengine.SimilarOpts{Limit
 
 - [ ] **Step 2: Commit**
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/clients/recommendation-engine && git add README.md && git commit -m "docs: recommendationengineclient README"
+cd $WORKSPACE/platform-new/clients/recommendation-engine && git add README.md && git commit -m "docs: recommendationengineclient README"
 ```
 
 ## Task 5: IntGateway — config для base URL движка
@@ -300,13 +300,13 @@ type RecommendationEngineConfig struct {
 
 - [ ] **Step 3: build**
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway && go build ./internal/platform/config/...
+cd $WORKSPACE/platform-new/intgateway && go build ./internal/platform/config/...
 ```
 Expected: без ошибок.
 
 - [ ] **Step 4: Commit**
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway
+cd $WORKSPACE/platform-new/intgateway
 git add internal/platform/config/config.go
 git commit -m "feat(config): RecommendationEngine.BaseURL (RECOMMENDATION_ENGINE_SERVICE_HOST)"
 ```
@@ -371,7 +371,7 @@ func TestEngineSource_PropagatesError(t *testing.T) {
 
 - [ ] **Step 2: Run — fails (NewEngineSource undefined)**
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway && go test ./internal/adapters/recommendations/
+cd $WORKSPACE/platform-new/intgateway && go test ./internal/adapters/recommendations/
 ```
 Expected: build error `undefined: NewEngineSource`.
 
@@ -418,7 +418,7 @@ func (s *EngineSource) Similar(ctx context.Context, productID domain.ProductID, 
 
 - [ ] **Step 4: добавить require в intgateway/go.mod**
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway
+cd $WORKSPACE/platform-new/intgateway
 go get gitlab.gloria.aaanet.ru/greensight/gj/go/clients/recommendationengineclient
 go mod tidy
 ```
@@ -426,15 +426,15 @@ go mod tidy
 
 - [ ] **Step 5: Run tests — pass**
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway && go test ./internal/adapters/recommendations/
+cd $WORKSPACE/platform-new/intgateway && go test ./internal/adapters/recommendations/
 ```
 Expected: `ok`.
 
 - [ ] **Step 6: Commit**
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway
+cd $WORKSPACE/platform-new/intgateway
 git add internal/adapters/recommendations/source.go internal/adapters/recommendations/source_test.go go.mod go.sum
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new && git add go.work.sum 2>/dev/null
+cd $WORKSPACE/platform-new && git add go.work.sum 2>/dev/null
 git commit -m "feat(intgateway): EngineSource adapter (recommendationengineclient -> RecommendationSource)"
 ```
 
@@ -473,13 +473,13 @@ git commit -m "feat(intgateway): EngineSource adapter (recommendationengineclien
 
 - [ ] **Step 2: build + vet**
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway && go build ./... && go vet ./...
+cd $WORKSPACE/platform-new/intgateway && go build ./... && go vet ./...
 ```
 Expected: без ошибок.
 
 - [ ] **Step 3: Commit**
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway
+cd $WORKSPACE/platform-new/intgateway
 git add internal/app/wire/recommendations.go
 git commit -m "feat(intgateway): wire real RecommendationSource when base URL set (stub fallback)"
 ```
@@ -490,15 +490,15 @@ git commit -m "feat(intgateway): wire real RecommendationSource when base URL se
 
 - [ ] **Step 1: build/vet/test всего IntGateway + клиента**
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway && go build ./... && go vet ./... && go test ./...
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/clients/recommendation-engine && go test ./...
+cd $WORKSPACE/platform-new/intgateway && go build ./... && go vet ./... && go test ./...
+cd $WORKSPACE/platform-new/clients/recommendation-engine && go test ./...
 ```
 Expected: всё `ok`, без FAIL.
 
 - [ ] **Step 2: e2e против локального движка (если поднят стенд recomendationengine на :8090)**
 ```bash
 # поднять движок (если не поднят): cd platform-new/recomendationengine && docker compose up -d
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/intgateway
+cd $WORKSPACE/platform-new/intgateway
 RECOMMENDATION_ENGINE_SERVICE_HOST=http://localhost:8090 \
 CATALOG_CATALOG_CACHE_SERVICE_HOST=<catalog-cache-url> \
 ORDERS_BASKETS_SERVICE_HOST=<baskets-url> \

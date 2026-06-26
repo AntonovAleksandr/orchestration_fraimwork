@@ -14,11 +14,11 @@
 
 ## Pre-flight: контекст для исполнителя (прочитать целиком)
 
-**Репозиторий:** `platform-new/recomendationengine` (модуль `gj-similar`, default-ветка `master`) внутри workspace `/Users/zak/Projects/GJ-Ecommerce`. Это отдельный git-клон — `cd` в него, коммить локально.
+**Репозиторий:** `platform-new/recomendationengine` (модуль `gj-similar`, default-ветка `master`) внутри workspace `$WORKSPACE`. Это отдельный git-клон — `cd` в него, коммить локально.
 
 **⚠️ Гейт Go-команд:** родительский `platform-new/go.work` НЕ содержит `recomendationengine` → все Go-команды запускать с префиксом `GOWORK=off`, иначе ошибка `directory prefix . does not contain modules listed in go.work`:
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationengine && GOWORK=off go build ./...
+cd $WORKSPACE/platform-new/recomendationengine && GOWORK=off go build ./...
 ```
 
 **Базлайн (до изменений):** `GOWORK=off go build/vet` зелёные; `go test ./...` все пакеты `ok`, КРОМЕ пред-существующего `TestAdminStrategy_GetStrategy_returnsDefaults` в `internal/handlers` — этот файл удаляется в Task 2, фейл уедет вместе с ним.
@@ -56,7 +56,7 @@ cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationengine && GOWORK=o
 - [ ] **Step 1: Создать ветку от master**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationengine
+cd $WORKSPACE/platform-new/recomendationengine
 git checkout master && git pull --ff-only 2>/dev/null; git checkout -b task-drop-sqlite
 ```
 Expected: `Switched to a new branch 'task-drop-sqlite'`.
@@ -70,7 +70,7 @@ Expected: `Switched to a new branch 'task-drop-sqlite'`.
 - [ ] **Step 1: Удалить тесты и testutil**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationengine
+cd $WORKSPACE/platform-new/recomendationengine
 git rm internal/database/migrations_test.go \
        internal/database/schema_consistency_test.go \
        internal/database/connection_rewrite_test.go \
@@ -392,7 +392,7 @@ git add -A && git commit -m "refactor(db): rewrite all runtime SQL to native Pos
 - [ ] **Step 1: Удалить**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationengine
+cd $WORKSPACE/platform-new/recomendationengine
 git rm internal/queries/builder.go internal/queries/builder_test.go internal/repository/category_path_filter.go
 ```
 
@@ -418,7 +418,7 @@ git commit -m "chore: remove dead query builder and category_path_filter (unused
 - [ ] **Step 1: Удалить sqlite-миграционную машинерию**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationengine
+cd $WORKSPACE/platform-new/recomendationengine
 git rm internal/database/migrations_runner.go
 ```
 
@@ -608,7 +608,7 @@ git add -A && git commit -m "refactor(db): remove sqlite driver and SQLite->PG r
 - [ ] **Step 1: tidy**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationengine
+cd $WORKSPACE/platform-new/recomendationengine
 GOWORK=off go mod tidy
 ```
 
@@ -656,7 +656,7 @@ ENTRYPOINT ["/gj-similar"]
 - [ ] **Step 2: Собрать образ**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationengine
+cd $WORKSPACE/platform-new/recomendationengine
 docker build -t recomendationengine:test .
 ```
 Expected: оба стейджа проходят, статический бинарь собирается без CGO.
@@ -676,7 +676,7 @@ git add Dockerfile && git commit -m "build: CGO_ENABLED=0 + distroless (sqlite w
 - [ ] **Step 1: Build + vet**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationengine
+cd $WORKSPACE/platform-new/recomendationengine
 GOWORK=off go build ./... && GOWORK=off go vet ./... && echo OK
 ```
 Expected: `OK`.
@@ -726,7 +726,7 @@ Expected: ветка в origin; стартует `golang-backend-pipeline`.
 - [ ] **Step 1: Поднять движок против staging/локального Postgres**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform-new/recomendationengine
+cd $WORKSPACE/platform-new/recomendationengine
 make pg-up                 # локальный PG на :5434 (или укажи DATABASE_URL на staging)
 DATABASE_URL=postgresql://similar:similar@localhost:5434/similar?sslmode=disable PORT=8080 go run ./cmd/similar &
 sleep 8

@@ -87,7 +87,7 @@ public function testCancelledDoesNotFallbackToChargedPrepaymentWhenReturnedPayme
 Run:
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform/integration/integration/www
+cd $WORKSPACE/platform/integration/integration/www
 ./vendor/bin/phpunit tests/Unit/UserApi/Mutators/V1/Order/OrderExport1CReceiptTest.php
 ```
 
@@ -107,7 +107,7 @@ Implement these rules:
 Run:
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform/integration/integration/www
+cd $WORKSPACE/platform/integration/integration/www
 ./vendor/bin/phpunit tests/Unit/UserApi/Mutators/V1/Order/OrderExport1CReceiptTest.php
 ```
 
@@ -344,7 +344,7 @@ Expected: invalid XML is never sent; explicit error is raised.
 - [ ] **Step 1: Run focused PHPUnit**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform/integration/integration/www
+cd $WORKSPACE/platform/integration/integration/www
 ./vendor/bin/phpunit tests/Unit/UserApi/Mutators/V1/Order/OrderExport1CReceiptTest.php
 ```
 
@@ -353,7 +353,7 @@ Expected: all receipt export tests pass.
 - [ ] **Step 2: Run existing wider unit suite if local bootstrap allows**
 
 ```bash
-cd /Users/zak/Projects/GJ-Ecommerce/platform/integration/integration/www
+cd $WORKSPACE/platform/integration/integration/www
 ./vendor/bin/phpunit tests/Unit
 ```
 

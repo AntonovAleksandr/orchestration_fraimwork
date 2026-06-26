@@ -21,10 +21,10 @@
 ## 1. Рамки проекта (scope / boundaries)
 
 - **Репозиторий:** `gloriaots/gloriaots` (GitLab: `git@gitlab.gloria.aaanet.ru:gloriaots/gloriaots.git`).
-- **Локальный клон (рабочая директория):** `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots`
+- **Локальный клон (рабочая директория):** `$WORKSPACE/platform/gloriaots/gloriaots`
 - **Ветка:** `yandex-fix` (уже создана от `staging`). В ней уже закоммичены фиксы 681 (`3c7e86e7`) и 683 (`8811dbb7`).
 - **Стек:** .NET 10, ASP.NET Core, EF Core (SQL Server), Refit (Yandex API client), System.Text.Json.
-- **Только этот репозиторий.** Не трогать другие платформы в `/Users/zak/Projects/GJ-Ecommerce/platform/*`.
+- **Только этот репозиторий.** Не трогать другие платформы в `$WORKSPACE/platform/*`.
 - **Не трогать:** метод трекинга статусов `MapToOrderIntegrationResult(GetRequestHistoryResponse ...)` (683, уже исправлен); другие ТК (FIVEPOST/RUSSIANPOST/CDEK/DPD/OWN) — они берут `tkInvoiceId` из tracking напрямую и от `parameters` не зависят; контракт с Яндексом и create-payload менять не нужно.
 - **Не коммитить и не пушить** без явной команды пользователя. Работать в `yandex-fix`.
 
@@ -88,18 +88,18 @@
 **Цель:** `OTSOrderParams.parameters` всегда заполнен из БД-tracking перед Yandex-вызовами; поле never-null на уровне модели.
 
 ### A1. Модель never-null
-- **Файл:** `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/GloriaOTS.ApplicationCore/OTSModels/Params/OTSRequestParams.cs`
+- **Файл:** `$WORKSPACE/platform/gloriaots/gloriaots/src/GloriaOTS.ApplicationCore/OTSModels/Params/OTSRequestParams.cs`
 - **Что:** свойство `public Dictionary<string, string> parameters { get; set; }` (≈ строка 40) переделать на бэкинг-поле с коалесингом в сеттере: при `null` присваивать пустой словарь. Гарантия: даже `"parameters": null` в JSON → не-null.
 - **На что смотреть:** это `record`; убедиться, что System.Text.Json при десериализации вызывает сеттер (вызывает) и что never-null не ломает существующую сериализацию. Прогнать `dotnet build`; десериализацию `OTSOrderParams` с `"parameters": null` проверить вручную/в рантайме.
 
 ### A2. Прогнать Yandex через обогащение (как DPD)
-- **Файл:** `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/Services/ShipmentServiceFacade.cs`
+- **Файл:** `$WORKSPACE/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/Services/ShipmentServiceFacade.cs`
 - **A2.1 — `CancelYandexOrder`** (метод ≈ строки 268–277): сейчас делает ручной `Deserialize` + `restoredOtsOrderParams.parameters[EXTERNAL_TK_ID] = ...` → NRE. Переписать на использование уже существующего `GetOrderParams(OrderTracking)` (≈ строка 428) — он восстанавливает из persisted-JSON **и** гидрирует `parameters` из `OrderTracking.OrderTrackingParams`. После этого `EXTERNAL_TK_ID` уже будет в `parameters` (из tracking). Если по бизнесу нужно гарантированно использовать `cancelParams.RegisteredInTKOrderOrInvoiceId` — допустимо перезаписать им ключ ПОСЛЕ гидрации (но проверить, что значения совпадают с tracking).
 - **A2.2 — `UpdateOrder`, ветка `ShipmentService.YANDEX`** (≈ строки 201–203): `ordTracking` уже загружен выше (≈ строка 183). Заполнить `orderParams.parameters` из `ordTracking` перед `_yandexShipmentService.UpdateOrderAsync(orderParams)`. Использовать общий хелпер (см. A4) либо существующий `EnrichOrderTrackingParams`/паттерн из `GetOrderParams(OrderTracking)`.
 - **На что смотреть:** не затереть осознанно выставленные значения; enrichment делает доп. запрос(ы) в БД — это уже норма для DPD, приемлемо; адаптеры остаются чистыми мапперами (БД-доступ только в фасаде).
 
 ### A3. Убрать ставшую лишней заплатку
-- **Файл:** `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/Handlers/Handlers/ORDER_TO_CHECK/OrderRegisterTransport.cs`
+- **Файл:** `$WORKSPACE/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/Handlers/Handlers/ORDER_TO_CHECK/OrderRegisterTransport.cs`
 - В блоке `if (action_type == ORDER_TO_EDIT && tracking != null)` есть незакоммиченная гидрация `otsOrderParams.parameters ??= tracking.OrderTrackingParams.ToDictionary(...)`. После A2.2 она дублируется фасадом — **откатить** (вернуть метод к исходному виду), чтобы логика жила в одном месте (фасад).
 
 ### A4. (Опционально) Консолидация конвертации
@@ -114,21 +114,21 @@
 
 ### B1. Эндпоинт в клиенте
 - **Файлы:**
-  - `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/ApiClients/Yandex/IYandexApiClient.cs`
-  - `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/ApiClients/Yandex/YandexApiService.cs`
+  - `$WORKSPACE/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/ApiClients/Yandex/IYandexApiClient.cs`
+  - `$WORKSPACE/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/ApiClients/Yandex/YandexApiService.cs`
 - Добавить Refit-метод (по образцу `GetRequestHistoryAsync`, который тоже `[Get]` с `request_id`):
   - `[Get("/api/b2b/platform/request/info")] Task<GetRequestInfoResponse> GetRequestInfoAsync([Query("request_id")] string requestId, CancellationToken ct = default);`
   - В `YandexApiService` — обёртка с логированием (как у остальных методов).
 
 ### B2. DTO ответа
-- **Папка:** `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/GloriaOTS.ApplicationCore/DTO/Yandex/` (рядом с `RemoveOrderItem`, `RequestHistory`, `CreateOrder`, `EditStatus`, `CancelRequest` — создать подпапку `RequestInfo`).
+- **Папка:** `$WORKSPACE/platform/gloriaots/gloriaots/src/GloriaOTS.ApplicationCore/DTO/Yandex/` (рядом с `RemoveOrderItem`, `RequestHistory`, `CreateOrder`, `EditStatus`, `CancelRequest` — создать подпапку `RequestInfo`).
 - Минимальный набор полей (имена JSON — snake_case, маппинг как в других DTO Яндекса):
   - корень: `request` (объект), `state { status }` (опц., для будущего трекинга).
   - `request.items[]`: `article` (string), `barcode` (string), `refused_count` (int), `count` (int), `name` (string).
 - Достаточно десериализовать только нужное; лишние поля игнорировать.
 
 ### B3. Поток вызова (в сервисе, не в адаптере)
-- **Файл:** `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/Services/ShipmentServices/Yandex/YandexShipmentService.cs`, метод `UpdateOrderAsync`.
+- **Файл:** `$WORKSPACE/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/Services/ShipmentServices/Yandex/YandexShipmentService.cs`, метод `UpdateOrderAsync`.
 - Перед маппингом `items/remove`:
   1. `requestId = orderParams.parameters[OrderTrackingParams.EXTERNAL_TK_ID]` (заполнен в части A; ключ-константа в `/src/GloriaOTS.ApplicationCore/Constants/OrderTrackingParams.cs`).
   2. `var info = await _yandexApiService.GetRequestInfoAsync(requestId)`.
@@ -137,7 +137,7 @@
 - Причина расположения: вызов API доступен в сервисе (`_yandexApiService`), а `OtsYandexResultAdapter` обязан остаться чистым маппером без сетевых/БД-зависимостей.
 
 ### B4. Маппинг
-- **Файл:** `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/Services/ShipmentServices/Yandex/OtsYandexResultAdapter.cs`, метод `MapToUpdateOrderRequest` (≈ строки 102–125).
+- **Файл:** `$WORKSPACE/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/Services/ShipmentServices/Yandex/OtsYandexResultAdapter.cs`, метод `MapToUpdateOrderRequest` (≈ строки 102–125).
 - Изменить сигнатуру: добавить параметр `IReadOnlyDictionary<string,string> articleToBarcode`.
 - Внутри: `ItemBarcode = articleToBarcode[good.article_id]` (хэш Яндекса) вместо текущего `group.Key`.
 - Группировку оставить по `article_id` (как сейчас), `RemainingCount = total − cancelled` (0 = удалить) — **не менять** (это корректно по 681).
@@ -158,7 +158,7 @@
 ## 7. Проверка на тест-стенде
 
 - **Индекс логов OTS (stage):** `gloria_ots_test-*` (через Buddy data-target `gloria_ots_test`, либо Kibana).
-- **Токен/URL Яндекс тест-стенда** (в конфиге): `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/Workers/GloriaOTS.OrderTracking/appsettings.json` → секция `YandexApi`:
+- **Токен/URL Яндекс тест-стенда** (в конфиге): `$WORKSPACE/platform/gloriaots/gloriaots/src/Workers/GloriaOTS.OrderTracking/appsettings.json` → секция `YandexApi`:
   - `BaseUrl = https://b2b.taxi.tst.yandex.net`
   - `ApiKey = <Bearer-токен тест-стенда>` (он же в `GloriaOTS.Web/appsettings.json`).
 - **Ручная проверка `request/info`** (read-only GET):
@@ -178,10 +178,10 @@
 ---
 
 ## 9. Конвенции и ограничения
-- **Workspace-правила** (`/Users/zak/Projects/GJ-Ecommerce/CLAUDE.md`): git-операции только внутри клона `platform/gloriaots/gloriaots`; домен-скилл — `gloriaots-stack-anatomy`.
+- **Workspace-правила** (`$WORKSPACE/CLAUDE.md`): git-операции только внутри клона `platform/gloriaots/gloriaots`; домен-скилл — `gloriaots-stack-anatomy`.
 - **Комментарии в коде:** не добавлять поясняющие/нарративные комментарии (по требованию владельца). Только если есть нетривиальное намерение/ограничение — кратко.
 - **Чистота слоёв:** БД/HTTP — в фасаде/сервисе; `OtsYandexResultAdapter` — чистый маппер.
-- **Сборка:** `dotnet build` из `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots` (см. `GloriaOTS.sln`). Локальный запуск — по `CLAUDE.md` раздел Gloria OTS.
+- **Сборка:** `dotnet build` из `$WORKSPACE/platform/gloriaots/gloriaots` (см. `GloriaOTS.sln`). Локальный запуск — по `CLAUDE.md` раздел Gloria OTS.
 - **Минимальные диффы**, без переформатирования чужого кода.
 
 ---
@@ -207,13 +207,13 @@
 ---
 
 ## Приложение. Ключевые файлы (абсолютные пути)
-- Модель: `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/GloriaOTS.ApplicationCore/OTSModels/Params/OTSRequestParams.cs`
-- Фасад: `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/Services/ShipmentServiceFacade.cs`
-- Адаптер: `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/Services/ShipmentServices/Yandex/OtsYandexResultAdapter.cs`
-- Сервис: `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/Services/ShipmentServices/Yandex/YandexShipmentService.cs`
-- Клиент: `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/ApiClients/Yandex/IYandexApiClient.cs` и `YandexApiService.cs`
-- Хендлер: `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/Handlers/Handlers/ORDER_TO_CHECK/OrderRegisterTransport.cs`
-- Сущность tracking: `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/GloriaOTS.ApplicationCore/Entities/OrderTracking.cs`
-- Константы: `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/GloriaOTS.ApplicationCore/Constants/OrderTrackingParams.cs`, `OrderStatus.cs`
-- DTO Яндекса: `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/GloriaOTS.ApplicationCore/DTO/Yandex/`
-- Конфиг (токен): `/Users/zak/Projects/GJ-Ecommerce/platform/gloriaots/gloriaots/src/Workers/GloriaOTS.OrderTracking/appsettings.json`
+- Модель: `$WORKSPACE/platform/gloriaots/gloriaots/src/GloriaOTS.ApplicationCore/OTSModels/Params/OTSRequestParams.cs`
+- Фасад: `$WORKSPACE/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/Services/ShipmentServiceFacade.cs`
+- Адаптер: `$WORKSPACE/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/Services/ShipmentServices/Yandex/OtsYandexResultAdapter.cs`
+- Сервис: `$WORKSPACE/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/Services/ShipmentServices/Yandex/YandexShipmentService.cs`
+- Клиент: `$WORKSPACE/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/ApiClients/Yandex/IYandexApiClient.cs` и `YandexApiService.cs`
+- Хендлер: `$WORKSPACE/platform/gloriaots/gloriaots/src/GloriaOTS.Infrastructure/Handlers/Handlers/ORDER_TO_CHECK/OrderRegisterTransport.cs`
+- Сущность tracking: `$WORKSPACE/platform/gloriaots/gloriaots/src/GloriaOTS.ApplicationCore/Entities/OrderTracking.cs`
+- Константы: `$WORKSPACE/platform/gloriaots/gloriaots/src/GloriaOTS.ApplicationCore/Constants/OrderTrackingParams.cs`, `OrderStatus.cs`
+- DTO Яндекса: `$WORKSPACE/platform/gloriaots/gloriaots/src/GloriaOTS.ApplicationCore/DTO/Yandex/`
+- Конфиг (токен): `$WORKSPACE/platform/gloriaots/gloriaots/src/Workers/GloriaOTS.OrderTracking/appsettings.json`

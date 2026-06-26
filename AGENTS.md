@@ -2,6 +2,8 @@
 
 See [CLAUDE.md](./CLAUDE.md) for repository instructions.
 
+`$WORKSPACE` in docs means the local repository root. Do not add developer-specific absolute paths to tracked files.
+
 ## Codex
 
 - Canonical workspace instructions live in `CLAUDE.md`.
