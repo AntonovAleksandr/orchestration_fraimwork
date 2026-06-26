@@ -1,6 +1,6 @@
 # Onboarding — Как работать в GJ-Ecommerce
 
-Краткий гайд для Claude Code и **Cursor**. Каноническая конфигурация агентов — в `.claude/`; полный контекст — в `CLAUDE.md`.
+Краткий гайд для Claude Code, **Cursor** и Codex. Каноническая конфигурация агентов — в `.claude/`; полный контекст — в `CLAUDE.md`.
 
 ## Bootstrap после клонирования репозитория
 
@@ -31,6 +31,10 @@ npx get-shit-done-cc@latest --claude --local --profile=core
 #    Codex CLI: /plugins → superpowers → Install Plugin
 #    Codex App: Plugins → Superpowers → +
 #    Прочее: https://github.com/obra/superpowers#installation
+
+# 3b. Codex only: сгенерировать локальные adapters из canonical .claude/*
+#     Claude Code / Cursor этот шаг не делают.
+./scripts/generate-codex-adapters.py
 
 # 4. (опционально) Зарегистрировать elc workspace для ENSI
 elc workspace add gj <workspace>/platform/ensi/workspace
@@ -66,17 +70,27 @@ GJ-Ecommerce/
 │   ├── onboarding.md     — этот файл
 │   └── architecture/     — ADR-документы (создаются `architect`-агентом)
 ├── .claude/              — канон: agents, skills, rules (в git)
-│   ├── agents/           — 24 сабагента (Cursor: Task)
-│   ├── skills/           — 25 скиллов GJ
+│   ├── agents/           — 34 сабагента (Cursor: Task)
+│   ├── skills/           — 32 скилла GJ
 │   ├── rules/            — project rules (.mdc)
 │   └── commands/gsd/     — GSD slash-команды (локально, не в git)
+├── .codex/               — generated Codex agents/hooks, не в git
+├── .agents/              — generated Codex skills mirror, не в git
 ├── .cursor/rules/        — симлинки → .claude/rules/ (для Cursor UI)
 └── CLAUDE.md             — top-level orientation, автозагрузка
 ```
 
-## Агенты (24)
+## Агенты (34)
 
 Вызываются через `Agent` tool с `subagent_type=<name>`.
+
+Source-of-truth для ролей — `.claude/agents/*.md`. Для Codex named agents генерируются локальные `.codex/agents/*.toml`:
+
+```bash
+./scripts/generate-codex-adapters.py
+```
+
+Не редактировать `.codex/agents` руками — править `.claude/agents`, затем регенерировать.
 
 ### Per-platform navigators (read-only, "где X?")
 | Агент | Платформа |
@@ -113,25 +127,32 @@ Findings сохраняются в `docs/research/<YYYY-MM-DD>-<topic>.md` (см
 | `integration-engineer` | PHP + Lumen + composer |
 | `gloriaots-engineer` | .NET 10 + ASP.NET Core + EF Core + C# workers |
 
-### Go-агенты для OMS (импортированы из `logistics/.claude/`, имеют logistics-контекст)
-- `oms-go-expert-coder` — concurrency, perf, idioms
-- `oms-go-quality-analyzer` — review
-- `oms-go-test-automation` — test code
-- `oms-go-test-strategist` — test strategy
-- `oms-go-solution-architect` — design (planning mode)
-- `oms-go-technical-debugger` — debugging
-- `oms-go-knowledge-keeper` — knowledge management
+### Go-агенты для `platform-new`
+- `go-service-engineer` — Go services: checkout, intgateway, policyengine, recommendation
+- `go-library-engineer` — shared `gj-go-*` libs and generated clients
+- `go-api-contract-engineer` — OpenAPI, Redocly bundle/lint, oapi-codegen, clients
+- `go-test-engineer` — Go tests, httptest, race, benchmarks
+- `go-code-reviewer` — Go review: correctness, contracts, concurrency, security
+- `go-debugger` — Go test/runtime/debug/performance failures
+- `go-architect` — Go fleet architecture, package boundaries, ADRs
 
-⚠️ При работе прямо в `logistics` — лучше использовать оригиналы из `platform/starfish24/core/go/logistics/.claude/agents/`.
+OMS logistics keeps its own Go agents in `platform/starfish24/core/go/logistics/.claude/agents/`; root agents intentionally do not duplicate that logistics-specific context.
 
 ### Cross-cutting (работают со всеми платформами)
 | Агент | Использовать когда |
 |-------|--------------------|
 | `gitlab-investigator` | MR/pipelines/jobs/файлы из GitLab через `mcp__gj-buddy__gitlab_*` |
 | `logs-detective` | Инциденты, trace, ошибки через `mcp__gj-buddy__logs_*` |
-| `architect` | Cross-system дизайн, ADR в `docs/architecture/<YYYY-MM-DD>-<topic>.md` |
+| `ensi-architect` | Архитектура внутри ENSI: service ownership, OpenAPI, models, Kafka, PHP↔Go migration |
+| `integration-architect` | Архитектура Integration Service: API/cron split, checkout BFF, OMS/ENSI/OTS handoffs, strangler |
+| `devops-architect` | DevOps/runtime архитектура: Helm, CI/CD, env config, observability, rollout/rollback |
+| `data-analytics-architect` | Data/DWH архитектура: Airflow, dbt, lineage, metrics ownership, data quality |
+| `architect` | E-commerce cross-system дизайн между основными платформами, ADR в `docs/architecture/<YYYY-MM-DD>-<topic>.md` |
+| `corporate-architect` | Enterprise-level архитектура: ecom + retail/ARM + 1C + DWH + DevOps + future platforms |
 
-## Скиллы (25) — авто-активируются по описанию
+## Скиллы (32) — авто-активируются по описанию
+
+Source-of-truth — `.claude/skills/*/SKILL.md`. Для Codex локально создаётся зеркало `.agents/skills/*`.
 
 ### ENSI (9, из ensi-platform/skills + кастом)
 `ensi-api-design`, `ensi-code-style`, `ensi-models`, `ensi-openapi`, `ensi-meta`, `ensi-query-builder`, `ensi-kafka`, `ensi-tests`, `ensi-elc-operations`, плюс `ansible-component`
@@ -151,9 +172,20 @@ Findings сохраняются в `docs/research/<YYYY-MM-DD>-<topic>.md` (см
 ### Gloria OTS (1)
 `gloriaots-stack-anatomy`
 
-### Cross-cutting (2)
+### Cross-cutting (3)
 `gj-multirepo-navigation` — поиск по 6+ GB кода
 `gj-buddy-mcp-mastery` — когда какой MCP-инструмент
+`gj-workspace-maintenance` — поддержка карты workspace, агентов/скиллов, игноров и generated Codex adapters
+
+### GJ business flows (3)
+`gj-checkout-order-flow` — checkout / pre-checkout / order create / Integration ↔ OMS
+`gj-money-discount-contracts` — деньги, скидки, промо, бонусы, сертификаты, фискальные суммы
+`gj-delivery-carrier-integration` — доставка, carrier codes, OMS ↔ OTS ↔ 1C/WMS, ТК onboarding
+
+### GJ specialized flows (3)
+`gj-marking-fiscalization` — Честный Знак, DataMatrix, permission mode, YooKassa/ATOL/OFD
+`gj-dwh-export-reconciliation` — DWH exports, Integration cron, reconciliation, data quality
+`gj-evidence-ledger-research` — multi-session research, source inventory, gap matrix, evidence ledger
 
 ### Superpowers (плагин, ~14; не в git)
 

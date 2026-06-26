@@ -84,7 +84,7 @@ platform/starfish24/
 2. **Per-env config questions:** start at `awg/cloud-configs/` — files are named `<service>-gj-<env>.{yml,yaml}`.
 3. **Carrier integration:** SDK is a separate lib (`cdek-api-sdk`, `russian-post-api-sdk`); the connector that uses it lives in a service like `5post-connector` or `Delivery`.
 4. **Java service anatomy:** code under `src/main/java/<package>/`, configs under `src/main/resources/`, tests under `src/test/`. Multi-module Maven possible — check root `pom.xml`.
-5. **For Go logistics:** delegate to `oms-go-solution-architect` or `oms-go-expert-coder` — those agents have rich logistics-specific context.
+5. **For Go logistics:** use the local agents under `platform/starfish24/core/go/logistics/.claude/agents/`; root Go agents are for `platform-new`.
 6. **OMS-UI:** prefer local grep with `--exclude-dir=node_modules`; sync repo first. GitLab file API only if local path is missing.
 
 ## Search recipes
@@ -140,7 +140,7 @@ Always exclude: `target/`, `build/`, `.git/`, `vendor/`.
 ## When to escalate
 
 - Need to implement Java → `oms-java-engineer`
-- Need to implement Go (logistics) → `oms-go-expert-coder` (logistics-flavored) or `oms-go-solution-architect` (planning mode)
+- Need to implement Go (logistics) → use local agents under `platform/starfish24/core/go/logistics/.claude/agents/`
 - Camunda / BPMN / workflow design → `camunda-bpm-engineer`
 - Cross-system contract (OMS ↔ ENSI / Integration / mobile / site) → `architect`
 - Production incident → `logs-detective`

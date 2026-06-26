@@ -1,6 +1,6 @@
 # GJ-Ecommerce — Agentic Workspace для Gloria Jeans
 
-Workspace для разработки **e-commerce платформы Gloria Jeans** и смежных логистических систем. Код организован в 6 независимых платформ — каждая в своём подкаталоге `platform/<system>/`. Настроены: **ENSI**, **Mobile App**, **Integration**, **Site**, **Starfish (OMS)**, **Gloria OTS** (логистика, тесно связана с e-commerce).
+Workspace для разработки **e-commerce платформы Gloria Jeans** и смежных логистических систем. Код организован в независимые платформенные зоны: основные e-commerce платформы живут в `platform/<system>/`, а новые/экспериментальные контуры — в `platform-new/` и `platform-next/`. Настроены: **ENSI**, **Mobile App**, **Integration**, **Site**, **Starfish (OMS)**, **Gloria OTS**, плюс смежные зоны **ARM**, **1C**, **Data Analytics**, **DevOps** и **Non-Platform**.
 
 ## Структура корня
 
@@ -12,7 +12,14 @@ GJ-Ecommerce/
 │   ├── integration/  — Integration Service: integration (Lumen) + logger/msq-client/health (PHP libs)
 │   ├── site/         — Frontend сайт: gj-ng-front (Angular 20 + Nx monorepo + NgRx + NestJS SSR)
 │   ├── mobile-app/   — Мобильное приложение: gj-app (RN monorepo) + mobapp-api-types
-│   └── gloriaots/    — Gloria OTS: Order Transport System (.NET 10, SQL Server, RabbitMQ)
+│   ├── gloriaots/    — Gloria OTS: Order Transport System (.NET 10, SQL Server, RabbitMQ)
+│   ├── 1s8-enterprise/ — 1C enterprise configs: retail / logistics contours
+│   ├── arm/          — retail-store ARM/POS/order/stock services
+│   ├── data-analytics/ — Airflow, dbt, analytics scripts
+│   ├── devops/       — shared deployment values/configs
+│   └── non-platform/ — adjacent services: feeds, merch, reports, stock, bots
+├── platform-new/     — new e-commerce Go services / clients / libs (ignored by root git)
+├── platform-next/    — mini / mini-gj experimental workspaces (ignored by root git)
 ├── docs/             — service-index, onboarding, architecture (ADRs)
 ├── .claude/          — канон: agents/, skills/, rules/ (в git); GSD/hooks — локально
 ├── .cursor/rules/    — симлинки на .claude/rules/ (для Cursor)
@@ -81,8 +88,7 @@ platform/starfish24/
 
 **Особенности:**
 - Многие default-branch ≠ master/main: `Delivery` (`19783+19795`), `pay-service` (`CLD-1840`), `cdek-api-sdk` (`CLD-4877`), `cloud-configs` (`CLD-17047`), `integration-gj` (`develop`)
-- В `platform/starfish24/core/go/logistics/.claude/` — готовый набор из 7 высококачественных Go-агентов (от команды logistics)
-- В корневом `.claude/agents/` те же 7 агентов скопированы с префиксом `oms-go-*`
+- В `platform/starfish24/core/go/logistics/.claude/` — готовый набор Go-агентов от команды logistics; для работы прямо в logistics использовать локальные агенты этого репо.
 - Подробнее: `.claude/skills/oms-stack-anatomy/SKILL.md`, `.claude/skills/oms-java-conventions/SKILL.md`, `.claude/skills/camunda-bpm/SKILL.md`, плюс `platform/starfish24/core/go/logistics/CLAUDE.md` для Go-специфики
 
 ## Платформа Site (`platform/site/`)
@@ -205,9 +211,28 @@ dotnet run --project src/Workers/GloriaOTS.OrderTracking
 
 Подробнее: `.claude/skills/gloriaots-stack-anatomy/SKILL.md`, README внутри клонированного репо.
 
+## Дополнительные зоны `platform/`
+
+| Зона | Назначение | Когда смотреть |
+|------|------------|----------------|
+| `platform/1s8-enterprise/` | 1C retail / LC конфигурации | store-from-store, retail pickup, stock/order hypotheses involving 1C |
+| `platform/arm/` | ARM/POS/store execution services | магазинное исполнение заказов, касса, остатки, labels, TSD, store UI |
+| `platform/data-analytics/` | Airflow, dbt, analytics scripts | аналитические пайплайны, витрины, data lineage |
+| `platform/devops/` | Shared deploy configs, currently `ms-helm-values` | environment values, helm, runtime config checks |
+| `platform/non-platform/` | Adjacent services outside primary platforms | feeds, auto-merch, stats, reviews, stock inventory, support utilities |
+
+Верхнеуровневые README этих зон трекаются в workspace-репозитории. Их вложенные репозитории игнорируются корневым git.
+
+## Новые контуры вне `platform/`
+
+| Зона | Назначение | Git tracking |
+|------|------------|--------------|
+| `platform-new/` | Go-based new e-commerce services and shared clients/libs: `checkout`, `intgateway`, `policyengine`, recommendation engine, `gj-go-*` packages, generated clients | полностью ignored в корневом git |
+| `platform-next/` | Experimental `mini` / `mini-gj` AI-native platform and GJ rewrite workspaces | полностью ignored в корневом git |
+
 ## Расширение workspace
 
-Все 6 платформ описаны. При расширении (новый сервис в OMS, новая платформа) — клонировать в `platform/<name>/` и обновить `CLAUDE.md` + `docs/service-index.md`.
+Все текущие платформенные зоны описаны. При расширении (новый сервис в OMS, новая платформа, новый ignored workspace) — клонировать в соответствующий каталог и обновить `CLAUDE.md` + `docs/service-index.md` + верхнеуровневый `README.md` зоны, если каталог находится в `platform/`.
 
 ## Методологии
 
@@ -236,10 +261,15 @@ dotnet run --project src/Workers/GloriaOTS.OrderTracking
 | `oms-researcher` | "Почему заказ застрял?" — read-only, BPMN flow, Camunda quirks, carrier integrations |
 | `oms-java-engineer` | Писать/менять Spring Boot / Maven / Lombok-код с учётом oms-* скиллов |
 | `camunda-bpm-engineer` | Дизайн BPMN-процессов, external task workers, миграции инстансов |
-| `oms-go-*` (7 агентов) | Go-специфика OMS — `expert-coder`, `quality-analyzer`, `test-automation`, `test-strategist`, `solution-architect`, `technical-debugger`, `knowledge-keeper` (адаптированы с logistics, имеют logistics-контекст) |
+| `go-*` (7 агентов) | Go-сервисы и библиотеки `platform-new`: service/library/API-contract/test/review/debug/architecture |
 | `gitlab-investigator` | MR/pipelines/файлы из любого GitLab-репо через `mcp__gj-buddy__gitlab_*` |
 | `logs-detective` | Инциденты, трассировка через `mcp__gj-buddy__logs_*` |
 | `architect` | Cross-service дизайн, ADR в `docs/architecture/` |
+| `ensi-architect` | ENSI service ownership, OpenAPI/API, models, Kafka, PHP↔Go migration architecture |
+| `integration-architect` | Integration Service architecture: API/cron split, checkout BFF, OMS/ENSI/OTS handoffs |
+| `devops-architect` | DevOps/runtime architecture: Helm, CI/CD, env config, observability, rollout/rollback |
+| `data-analytics-architect` | Data/DWH architecture: Airflow, dbt, lineage, metrics ownership, data quality |
+| `corporate-architect` | Enterprise-level architecture across ecom, retail/ARM, 1C, DWH, DevOps, platform-new/next |
 | `gloriaots-navigator` | "Где в Gloria OTS X?" — handlers, TK/WMS, workers, API |
 | `gloriaots-researcher` | "Почему OTS ведёт себя так?" — read-only, интеграции OMS/Integration |
 | `gloriaots-engineer` | Писать/менять .NET/C# код Gloria OTS с `gloriaots-stack-anatomy` |

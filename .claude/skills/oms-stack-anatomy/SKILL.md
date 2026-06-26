@@ -72,7 +72,7 @@ platform/starfish24/
 |---------|------|
 | `logistics` | Delivery pricing/availability rule engine. Has its own ready-to-use `.claude/` with 7 agents + extensive `CLAUDE.md`. |
 
-The 7 agents from logistics are also copied to project root with `oms-go-*` prefix (e.g. `oms-go-expert-coder`, `oms-go-solution-architect`). They contain logistics-specific examples — treat their advice as Go-OMS-flavored.
+The logistics repo keeps its own Go agents under `platform/starfish24/core/go/logistics/.claude/agents/`. Root Go agents are generic `platform-new` agents and intentionally do not duplicate logistics-specific OMS context.
 
 ## GJ-specific overlay (`awg/`)
 

@@ -89,7 +89,7 @@ Read `.claude/skills/oms-*/SKILL.md` and `.claude/skills/camunda-bpm/SKILL.md` i
 ## When to escalate
 
 - Where is X → `oms-navigator`
-- Go (logistics) → `oms-go-expert-coder` / `oms-go-solution-architect`
+- Go (logistics) → use local agents under `platform/starfish24/core/go/logistics/.claude/agents/`
 - Camunda BPMN process design / workers → `camunda-bpm-engineer`
 - Cross-system contract (OMS ↔ ENSI / Integration / mobile / site) → `architect`
 - Recent CI/pipeline failure → `gitlab-investigator`

@@ -192,18 +192,11 @@ platform/starfish24/
 |--------|------|--------|-------------|
 | logistics | `core/go/logistics/` | `master` | Pricing/availability rule engine. **Имеет собственный `.claude/` с 7 агентами и подробный `CLAUDE.md`.** |
 
-### Агенты-копии для Go-сервисов (в корневом `.claude/agents/`)
+### Go agents
 
-Из `core/go/logistics/.claude/agents/` скопированы 7 высококачественных агентов с префиксом `oms-go-`:
-- `oms-go-expert-coder` — Go concurrency/performance
-- `oms-go-quality-analyzer` — code quality
-- `oms-go-test-automation` — test automation
-- `oms-go-test-strategist` — test strategy
-- `oms-go-solution-architect` — Go architecture (planning mode)
-- `oms-go-technical-debugger` — debugging
-- `oms-go-knowledge-keeper` — knowledge management
+`core/go/logistics/` имеет собственные agent definitions в `core/go/logistics/.claude/agents/`; для работы прямо в logistics использовать их локально.
 
-Они написаны для logistics и содержат logistics-специфичный контекст. Для работы прямо в logistics — лучше использовать оригинальные в `core/go/logistics/.claude/agents/` (там же `test_examples/`).
+Корневые Go-агенты `.claude/agents/go-*` предназначены для non-OMS Go-контура `platform-new/`: services, shared libs, generated clients and API contracts.
 
 ### Стек
 
@@ -463,3 +456,81 @@ gloriaots/
 mkdir -p platform/gloriaots && cd platform/gloriaots
 git clone git@gitlab.gloria.aaanet.ru:gloriaots/gloriaots.git
 ```
+
+---
+
+## Дополнительные зоны `platform/`
+
+Эти каталоги лежат рядом с основными платформами, но относятся к смежным контурам или инфраструктуре. Вложенные каталоги остаются отдельными git-репозиториями и игнорируются корневым workspace-репозиторием; верхнеуровневые `README.md` служат tracked-описаниями зон.
+
+### 1C 8 Enterprise (`platform/1s8-enterprise/`)
+
+| Репо | Путь | Назначение |
+|------|------|------------|
+| 1c-lc | `platform/1s8-enterprise/1c-lc` | 1C logistics / LC контур |
+| 1c-retail | `platform/1s8-enterprise/1c-retail` | 1C retail контур, магазинные процессы |
+
+### ARM / Retail Store Systems (`platform/arm/`)
+
+| Зона | Примеры репозиториев | Назначение |
+|------|----------------------|------------|
+| Store order / POS | `gloria-jeans-cashier`, `gloria-jeans-orders`, `gloria-jeans-pos-ui`, `gloria-jeans-ui-server` | магазинное исполнение заказов, касса, POS/UI |
+| Stock / receiving / catalog | `gloria-jeans-stock`, `gloria-jeans-receiving`, `gloria-jeans-catalog`, `gloria-jeans-core` | остатки, приемка, каталог, общие доменные библиотеки |
+| Devices / labels / TSD | `gloria-jeans-device`, `gloria-jeans-label-service`, `gloria-jeans-label-ui`, `gloria-jeans-tsd-ui` | оборудование, печать labels, ТСД |
+| Deploy / support | `devops`, `gloria-jeans-ansible`, `gloria-jeans-deployment`, `gloria-jeans-docker-images`, `gloria-jeans-export`, `gloria-jeans-onec-db-mapper` | deployment, export, 1C mapping, support tooling |
+
+### Data Analytics (`platform/data-analytics/`)
+
+| Репо | Путь | Назначение |
+|------|------|------------|
+| airflow-aero | `platform/data-analytics/airflow-aero` | Airflow DAGs / pipelines |
+| airflow-gj | `platform/data-analytics/airflow-gj` | Airflow DAGs / pipelines for GJ |
+| analytics-scripts | `platform/data-analytics/analytics-scripts` | analytical scripts |
+| dbt | `platform/data-analytics/dbt` | dbt models / warehouse transformations |
+
+### DevOps (`platform/devops/`)
+
+| Репо | Путь | Назначение |
+|------|------|------------|
+| ms-helm-values | `platform/devops/ms-helm-values` | Helm values and environment runtime settings |
+
+### Non-Platform / Adjacent Services (`platform/non-platform/`)
+
+| Репо | Путь | Назначение |
+|------|------|------------|
+| ecom-auto-merch | `platform/non-platform/ecom-auto-merch` | auto-merchandising |
+| ecom-stat-service | `platform/non-platform/ecom-stat-service` | e-commerce statistics service |
+| event-dispatcher | `platform/non-platform/event-dispatcher` | event dispatching |
+| feed-generator | `platform/non-platform/feed-generator` | feed generation |
+| stock-inventory-service | `platform/non-platform/stock-inventory-service` | stock / inventory adjacent service |
+| dwh-exporter | `platform/non-platform/dwh-exporter` | data warehouse export |
+| OzonReviews | `platform/non-platform/OzonReviews` | reviews integration/tooling |
+| GjReportViwer | `platform/non-platform/GjReportViwer` | report viewer |
+| bots | `platform/non-platform/bots` | support/automation bots |
+
+---
+
+## Новые ignored workspaces вне `platform/`
+
+### New Platform (`platform-new/`)
+
+**Статус:** полностью ignored корневым git. Используется для новых Go-сервисов, shared clients и библиотек нового e-commerce контура.
+
+| Репо / зона | Путь | Назначение |
+|-------------|------|------------|
+| checkout | `platform-new/checkout` | stateful Go checkout service / strangler over legacy Integration |
+| intgateway | `platform-new/intgateway` | stateless Go BFF / integration gateway |
+| policyengine | `platform-new/policyengine` | checkout policy evaluation service |
+| recomendationengine | `platform-new/recomendationengine` | similar products / recommendation backend |
+| recomendationenginegui | `platform-new/recomendationenginegui` | recommendation admin UI |
+| clients | `platform-new/clients/*` | generated/shared Go clients for ENSI/OMS and adjacent services |
+| gj-go-* | `platform-new/gj-go-httpclient`, `platform-new/gj-go-logger`, `platform-new/gj-go-migrate`, `platform-new/gj-go-money` | shared Go libraries |
+
+### Platform Next (`platform-next/`)
+
+**Статус:** полностью ignored корневым git. Используется для experimental `mini` / `mini-gj` AI-native platform workspaces.
+
+| Workspace | Путь | Назначение |
+|-----------|------|------------|
+| mini | `platform-next/mini` | generic `mini` platform and reusable packages (`mini-ecom`, auth, redis, kafka, admin, etc.) |
+| gj | `platform-next/gj` | GJ-specific implementation on top of `mini`: `mini-gj`, `mini-gj-ecom`, facade, admin, target docs |

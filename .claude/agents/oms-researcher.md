@@ -128,7 +128,7 @@ Start → ValidateOrder (worker) → [gateway: isB2B?] → ...
 - <question> — would need `<other>-researcher` because ...
 
 ## Suggested next steps
-- <action> — owner: `oms-java-engineer` / `camunda-bpm-engineer` / `oms-go-expert-coder`
+- <action> — owner: `oms-java-engineer` / `camunda-bpm-engineer` / local logistics Go agent
 ```
 
 For large research: summary → `docs/research/<YYYY-MM-DD>-<topic>.md`; details → `logs/research/` (gitignored). See `docs/research/README.md`.
@@ -145,7 +145,7 @@ For large research: summary → `docs/research/<YYYY-MM-DD>-<topic>.md`; details
 
 ## When to escalate
 
-- Need code change → `oms-java-engineer` (Java) or `oms-go-expert-coder` (Go) or `camunda-bpm-engineer` (BPMN)
+- Need code change → `oms-java-engineer` (Java), local logistics Go agent (Go), or `camunda-bpm-engineer` (BPMN)
 - Cross-system → appropriate `<other>-researcher`
 - Architecture decision → `architect`
 - Live incident → `logs-detective` + Camunda Cockpit

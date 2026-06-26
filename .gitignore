@@ -12,6 +12,10 @@ platform/*/*
 # Each subdir is its own git repo (e-commerce/platform/*, go-pkg/*); never tracked here.
 platform-new/
 
+# Experimental / next-generation mini platform workspaces.
+# These are standalone repos with their own git roots and are documented from the workspace index.
+platform-next/
+
 # macOS / IDE noise
 .DS_Store
 **/.DS_Store
@@ -38,6 +42,13 @@ platform-new/
 
 # Personal Claude Code approvals (machine-specific)
 .claude/settings.local.json
+
+# =============================================================================
+# Codex adapters — generated from .claude/*, local only
+# =============================================================================
+
+.codex/
+.agents/
 
 # =============================================================================
 # .cursor — only rules symlinks are tracked (→ .claude/rules/)

@@ -1,29 +1,38 @@
 # GJ-Ecommerce — Agentic Workspace
 
-**Agentic workspace** для e-commerce платформы **Gloria Jeans** и смежной логистики: одна среда, в которой ИИ-агенты помогают на всём пути — от понимания ландшафта до выката и разбора инцидентов. Это не «репозиторий только для кодинга», а **операционная база знаний и ролей** поверх шести платформ (`ENSI`, `OMS`, `Integration`, `Site`, `Mobile`, `Gloria OTS`).
+**Agentic workspace** для e-commerce платформы **Gloria Jeans** и смежной логистики: одна среда, в которой ИИ-агенты помогают на всём пути — от понимания ландшафта до выката и разбора инцидентов. Это не «репозиторий только для кодинга», а **операционная база знаний и ролей** поверх основных платформ (`ENSI`, `OMS`, `Integration`, `Site`, `Mobile`, `Gloria OTS`) и смежных локальных зон (`ARM`, `1C`, analytics, devops, non-platform, `platform-new`, `platform-next`).
 
 | Направление | Примеры задач | Чем закрываем в workspace |
 |-------------|---------------|---------------------------|
 | **Разработка** | эндпоинт, экран, BPMN, фикс бага | `*-engineer` агенты, доменные `skills/`, локальный запуск (elc, nx, yarn, …) |
-| **Архитектура** | cross-system дизайн, ADR, trade-offs «PIM vs cache» | `architect`, `docs/architecture/`, GSD для крупных инициатив |
+| **Архитектура** | service/domain/corporate дизайн, ADR, trade-offs «PIM vs cache» | `ensi-architect`, `integration-architect`, `devops-architect`, `data-analytics-architect`, `architect`, `corporate-architect`, `docs/architecture/` |
 | **Аналитика и исследования** | «как реально работает checkout», трассировка флоу, legacy | `*-researcher`, `*-navigator`, `docs/bp/`, `docs/research/` |
-| **Тестирование** | стратегия, автотесты, регресс после изменений | `ensi-tests`, `oms-go-test-*`, скиллы/агенты по стеку, CI через `gitlab-investigator` |
+| **Тестирование** | стратегия, автотесты, регресс после изменений | `ensi-tests`, `go-test-engineer`, скиллы/агенты по стеку, CI через `gitlab-investigator` |
 | **Эксплуатация** | прод-инцидент, trace, «что деплоилось» | `logs-detective`, Buddy MCP (логи, GitLab, Jira, Confluence) |
 
-Код платформ живёт в `platform/*/` (отдельные git-клоны). **Этот репозиторий** хранит карту системы, агентов, скиллы и накопленные артефакты расследований — чтобы любая роль (разработчик, архитектор, аналитик, QA, support) начинала с одного контекста.
+Код платформ и смежных контуров живёт в локальных клонах под `platform/`, `platform-new/` и `platform-next/`. **Этот репозиторий** хранит карту системы, агентов, скиллы и накопленные артефакты расследований — чтобы любая роль (разработчик, архитектор, аналитик, QA, support) начинала с одного контекста.
 
 Проект **изначально собран под [Claude Code](https://docs.anthropic.com/en/docs/claude-code)** (GSD, slash-команды, hooks, плагины), но конфигурация агентов спроектирована **agent-agnostic**: один канонический слой в `.claude/` + `CLAUDE.md`, который без дублирования подхватывают Cursor и другие IDE с поддержкой тех же форматов.
 
 Репозиторий трекает только **нашу интеллектуальную собственность**:
-- `.claude/agents/` — 24 сабагента
-- `.claude/skills/` — 25 доменных скиллов
+- `.claude/agents/` — 34 сабагента
+- `.claude/skills/` — 32 доменных скилла
 - `.claude/rules/` — project rules (Cursor подключает через `.cursor/rules/` → симлинки)
 - `docs/` и корневой `CLAUDE.md`
 
 **Claude Code и Cursor** читают агентов и скиллы из `.claude/`; отдельно копировать в `.cursor/skills/` не нужно.
 
+**Codex** использует локальные generated adapters: `.codex/agents/*.toml` и `.agents/skills/*`. Они не коммитятся и регенерируются из `.claude/`:
+
+```bash
+./scripts/generate-codex-adapters.py
+```
+
 **Не трекается** (восстанавливается локально):
-- `platform/` — клоны 6 платформ (каждый — свой git-репозиторий)
+- `platform/` — клоны платформ и смежных зон (вложенные сервисы — отдельные git-репозитории)
+- `platform-new/` — новые Go-сервисы/клиенты/libs; полностью ignored корневым git
+- `platform-next/` — experimental `mini` / `mini-gj` workspaces; полностью ignored корневым git
+- `.codex/` и `.agents/` — generated Codex adapters из `.claude/`
 - GSD: `.claude/commands/`, `get-shit-done/`, `hooks/`, `settings.json` — `npx get-shit-done-cc --claude --local --profile=core`
 - Опционально GSD для Cursor: `.cursor/get-shit-done/`, `.cursor/skills/gsd-*` — `--cursor --local` (см. `.claude/README.md`)
 - `.claude/settings.local.json` — личные approve команды
@@ -52,6 +61,7 @@ GJ-Ecommerce/
 │   ├── skills/               # доменные SKILL.md (триггер по description)
 │   └── rules/                # короткие .mdc: границы, MCP, вызов сабагентов
 ├── .cursor/rules/            # только симлинки → ../.claude/rules/ (адаптер Cursor)
+├── scripts/generate-codex-adapters.py # локально генерирует .codex/ и .agents/ для Codex
 ├── .claude/commands/ …       # GSD для Claude Code — локально, не в git
 └── .cursor/skills/gsd-* …    # опциональный GSD для Cursor — локально, не в git
 ```
@@ -60,7 +70,7 @@ GJ-Ecommerce/
 
 | Задача | Куда | Не делать |
 |--------|------|-----------|
-| Карта платформ, «где что искать», стек, 6 `platform/*` | `CLAUDE.md` | Не раздувать rules повтором таблиц из `docs/service-index.md` |
+| Карта платформ, «где что искать», стек, локальные платформенные зоны | `CLAUDE.md` | Не раздувать rules повтором таблиц из `docs/service-index.md` |
 | Короткие обязательные ограничения для **любого** агента (git root, elc, MCP, сабагенты, local-first + sync) | `.claude/rules/*.mdc` | Не писать второй раз в `.cursor/rules/` — только симлинк |
 | Правила для **типа файлов** (PHP ENSI, Java OMS, Angular site) | `.claude/rules/<topic>.mdc` с `globs:` + симлинк в `.cursor/rules/` | Не смешивать с автогеном GSD |
 | Новая роль «найди / напиши код» | `.claude/agents/<name>.md` | Не форкать промпт в `.cursor/` |
@@ -68,6 +78,7 @@ GJ-Ecommerce/
 | Архитектурное решение, ADR | `docs/architecture/YYYY-MM-DD-<topic>.md` + `architect` | Не дублировать в `docs/research/` |
 | Бизнес-процессы, e2e-флоу (аналитика) | `docs/bp/` | Не копировать в `CLAUDE.md` целиком |
 | Доменный how-to (OpenAPI, Camunda, Nx) | `.claude/skills/<name>/SKILL.md` | Не копировать в `.cursor/skills/` |
+| Codex named subagents / skills | `./scripts/generate-codex-adapters.py` → `.codex/`, `.agents/` | Не редактировать `.codex/` и `.agents/` руками |
 | Большой процесс (roadmap, фазы) | GSD → `.planning/` (опционально в git) | Не коммитить `get-shit-done/`, `commands/gsd/` |
 | Только вызов инструмента IDE | `.claude/rules/workspace.mdc` (таблица Claude vs Cursor) | Не размазывать по десятку файлов |
 
@@ -88,6 +99,8 @@ GJ-Ecommerce/
 | Скиллы GJ | `.claude/skills/` | те же `.claude/skills/` |
 | GSD | `/gsd:new-project`, … | опционально `gsd-new-project` skill (`--cursor --local`) |
 | Superpowers | `claude plugin install …` / `~/.claude/plugins/` | `/add-plugin superpowers` (marketplace) |
+
+Для Codex: после clone или после изменения `.claude/agents` / `.claude/skills` запустить `./scripts/generate-codex-adapters.py`. Это создаст ignored `.codex/agents/*.toml` и `.agents/skills/*`; source-of-truth остаётся в `.claude/`.
 
 Подробнее о каталоге `.claude/` — [.claude/README.md](.claude/README.md); о формате rules — [.claude/rules/README.md](.claude/rules/README.md).
 
@@ -244,7 +257,7 @@ git clone git@gitlab.gloria.aaanet.ru:gloriaots/gloriaots.git
 | [CLAUDE.md](CLAUDE.md) | Карта workspace (agent-agnostic; читается Claude Code, Cursor, …) |
 | [.claude/README.md](.claude/README.md) | Что в git в `.claude/` vs что регенерировать локально |
 | [.claude/rules/](.claude/rules/) | Project rules; в Cursor — симлинки из `.cursor/rules/` |
-| [docs/service-index.md](docs/service-index.md) | Полный реестр сервисов всех 6 платформ + GitLab URLs |
+| [docs/service-index.md](docs/service-index.md) | Полный реестр сервисов и локальных платформенных зон + GitLab URLs |
 | [docs/bp/](docs/bp/) | Бизнес-процессы и e2e-флоу (аналитика, онбординг в домен) |
 | [docs/research/](docs/research/) | Findings расследований (`*-researcher`) |
 | [docs/architecture/](docs/architecture/) | ADR и архитектурные решения (`architect`) |
@@ -260,20 +273,23 @@ git clone git@gitlab.gloria.aaanet.ru:gloriaots/gloriaots.git
 | Site | Angular 20 + Nx + NgRx + NestJS SSR + Transloco + Storybook |
 | Mobile App | React Native 0.74 + TypeScript + yarn workspaces + styled-components + YooKassa |
 | Gloria OTS | .NET 10 + ASP.NET Core + SQL Server + RabbitMQ + Hangfire + React/Vite admin |
+| ARM / 1C | Store execution, POS/ARM services, 1C retail/logistics configs |
+| Data Analytics / DevOps / Non-Platform | Airflow/dbt/scripts, Helm values, adjacent feeds/stock/merch/reporting services |
+| platform-new / platform-next | New Go e-commerce services and experimental `mini`/`mini-gj` workspaces |
 
-## Агенты (24)
+## Агенты (34)
 
 Роли сгруппированы по **типу работы**, а не только по платформе:
 
 | Тип | Агенты | Режим |
 |-----|--------|--------|
-| **Навигация** («где X в коде?») | `*-navigator` (6 платформ) | read-only |
-| **Исследование** («почему так?», legacy, трассировка) | `*-researcher` (6 платформ) | read-only → `docs/research/` |
+| **Навигация** («где X в коде?») | `*-navigator` по основным платформам + README/index по смежным зонам | read-only |
+| **Исследование** («почему так?», legacy, трассировка) | `*-researcher` по основным платформам + `docs/research/` для cross-system findings | read-only → `docs/research/` |
 | **Реализация** | `*-engineer`, `camunda-bpm-engineer` | write code |
-| **Архитектура** | `architect`, `oms-go-solution-architect` | ADR / design |
-| **Качество и тесты** | `oms-go-quality-analyzer`, `oms-go-test-automation`, `oms-go-test-strategist` | review / tests |
+| **Архитектура** | `ensi-architect`, `integration-architect`, `devops-architect`, `data-analytics-architect`, `go-architect`, `architect`, `corporate-architect` | ADR / design |
+| **Качество и тесты** | `go-code-reviewer`, `go-test-engineer` | review / tests |
 | **Эксплуатация** | `logs-detective`, `gitlab-investigator` | MCP: логи, MR, pipelines |
-| **Go / logistics** | `oms-go-*` (7) | см. `platform/starfish24/core/go/logistics/.claude/` |
+| **Go / platform-new** | `go-*` | Go services, shared libs, clients, OpenAPI contracts |
 
 Полное описание ролей и сценариев (инцидент, cross-system фича, расследование промо) — в [docs/onboarding.md](docs/onboarding.md).
 
