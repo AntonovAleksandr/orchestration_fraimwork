@@ -2,7 +2,7 @@
 
 **Дата:** 2026-06-28 · **Владелец:** Александр (CTO eCommerce) · **Статус:** индикативная оценка (по итогам анализа)
 **Детальный пакет:** [`README.md`](README.md) · [`gap-matrix.md`](gap-matrix.md) · [`implementation-slices.md`](implementation-slices.md) · [`acceptance-and-test-plan.md`](acceptance-and-test-plan.md)
-**Методика оценки:** [`../../methodologies/ai-accelerated-estimation.md`](../../methodologies/ai-accelerated-estimation.md)
+**Методика оценки:** [`../../methodologies/initiative-indicative-estimation.md`](../../methodologies/initiative-indicative-estimation.md)
 
 ---
 

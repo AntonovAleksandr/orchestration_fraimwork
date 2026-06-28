@@ -42,7 +42,7 @@
 
 Общие методологии (оценка сроков, дисциплина research и т.п.) живут в [`docs/methodologies/`](../methodologies/README.md) —
 источник истины. В проектах **ссылаться** на них, не копировать. Пример: оценка сроков под AI-разработку —
-[`docs/methodologies/ai-accelerated-estimation.md`](../methodologies/ai-accelerated-estimation.md).
+[`docs/methodologies/initiative-indicative-estimation.md`](../methodologies/initiative-indicative-estimation.md).
 
 ## Агенты
 

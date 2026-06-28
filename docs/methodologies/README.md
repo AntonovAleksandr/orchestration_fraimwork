@@ -14,14 +14,14 @@
 
 | Файл | Что внутри | Когда применять |
 |---|---|---|
-| [`ai-accelerated-estimation.md`](ai-accelerated-estimation.md) | Оценка сроков под AI-разработку: две оси (инженерный effort vs календарь), критический путь, формула `max+зависимости` | Любая оценка сроков фич/проектов, где разработка ведётся с AI и старые «недели–месяцы» неприменимы |
+| [`initiative-indicative-estimation.md`](initiative-indicative-estimation.md) | Индикативная оценка инициатив на предпроектном исследовании: две оси (инженерный effort vs календарь), три потока (анализ/разработка/тест), критический путь, форма выдачи бизнесу | Когда по итогам предпроекта нужно дать бизнесу индикативный диапазон сроков инициативы |
 
 ## Как ссылаться из проекта
 
 В research-проекте (`docs/research/<project>/`) — относительная ссылка:
 
 ```markdown
-Методика оценки: [`../../methodologies/ai-accelerated-estimation.md`](../../methodologies/ai-accelerated-estimation.md)
+Методика оценки: [`../../methodologies/initiative-indicative-estimation.md`](../../methodologies/initiative-indicative-estimation.md)
 ```
 
 Опционально завести в проекте локальный файл-указатель (напр. `00-estimation-methodology.md`) с ссылкой на канон

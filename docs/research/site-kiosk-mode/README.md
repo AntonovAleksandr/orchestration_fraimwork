@@ -59,7 +59,7 @@
 | [`ONE-PAGER.md`](ONE-PAGER.md) | **One-pager для руководства**: суть, скоуп MVP, индикативные сроки, нужные решения, риски |
 | [`00-PLAN.md`](00-PLAN.md) | **Мастер-план**: метод, таблица стадий, MCP/код-плейбук, протокол сессии, progress tracker |
 | [`00-requirements.md`](00-requirements.md) | **Канонические требования** (KR-NN) из брифа: MVP vs Phase 2, NFR; что согласовать |
-| [`00-estimation-methodology.md`](00-estimation-methodology.md) | Указатель на канон [`methodologies/ai-accelerated-estimation.md`](../../methodologies/ai-accelerated-estimation.md) + **проектные допущения киоска** |
+| [`00-estimation-methodology.md`](00-estimation-methodology.md) | Указатель на канон [`methodologies/initiative-indicative-estimation.md`](../../methodologies/initiative-indicative-estimation.md) + **проектные допущения киоска** |
 | [`00-source-inventory.md`](00-source-inventory.md) | Источники: код (site, customer-auth, …), эталон ASM, Confluence/Jira (TBD), железо/kiosk |
 | [`EVIDENCE-LEDGER.md`](EVIDENCE-LEDGER.md) | Сквозной реестр находок/решений/разрывов, засеян по KR-NN (verdict TBD до сверки) |
 | [`TEMPLATE-stage.md`](TEMPLATE-stage.md) | Шаблон файла стадии (as-is / целевое / решение / оценка / вопросы / acceptance) |

@@ -61,4 +61,4 @@
 
 Зафиксировать решения из списка выше → стартовать разработку MVP. Детали и оценка по фичам —
 [`stages/stage-07-synthesis-roadmap.md`](stages/stage-07-synthesis-roadmap.md); методика оценки —
-[`docs/methodologies/ai-accelerated-estimation.md`](../../methodologies/ai-accelerated-estimation.md).
+[`docs/methodologies/initiative-indicative-estimation.md`](../../methodologies/initiative-indicative-estimation.md).

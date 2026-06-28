@@ -1,6 +1,6 @@
 # Методика оценки сроков (указатель + проектные допущения)
 
-> **Канон методологии вынесен:** [`../../methodologies/ai-accelerated-estimation.md`](../../methodologies/ai-accelerated-estimation.md).
+> **Канон методологии вынесен:** [`../../methodologies/initiative-indicative-estimation.md`](../../methodologies/initiative-indicative-estimation.md).
 > Здесь — только **проектные допущения киоска**. Общую методику (две оси, формула `max+зависимости`,
 > критический путь, шкалы XS–XL) не дублировать — читать канон.
 
