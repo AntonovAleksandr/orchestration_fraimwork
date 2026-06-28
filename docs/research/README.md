@@ -38,6 +38,12 @@
 | > ~150 строк, autopsy, duplicate BP | `logs/research/` |
 | L1 процессы | `docs/bp/` — не дублировать research |
 
+## Методологии (переиспользуемые)
+
+Общие методологии (оценка сроков, дисциплина research и т.п.) живут в [`docs/methodologies/`](../methodologies/README.md) —
+источник истины. В проектах **ссылаться** на них, не копировать. Пример: оценка сроков под AI-разработку —
+[`docs/methodologies/ai-accelerated-estimation.md`](../methodologies/ai-accelerated-estimation.md).
+
 ## Агенты
 
 `*-researcher`: итог в `docs/research/`; детали — `logs/research/`. Сначала grep `docs/research/` по теме; не плодить новые md без необходимости — **дополнять существующий summary**.
