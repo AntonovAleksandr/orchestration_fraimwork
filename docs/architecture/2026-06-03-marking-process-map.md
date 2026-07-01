@@ -125,6 +125,13 @@ sequenceDiagram
 - В выгрузках заказа в 1С марка передаётся как `<serial_number>`: `INT 132.31.1` (1С Ecomm), `INT 132.25.1` (1С ЦБР, `63470442`).
 - Связанные INT: `130133580` (INT 97.65.5 GJISMP→OTS, разрешительный режим, RabbitMQ, поля `good_mark_validation_*`).
 
+> **⚠️ Code-verified уточнение (2026-07-01):**
+> - **ОТС = `gloriaots`** (.NET, в клонах), отдельная система, НЕ часть OMS. Криптохвост запрашивает **сам gloriaots** у WebGJISMP: `OrderToPickup.BuildParamsWithMarksAndCrypto()` → `WebGjIsmpClient` `POST /api/KM/GetKMFull?from=OTS` → пишет `good_id_mark_cryptotail`. Стрелка «OMS → WebGJISMP» на схеме выше — **упрощение/ошибка** (запрос идёт от ОТС).
+> - OMS↔ОТС — **через Интеграцию**: gloriaots публикует статус+марку в Kafka (`OrderStatusNotifiers/Starfish/Sender.cs`), Integration `TransferService::transferOtsOrderStatus()` потребляет и шлёт в OMS (`good_id_mark` → `datamatrixCode` без обрезки, `:2108-2110`). «Одёжная» обрезка `substr(18,13)` — в экспортном мутаторе Integration в 1С (`AbstractOrderExport1CMutator.php:1165`).
+> - РР: gloriaots принимает permission-queue (RabbitMQ `MarkPermissionRequestedEvent`), прокидывает `good_mark_validation_uuid/timestamp` в каждый товар на `≥ DELIVERING` (`ResultConversionService`). `inst`/`version` пока НЕ реализованы (ни gloriaots, ни Integration).
+> - **Прежние доки (эта карта §0/§8, research `2026-06-19`) ошибочно писали «ОТС=Starfish, gloriaots не участвует» — из-за gitignore-ловушки при grep. Исправлено.**
+> Контур марки косметики (процесс + доработки): `research/2026-07-01-beauty-marking-process.md`.
+
 ---
 
 ## 4. Верификация КМ (разрешительный режим / offline-проверка)
@@ -168,8 +175,32 @@ flowchart LR
 | **BY (Беларусь)** | Обязательная маркировка через DataMatrix внутри OMS BPMN | OMS camunda-worker | external tasks `datamatrixCodeGetterActivity`, `datamatrixCodeValidation`, `decommissioningActivity` (`docs/bp/source/oms-processes.md`) |
 | **KZ (Казахстан)** | Экспорт марок в КЗ + запуск e-com | GJMarkUpdate, OMNIES | `82000156`; KZ e-com: `165404571`, `165404000`, `165404828` |
 | **НШ (Новошахтинск ЛЦ)** | Запуск ЛЦ НШ, мост 1С7 НШ → WebGJISMP | GJMarkUpdateNsh | space **MWHNSH**: `165405524`, `165405070` |
-| **Beauty / косметика в e-com** | Запуск маркированной косметики на сайте/МП | OMNIES, OPSLOG | `165406767`, `165406718`, `165406772`, `165405413`, `165404528`, `165397174` |
+| **Beauty / косметика в e-com** | Запуск маркированной косметики на сайте/МП (OPSOMN001-247, релиз ~20.07.2026) | OMNIES, OPSLOG | корень `165406763`; ТЗ `165408124` (маркировка), `165408218` (OMS), `165408217` (ИС), `165408096` (потоки), `165397174` (склад) — **см. §5.1** |
 | **Многоместные отправления** | Марки в multi-package заказах | OMNIES | `165406777` |
+
+---
+
+### 5.1. Beauty / косметика (OPSOMN001-247) — контур маркировки
+
+Программа запуска маркированной косметики в e-com. Процесс маркировки и доработки (WebGJISMP→ОТС→ИС→OMS): `research/2026-07-01-beauty-marking-process.md`.
+
+**Формат КМ (отличие от одежды):**
+- Косметика: чистый КМ **24 символа** = `010+GTIN13+21+serial6`; **serial = 6 символов** (у одежды/обуви/парфюма = 13). Пример: `0104620302844650215ABC00`.
+- В 1С косметическая марка добивается до 13 символов: `serial6 + ZZZZZZZ`; в интеграциях/WebGJISMP — чистая (6 или 24). `КодТипаМарки=1522` (ТГ chemistry).
+
+**Ключевые правила (`165408124`):**
+- SYS-MRK-01: парсер GS1, полный КМ косметики 24 симв.; SYS-MRK-03: **не резать** косметический КМ по «одёжному» правилу; SYS-MRK-08: OTS→WebGJISMP передаёт чистую 24-символьную марку.
+- SYS-MRK-04: **WebGJISMP** — инициатор отчёта о нанесении (`POST /api/v3/utilisation`); **OMS не вызывает AddByBox** (работа с марками в обороте).
+- Выбытие: через **чек** (розница/онлайн-выкуп) или **документ перемещения** в 1C ERP (курьерская доставка, независимо от типа оплаты). Возврат по MVP отдельным IT-контуром не развивают.
+- Дедлайн: **01.07.2026** — обязательная передача выбытия через ККТ.
+
+**Роли систем (по ТЗ + code-verify 2026-07-01):**
+- **gloriaots (ОТС, .NET)** — **центральный участник контура марок** (исправлено 2026-07-01): хранит марку (`OrderGood.DataMatrix`), строит КМ (`MarkUtils`), сам запрашивает криптохвост у WebGJISMP (`/api/KM/GetKMFull?from=OTS`), принимает permission-queue РР, отдаёт `GoodsMark`/`GoodsMarkCryptotail`/`good_mark_validation_*` в Kafka → ИС → OMS.
+- **OMS Starfish** — snapshot beauty при создании заказа, `markable`/`markingCode`, хранит `datamatrixCode` на позиции после pick (INT 65.132.4 / 132.0.94). Конфликт **OQ-OMS-01**: INT 65.132.4 сейчас кладёт `good_id_mark` (6/13) в `datamatrixCode`, а beauty требует 24 + `good_id_mark` 6 отдельно.
+- **ИС (avg-integration-service)** — транспорт OTS(gloriaots)→OMS (INT 65.132.4, `TransferService`) и Catalog→OMS (136.132.1); плюс собственный вызов `WebGjISmpClient::getKMFull`. Checkout (132.0.6) и 1С АРМ (132.24.1) минуют ИС.
+- **WebGJISMP** — хранилище марок, криптохвост (вызывают gloriaots и ИС), отчёт о нанесении, verify.
+
+**Дорабатываемые INT:** `27.136.5` (mark_type в SKU), `136.132.1` (markable в OMS), `65.132.4` (OTS→OMS КМ), `132.0.94` (обновление КМ), `97.132.1`/`132.0.102` (WebGJISMP↔OMS), `132.24.1` (OMS↔1С АРМ), INT-M-08 (`/api/v3/utilisation`), INT-M-10 (`api/Ref/TGChZ`, ТГ chemistry, код типа марки 1522).
 
 ---
 
@@ -236,5 +267,5 @@ Confluence **`60696316`** (BP-4.3, серия BP-4 «Комплектация з
 **E-com:** `81989395` (R-10 криптохвост) · `130145593` (использование марок в заказах) · `130133580` (GJISMP→OTS валидация) · `60696318` (BP-4.4 чеки)
 **Верификация:** `165407120` · `130131200` · `165406831` · `149750417` · `165388354` · `165404419` · `165403769`
 **Lifecycle/1С:** `15977939` · `89984131` · `118313917` · `118313951` · `130141896` · `165407495` · `82000156`
-**Регионы/категории:** KZ `165404571`/`165404000`/`165404828` · НШ `165405524`/`165405070` · Beauty `165406767`/`165406718`/`165406772`/`165405413`/`165404528`/`165397174` · multi-package `165406777`
+**Регионы/категории:** KZ `165404571`/`165404000`/`165404828` · НШ `165405524`/`165405070` · Beauty (OPSOMN001-247) корень `165406763` + ТЗ `165408124`/`165408218`/`165408217`/`165408096`/`165397174` · multi-package `165406777`
 **Операционная (не ЧЗ):** `60696316` (BP-4.3) · `60696309` (BP-4)

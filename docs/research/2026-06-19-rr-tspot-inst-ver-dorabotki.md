@@ -19,11 +19,13 @@
 
 Оси **ортогональны**: предоплаченный заказ бывает и FF, и SFS. «Онлайн‑оплата» — **общий знаменатель обоих путей**, а не признак SFS. COD — отдельный кейс (реальный криптохвост из WebGJISMP, риск `CHECKED_INVALID`), вне данного скоупа тега 1265.
 
-## Терминология (важно — снять коллизию)
+> **⚠️ CORRECTION 2026-07-01 (критично):** блок «Терминология» ниже был НЕВЕРЕН. **ОТС = `gloriaots`** (.NET, `platform/gloriaots/gloriaots`, в клонах) — именно он принимает `permission-queue` и ведёт марки. Прежний вывод «ОТС=Starfish, gloriaots не участвует, репозиторий не в клонах» — артефакт поиска инструментом, уважающим `.gitignore` (вложенные репо `platform/*/` игнорируются → ложные «0 совпадений»). Перепроверено `rg --no-ignore-vcs`. Ниже блок сохранён с исправлениями; контур марки косметики — `research/2026-07-01-beauty-marking-process.md`.
 
-- **«ОТС»** в маркировочных доках = **Starfish** (`ots.gloria-jeans.ru`, элемент `OTS-Starfish` на схемах). Это система, принимающая `permission-queue` и ведущая статусы заказа (`ORDER_PICKUP`/`PICKING`/`DELIVERING`).
-- **.NET `gloriaots`** (Order Transport System) в этом контуре **НЕ участвует** — проверено по коду: ноль упоминаний `permission`/`Mark`/`Validation`/`1265` во всём репозитории.
-- **OMS** — система формирования чека `full_payment` и выгрузки в 1С.
+## Терминология (ИСПРАВЛЕНО)
+
+- **«ОТС» = `gloriaots`** (.NET Order Transport System, **в клонах**). Принимает `permission-queue` (RabbitMQ `MarkPermissionRequestedEvent`), строит КМ (`MarkUtils`), сам запрашивает криптохвост у WebGJISMP (`/api/KM/GetKMFull?from=OTS`), ведёт статусы (`ORDER_PICKUP`/`DELIVERING`/`COMPLETED`), публикует статус+марку в Kafka → ИС → OMS. Код: `OrderToPickup.cs`, `ResultConversionService.cs`, `OrderIntegrationResult.cs`, `ApiClients/WebGjIsmp/`.
+- **~~.NET gloriaots НЕ участвует~~** — неверно (см. выше). gloriaots и есть ОТС.
+- **OMS (Starfish, Java)** — формирование чека `full_payment`, выгрузка в 1С; с ОТС общается **через Интеграционный сервис**.
 
 ---
 
@@ -35,7 +37,7 @@
 flowchart LR
     CHZ["ГИС МТ / ЛМ ЧЗ\n(офлайн → inst, version)"]
     WEB["WebGJISMP (WEBJSMP)\nСервис Марок"]
-    OTS["ОТС (Starfish)\nприёмник permission-queue"]
+    OTS["ОТС (gloriaots)\nприёмник permission-queue"]
     OMS["OMS\n(чек full_payment)"]
     YOO["YooKassa → ATOL → ОФД"]
     CHZ --> WEB
@@ -49,7 +51,7 @@ flowchart LR
 | # | Система | Что доработать | Где / ссылка |
 |---|---|---|---|
 | 1 | **WebGJISMP** (Сервис Марок, DEVLBL001) | Добавить `inst` и `Ver` в JSON сообщения `permission-queue` (только в аварийном/офлайн режиме). Обновить контракт интеграции. | INT 97.65.5 — Confluence `130133580` |
-| 2 | **ОТС** (Starfish, приёмник очереди) | Распарсить 2 новых необязательных поля; завести `good_mark_validation_instance` / `good_mark_validation_version`; **продублировать в каждый товар** заказа; на `≥ DELIVERING` добавить их per-item в статус‑сообщение к Integration. | Расширение OPSOMN‑11421. ⚠️ репозиторий ОТС **не в клонах**. |
+| 2 | **ОТС = `gloriaots`** (приёмник permission-queue) | Распарсить 2 новых необязательных поля; завести `good_mark_validation_instance` / `good_mark_validation_version` (рядом с uuid/timestamp в `OrderTrackingParams`, `OTSOrderResultV2`, `OrderIntegrationResult`); **продублировать в каждый товар** (`ResultConversionService`); на `≥ DELIVERING` добавить per-item в Kafka-статус. | Расширение OPSOMN‑11421. ✅ **репозиторий В клонах**: `platform/gloriaots/gloriaots` (реальные якоря есть). |
 | 3 | **Integration** (FF‑хоп) | Демон `TransferService::transferOtsOrderStatus()` читает per-item `good_mark_validation_*` из сообщения ОТС и шлёт в OMS — дописать `datamatrixCodeValidation.inst/version`. **У нас в клонах.** | `…/Exchange/Services/V1/Common/TransferService.php` (~стр. 2194) |
 
 ---
@@ -102,7 +104,7 @@ flowchart LR
 
 ## Открытые вопросы
 
-1. **Репозиторий ОТС‑Starfish** — не в локальных клонах; подтвердить парсинг `permission-queue` и формирование статус‑сообщения к Integration (путь 1, звено 2). Хоп Integration (`transferOtsOrderStatus`) — в клонах.
+1. ~~Репозиторий ОТС‑Starfish не в клонах~~ — **исправлено:** ОТС = `gloriaots`, в клонах. Парсинг `permission-queue` (`MarkPermissionRequestedEvent`) и формирование статус‑сообщения (`ResultConversionService` → Kafka `Starfish/Sender.cs`) — подтверждены кодом. Хоп Integration (`transferOtsOrderStatus`) — тоже в клонах.
 2. **Имена полей** в очереди (`inst`/`Ver`) vs розница (`inst`/`version`) — выровнять в контракте INT 97.65.5.
 3. **Код фискализации OMS** (тег 1265) — обфусцирован/вне читаемых клонов; нужна верификация по чеку (оговорка выше).
 4. **Демон `TransferService`** (2d) — уточнить, проходят ли SFS‑марки через него, или только через `updateStatusByArmV2`.

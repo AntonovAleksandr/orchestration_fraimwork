@@ -1,7 +1,7 @@
 # ТЗ: проброс атрибутов валидации марки `inst` / `version` (ТС ПИОТ, аварийный режим) — ОТС + Integration
 
 > **Дата:** 2026-06-19 · **Тип:** ТЗ на доработку · **Эпик:** OPSOMN‑10783 (Разрешительный режим маркировки для Еком)
-> **Системы в скоупе:** **ОТС (Starfish)**, **Integration Service** (`platform/integration`).
+> **Системы в скоупе:** **ОТС (= `gloriaots`, `platform/gloriaots`)**, **Integration Service** (`platform/integration`). ⚠️ Исправлено 2026-07-01: ОТС — это gloriaots, не Starfish (см. §4).
 > **Связанный research:** `docs/research/2026-06-19-rr-tspot-inst-ver-dorabotki.md`.
 
 ---
@@ -76,7 +76,7 @@
 ## 3. Скоуп
 
 **В скоупе:**
-- **ОТС (Starfish):** приём 2 новых полей из `permission-queue`, хранение, проброс далее (FF).
+- **ОТС (`gloriaots`):** приём 2 новых полей из `permission-queue`, хранение, проброс далее (FF).
 - **Integration:** проброс 2 новых полей в OMS в обеих ветках (FF — демон `transferOtsOrderStatus`; SFS — `updateStatusByArmV2`).
 
 **Вне скоупа:**
@@ -88,14 +88,14 @@
 
 ## 4. Глоссарий
 
-- **ОТС** — система Starfish (`ots.gloria-jeans.ru`), приёмник `permission-queue`, ведёт статусы заказа. **НЕ** .NET `gloriaots`.
+- **ОТС = `gloriaots`** (.NET Order Transport System, `platform/gloriaots/gloriaots`, **в клонах**) — приёмник `permission-queue` (RabbitMQ `MarkPermissionRequestedEvent`), ведёт статусы заказа и марки. ⚠️ **Исправлено 2026-07-01:** прежняя формулировка «ОТС = Starfish, НЕ gloriaots» была неверна (ошибка из-за gitignore-ловушки при grep). Доработку `inst`/`version` делать **в gloriaots** — якоря: `OTSOrderResultV2.cs`, `Infrastructure/OrderStatusNotifiers/Services/ResultConversionService.cs`, `Constants/OrderTrackingParams.cs`, `OTSModels/Results/OrderIntegrationResult.cs`, Kafka `OrderStatusNotifiers/Starfish/Sender.cs`, `Events/MarkPermissionRequestedEvent.cs`.
 - **FF** — отгрузка с регионального склада; проверка марки серверно в WebGJISMP.
 - **SFS** — отгрузка из магазина; проверка марки на кассе/АРМ через ТС ПИОТ.
 - **Тег 1265** — реквизит в составе отраслевого реквизита 1260 фискального чека.
 
 ---
 
-## 5. ТЗ для ОТС (Starfish)
+## 5. ТЗ для ОТС (= `gloriaots`, .NET, в клонах)
 
 ### 5.1 Приём из `permission-queue`
 
