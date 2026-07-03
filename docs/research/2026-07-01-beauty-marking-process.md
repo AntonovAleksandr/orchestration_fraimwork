@@ -33,24 +33,27 @@
 
 ---
 
-## 3. Сквозной процесс (as-is по коду, косметика serial=6, криптохвост нужен)
+## 3. Сквозной процесс (as-is по коду, косметика serial=6)
 
 ```mermaid
 sequenceDiagram
     participant WMS as "WMS / ТСД"
     participant OTS as "ОТС (gloriaots)"
     participant WEB as "WebGJISMP (чёрный ящик)"
+    participant TK as "ТК / перевозчик"
     participant IS as "ИС (Integration)"
     participant OMS as "OMS (Starfish)"
     participant ONEC as "1С"
 
-    WMS->>OTS: serial 6 (good_id_mark)
-    Note over OTS: собирает 010+GTIN+21+serial6 = 24
-    OTS->>WEB: GetKMFull (поход №1, пачкой)
-    WEB-->>OTS: полный КМ + криптохвост
-    Note over OTS: РЕЗКА №1 — Substring(18,13) на ответе<br/>для сопоставления по serial
-    OTS->>IS: Kafka: статус + serial (+ криптохвост)
-    Note over IS: serial в datamatrixCode как есть (без резки)
+    WMS->>OTS: serial (good_id_mark) — 6 косметика / 13 одежда
+    Note over OTS: в БД GoodsStatus.DataMatrix = serial<br/>(без криптохвоста)
+    Note over OTS: собирает 010+GTIN+21+serial (24 косметика / 31 одежда)
+    OTS->>WEB: GetKMFull (поход №1)
+    WEB-->>OTS: полный КМ + криптохвост (в память, не в БД)
+    Note over OTS: РЕЗКА №1 — Substring(18,13) при сопоставлении<br/>ответа с позицией (для косметики ломается)
+    OTS->>TK: newOrderParams + криптохвост (накладная/отгрузка ТК)
+    OTS->>IS: Kafka: статус + serial + validation (uuid/ts)<br/>БЕЗ криптохвоста
+    Note over IS: good_id_mark → datamatrixCode как есть (без резки)
     IS->>WEB: GetKMFull (поход №2, MARKING-экспорт)
     WEB-->>IS: полный КМ + криптохвост
     Note over IS: перезаписывает datamatrixCode полным КМ
@@ -60,17 +63,21 @@ sequenceDiagram
 
 ### Пошагово
 
-1. **WMS → ОТС.** Приходит **serial 6** (`good_id_mark`). Резки нет.
-2. **ОТС собирает код.** `MarkUtils.BuildKmCode(serial, gtin)` = `010+GTIN+21+serial6` = **24 симв.** Это сборка (префикс), **не резка**.
-3. **ОТС → WebGJISMP (поход №1).** `OrderToPickup.BuildParamsWithMarksAndCrypto` → `WebGjIsmpClient.GetKmList` (`POST /api/KM/GetKMFull?from=OTS`), **1 обращение пачкой** по всем товарам. Получает по каждому **полный длинный КМ с криптохвостом**.
-4. **ОТС разбирает ответ — РЕЗКА №1.** Чтобы сопоставить вернувшийся код с позицией, извлекает serial из **ответа**: `WebGjIsmpResponse.GetMarkSerial() = km.Substring(18, 13)` → **хардкод 13**; сравнивает с `good_id_mark` (`OrderToPickup.cs:153`). Для косметики: `Substring(18,13)` = `serial6 + мусор` ≠ `6` → **не сопоставилось → криптохвост не привязался.** ❌
-5. **ОТС → Kafka → ИС.** Отдаёт `GoodsMark` (serial) + `GoodsMarkCryptotail`. Публикация — `OrderStatusNotifiers/Starfish/Sender.cs`.
-6. **ИС принимает статус.** `TransferService.transferOtsOrderStatus` кладёт `good_id_mark` в `datamatrixCode` **как есть, без резки** (`:2108-2110`); криптохвост из сообщения ОТС **не читает**.
-7. **ИС → WebGJISMP (поход №2).** На MARKING-экспорте `OrderService.fillCryptoDatamatrixCodes` снова собирает `010+GTIN+21+serial` (сборка) → `getKMFull` (`:4961-4996`) → **перезаписывает `datamatrixCode` полным КМ**.
-8. **ИС → OMS.** Отдаёт `datamatrixCode` (полный КМ). OMS **хранит как есть** (`Item.datamatrixCode`), в WebGJISMP не ходит, не режет.
-9. **ИС → 1С — РЕЗКА №2.** `AbstractOrderExport1CMutator:1165`: `if strlen(datamatrixCode) > 13 → substr(18, 13)`. Т.к. после шага 7 код длинный — режет **хардкодом 13** → для косметики `serial6 + мусор`. ❌
+1. **WMS → ОТС.** Приходит **serial** (`good_id_mark`) — 6 у косметики / 13 у одежды. В БД `GoodsStatus.DataMatrix` хранится **только serial, без криптохвоста**. Резки нет.
+2. **ОТС собирает код.** `MarkUtils.BuildKmCode(serial, gtin)` = `010+GTIN+21+serial` (24 косметика / 31 одежда). Это сборка (префикс), **не резка**.
+3. **ОТС → WebGJISMP (поход №1).** `OrderToPickup.BuildParamsWithMarksAndCrypto` → `WebGjIsmpClient.GetKmList` (`POST /api/KM/GetKMFull?from=OTS`). Получает **полный КМ с криптохвостом** и пишет его в `good_id_mark_cryptotail` **в памяти** (в БД не сохраняется).
+4. **ОТС разбирает ответ — РЕЗКА №1.** Чтобы сопоставить вернувшийся код с позицией, извлекает serial из **ответа**: `WebGjIsmpResponse.GetMarkSerial() = km.Substring(18, 13)` → **хардкод 13**; сравнивает с `good_id_mark` (`OrderToPickup.cs:153`). Для косметики `Substring(18,13)` = `serial6 + мусор` ≠ `6` → **не сопоставилось → криптохвост не привязался.** ❌
+5. **Обогащённые параметры (с криптохвостом) → ТК/перевозчику.** `tkOrderManager.UpdateOrder(newOrderParams)` (`OrderToPickup.cs:63`, `tkOrderManager` = **`IShipmentServiceFacade`**). Криптохвост нужен для **накладной/отгрузки в ТК** — сюда, а НЕ в OMS.
+6. **ОТС → Kafka → ИС.** Уведомление строится из **`ctx.OtsOrderParams` (исходные)** — `OTSOrderResultBuilder.Create(ctx.OtsOrderParams)` (`:69`) → `StarfishOrderStatusNotifier` → `Sender`. В Kafka уходит **serial (`good_id_mark`) + validation (`good_mark_validation_uuid/timestamp`), но НЕ криптохвост** (он был только в `newOrderParams`, ушедших в ТК).
+7. **ИС принимает статус.** `TransferService.transferOtsOrderStatus` кладёт `good_id_mark` в `datamatrixCode` **как есть, без резки** (`:2108-2110`); криптохвоста в сообщении ОТС и нет.
+8. **ИС → WebGJISMP (поход №2).** На MARKING-экспорте `OrderService.fillCryptoDatamatrixCodes` снова собирает `010+GTIN+21+serial` → `getKMFull` (`:4961-4996`) → **перезаписывает `datamatrixCode` полным КМ** для OMS.
+9. **ИС → OMS.** Отдаёт `datamatrixCode` (полный КМ). OMS **хранит как есть** (`Item.datamatrixCode`), в WebGJISMP не ходит, не режет.
+10. **ИС → 1С — РЕЗКА №2.** `AbstractOrderExport1CMutator:1165`: `if strlen(datamatrixCode) > 13 → substr(18, 13)`. Код длинный → режет **хардкодом 13** → для косметики `serial6 + мусор`. ❌
 
-> ⚠️ **По коду выходит ДВА обращения в WebGJISMP** (шаги 3 и 7), причём ИС не переиспользует криптохвост от ОТС. Нужно проверить — нет ли лишнего дублирования и какой из походов реально питает OMS.
+> **Два `GetKMFull` — это НЕ дубль, а разные потребители криптохвоста:**
+> - **поход №1 (ОТС)** → криптохвост для **ТК/перевозчика** (накладная, шаг 5);
+> - **поход №2 (ИС)** → криптохвост для **OMS** (шаг 8).
+> ОТС в Kafka криптохвост **не передаёт**, поэтому ИС считает его сам. Стоит проверить, нельзя ли переиспользовать один запрос, но функционально это два независимых потока.
 
 ---
 
@@ -101,11 +108,11 @@ sequenceDiagram
 
 | # | Система | Что сделать | Где (файл/точка) | Зачем |
 |---|---|---|---|---|
-| 1 | **ОТС (`gloriaots`)** | **Резка №1:** заменить хардкод `Substring(18, 13)` на структурный разбор serial (по `km_without_tail` / до `GS`), длина сама 6/13 | `WebGjIsmpResponse.cs:51-54` (`GetMarkSerial`) + сопоставление `OrderToPickup.cs:153` | иначе serial из ответа WebGJISMP = 13 (`serial6+мусор`) ≠ пришедшему 6 → **криптохвост не привяжется** |
+| 1 | **ОТС (`gloriaots`)** | **Резка №1:** заменить хардкод `Substring(18, 13)` на структурный разбор serial (по `km_without_tail` / до `GS`), длина сама 6/13 | `WebGjIsmpResponse.cs:51-54` (`GetMarkSerial`) + сопоставление `OrderToPickup.cs:153` | иначе serial из ответа WebGJISMP = 13 (`serial6+мусор`) ≠ пришедшему 6 → **криптохвост не привяжется к позиции**. Зона влияния — **отгрузка/накладная в ТК** (`tkOrderManager.UpdateOrder`), НЕ фискалка OMS (у OMS свой криптохвост через ИС) |
 | 2 | **ИС (`Integration`)** | **Резка №2:** заменить `substr(18, 13)` при выгрузке в 1С на корректный разбор serial — **по признаку из PIM/Catalog** (`markable` / товарная группа; `categoryName` уже синкается) либо структурно по длине | `AbstractOrderExport1CMutator.php:1165`; источник признака — `CatalogClient` / `pullProductCustomAttributes` | для косметики (полный КМ) «одёжный» рез 13 кладёт `serial6+мусор` в `serial_number` 1С. На стороне ИС признак ТГ доступен из каталога (в рамках плановых PIM-доработок) |
 | 3 | **OMS (`Starfish`)** | **Доработок нет.** Хранит `datamatrixCode` (строка) как есть; поля марки/валидации уже заведены | `Order/.../entities/Item.java:61-79`, `ItemConverter.java` | в WebGJISMP не ходит, не режет; фискализация уже кладёт марку в чек (`pay-service/OnlinePaymentServiceImpl.java:304-319`) |
 | 4 | **WMS → ОТС** (контракт, **не наша разработка**) | Убедиться, что для косметики в ОТС приходит **чистый serial 6** (не 24, не 13-с-Z) | вход `good_id_mark` ← `DataMatrix` статуса WMS | ОТС/ИС собирают `010+GTIN+21+serial`; иной формат ломает склейку |
-| — | **Проверка** | Устранить/подтвердить **двойной поход в WebGJISMP** (ОТС шаг 3 + ИС шаг 7) | `OrderToPickup.cs` (ОТС) + `fillCryptoDatamatrixCodes` (ИС) | возможно дублирование запроса криптохвоста |
+| — | **Проверка (не бага)** | Два `GetKMFull` — **разные потребители, не дубль:** ОТС→криптохвост для **ТК** (шаг 5), ИС→криптохвост для **OMS** (шаг 8). ОТС в Kafka крипто не кладёт. Проверить, можно ли переиспользовать один запрос | `OrderToPickup.cs:63` (ТК) + `fillCryptoDatamatrixCodes` (OMS) | оптимизация, не блокер |
 
 **Суть:** обе доработки (1 и 2) — это **снятие «одёжного» хардкода 13**. OMS не трогаем.
 
