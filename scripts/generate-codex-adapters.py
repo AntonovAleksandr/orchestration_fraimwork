@@ -51,8 +51,9 @@ def toml_string(value: str) -> str:
 
 
 def toml_multiline(value: str) -> str:
-    escaped = value.replace('"""', '\\"\\"\\"')
-    return f'"""\n{escaped}\n"""'
+    if "'''" in value:
+        return toml_string(value)
+    return f"'''\n{value}\n'''"
 
 
 def codex_instructions(body: str) -> str:

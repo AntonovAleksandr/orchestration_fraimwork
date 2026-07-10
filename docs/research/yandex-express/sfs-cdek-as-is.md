@@ -565,118 +565,28 @@ Exchange:
 
 Вывод: OTS не является участником as-is SFS CDEK исполнения.
 
-## Последствия для Яндекс Express SFS
+## Как использовать AS-IS для Яндекс Экспресс
 
-Если Яндекс Express должен быть аналогом SFS CDEK, то основные зоны изменений:
+Этот документ описывает локальную версию CDEK SFS и остается эталоном магазинного lifecycle, но не спецификацией новой версии Starfish24.
 
-### OMS / Delivery
+Актуальные выводы:
 
-Нужно подтвердить/сделать:
+- Яндекс Экспресс должен сохранить SFS reserve/assembly/handover/status flow.
+- `yandexNextDayDelivery` не является кандидатом: это отдельный складской продукт.
+- По сообщению Starfish24, Yandex Express capability уже существует в новых версиях OMS и требует настройки 1–2 недели.
+- Поэтому локальные CDEK-specific BPMN gateway используются как acceptance checklist, а не как доказательство обязательной разработки OMS со стороны e-commerce.
+- E-commerce должен получить exact interval/order contract и адаптировать Integration, customer-api-web, Site и Mobile.
+- Retail/ARM/1C должен подтвердить, что carrier identity не ломает существующую сборку и выдачу курьеру.
+- OTS остается вне target, если тестовый order route Starfish24 подтверждает экспорт SFS в `1c-cbr`.
 
-- carrier id для Яндекс Express;
-- delivery interval должен отдавать этот carrier id;
-- `dispatchProcess` должен запускать carrier registry для нового carrier;
-- `carrierRegistryProcess` должен знать новый carrier:
-  - таймер вызова;
-  - путь вызова курьера;
-  - путь проверки статуса вызова;
-- Delivery service должен уметь вызвать Яндекс:
-  - либо существующий Yandex courier/cargo client;
-  - либо новый `CourierRequestService`;
-  - matching `CarrierEnum`;
-  - конфиги URL/token/legal entity;
-- `releaseProcess` gateway "SFS и CDEK?" нужно расширить, иначе `COMPLETED` item update останется только для CDEK.
+Обязательный открытый вопрос Starfish24:
 
-### Integration
+> Предоставить пример delivery interval и OMS order из новой версии с Яндекс Экспресс: точные carrier/tariff/delivery/fulfillment ids, source store, dynamic price, prepaid restriction, timezone/working-hours semantics и quote TTL.
 
-Нужно:
-
-- принять carrier id из выбранного интервала;
-- добавить mapping `delivery + sfs + <yandex express carrier> -> delivery type code`;
-- добавить CBR mapping для export `1c-cbr`;
-- проверить `DeliveryGoodIdMap` для строки доставки;
-- проверить обратные статусы ARM: они carrier-agnostic, но зависят от того, что ARM сможет импортировать/выдать заказ как новую ТК.
-
-### ARM / Gloria Retail
-
-Если текущий main действительно является тем, что будет дорабатываться:
-
-- добавить новую ТК в `Tk`;
-- UI-кнопку рядом с CDEK;
-- убрать жесткий `Tk.CDEK` при создании SFS `OrderDocument`;
-- научить импорт определять transport company по данным из OMS/Integration;
-- проверить barcode validation;
-- проверить `ВыдачаКурьеру`/`ВозвратОтКурьера`, если в документе нужна новая ТК.
-
-Но по вводной из расследования есть вероятность, что розница уже делала Яндекс/KSE в других ветках или задачах. Поэтому перед планированием розничной части нужно проверить remote branches и Jira/Confluence.
-
-### 1C
-
-Нужно подтвердить:
-
-- получает ли 1C документы `ВыдачаКурьеру` из Rabbit;
-- требуется ли отдельный справочник/код ТК;
-- участвует ли 1C в текущем магазинном UI или только в учетном контуре.
-
-## Открытые вопросы
-
-1. Какая точная строка carrier id для Яндекс Express SFS в OMS?
-2. Должен ли Яндекс Express использовать существующий `yandex`, `yandexNextDayDelivery`, `gjexpress` или новый id?
-3. Есть ли уже в OMS Delivery готовый `CourierRequestService` для Яндекс Express, или текущий Yandex код только для других сценариев?
-4. Какой статус должен ставиться после вызова Яндекс курьера: тот же `ORDER_FOR_SHIPPING`?
-5. Нужно ли расширять `carrierRegistryProcess` или розница уже сделала альтернативный процесс?
-6. Должен ли ARM получать transport company из OMS response, и есть ли это поле сейчас в `/integration/orders/points` presenter?
-7. Кто является потребителем Rabbit `ВыдачаКурьеру`, и нужны ли изменения в 1C для новой ТК?
-
-## Команды для дальнейшей проверки
-
-### OMS carrier registry / courier call
-
-```bash
-cd /Users/zak/Projects/GJ-Ecommerce
-
-rg -n "carrierRegistryProcess|carrierRegistryActivity|carrierCourierCall|couriercall/request|carrierId == 'cdek'|carrierId == 'gjexpress'" \
-  platform/starfish24/awg/bpmn-process/process/gloriajeans \
-  platform/starfish24/core/Camunda/src/main/java \
-  platform/starfish24/core/camunda-worker/src/main/java \
-  platform/starfish24/core/Delivery/src/main/java \
-  -g '!**/target/**'
-```
-
-### ARM SFS CDEK hardcode
-
-```bash
-cd /Users/zak/Projects/GJ-Ecommerce
-
-rg -n "Tk.CDEK|PICKUP_SFS|READY_FOR_DELIVERY|finishIssuingOrders|getOrdersForDelivery|orders/status/1c|orders/points" \
-  platform/arm/gloria-jeans-orders/src/main/java \
-  platform/arm/gloria-jeans-ui-server/src/main/java \
-  platform/arm/gloria-jeans-core/src/main/java \
-  -g '!**/target/**'
-```
-
-### Integration mappings
-
-```bash
-cd /Users/zak/Projects/GJ-Ecommerce
-
-rg -n "SFS_CDEK|SFS_GLORIAJEANS_EXPRESS|yandexNextDayDelivery|gjexpress|DeliveryTypeCodeMapByRules|DeliveryGoodIdMap|updateStatusByArmV2" \
-  platform/integration/integration/www/app/Service \
-  -g '!**/vendor/**'
-```
-
-### OTS exclusion check
-
-```bash
-cd /Users/zak/Projects/GJ-Ecommerce
-
-rg -n "fulfillmentType == 'sfs'|destination\">ots|destination\">1c-cbr|WAIT_EXPORT_TO_WAREHOUSE" \
-  platform/starfish24/awg/bpmn-process/process/gloriajeans/releaseProcess.bpmn \
-  platform/starfish24/awg/bpmn-process/process/gloriajeans/exportForPicking.bpmn
-```
+Детальный target и нарезка находятся в `sfs-yandex-target-process.md` и `implementation-slices.md`.
 
 ## Риски интерпретации
 
-- Документ построен по локальным main/current branches. Если розница делала Яндекс/KSE в feature branches, это не отражено в main-коде ARM.
+- Документ построен по локальным main/current branches. Новая версия Starfish24 и retail feature/release branches могут содержать более свежую реализацию.
 - Настройки OMS могут отличаться по окружениям; для runtime-истины нужно проверять deployed config/settings.
 - В OMS есть несколько похожих компонентов Camunda: embedded Java delegates и external workers. Для бизнес-границы это не меняет вывод: вызов курьера идет через OMS/Delivery, не через ARM.

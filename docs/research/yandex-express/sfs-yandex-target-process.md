@@ -1,299 +1,214 @@
-# SFS Yandex target process: целевая схема интеграции
+# Yandex Express SFS: target process
 
-Дата: 2026-06-28
+Дата актуализации: 2026-07-10
 
-Цель документа: описать целевой процесс подключения Яндекс-доставки для SFS, если carrier в OMS остается существующим `yandexNextDayDelivery`, а для учетного/магазинного контура вводится новый тип доставки SFS. Это продолжение `sfs-cdek-as-is.md`.
+## Цель
 
-Важно: документ фиксирует текущую рабочую гипотезу. Предыдущая заметка `docs/research/2026-06-25-yandex-express-sfs-investigation.md` рассматривала вариант с отдельным express carrier (`gjexpress` / условный `yandexExpress`). После уточнения этот вариант считаем устаревшей развилкой: carrier не новый, новый именно delivery type для SFS.
+Добавить отдельный пользовательский способ «Яндекс Экспресс», сохранив магазинный SFS lifecycle: магазин получает, собирает и передает заказ курьеру; Яндекс выполняет доставку клиенту.
 
-## Краткий вывод
+`yandexNextDayDelivery` полностью исключен из target: это доставка со склада в ПВЗ.
 
-Если использовать `yandexNextDayDelivery` как ТК для SFS, то с точки зрения ecom это не "еще один OTS/Yandex warehouse flow", а расширение существующего SFS-процесса:
+## Архитектурное решение
 
-- Site/Mobile/customer-api-web должны увидеть и создать SFS-интервал с `carrierId = yandexNextDayDelivery`.
-- Integration должен передать заказ в OMS как `delivery + sfs + yandexNextDayDelivery`.
-- Integration должен замапить такую комбинацию в новый справочный тип доставки, например `SFS_YANDEX`, а не в существующий `YANDEX = 10`.
-- OMS/Camunda должен вести SFS-заказ по магазинному процессу, но иметь отдельную ветку вызова/регистрации Яндекс-курьера.
-- OMS Delivery уже содержит часть поддержки `yandexNextDayDelivery` для расчета/регистрации/отмены/трекинга заказа, но в найденном коде нет `CourierRequestService` и `CallCourierStatusService` для `yandexNextDayDelivery`.
-- ARM/Gloria Retail должен уметь принять SFS-заказ с новой ТК/типом и выполнить выдачу курьеру; текущая main-ветка, которую мы смотрели, для SFS явно CDEK-only.
-- OTS в SFS-процесс не добавляем.
+- Frontend method: отдельный `express` рядом со стандартной courier delivery.
+- OMS carrier: отдельный carrier из новой версии Starfish24; точная строка открыта.
+- Fulfillment: `sfs`.
+- OMS delivery type: ожидаемо `delivery`, но фиксируется только после payload Starfish24.
+- Order lifecycle: общий SFS lifecycle, carrier-specific транспортная часть принадлежит Starfish24.
+- Retail: тот же операционный процесс магазина, но carrier/учетный mapping должен быть распознан.
+- OTS: вне target, пока Starfish24 не покажет обратное в реальном order route.
 
-## Целевая схема
+## Source status
+
+Подтверждено локальным e-commerce кодом:
+
+- V4 Integration переносит carrier/fulfillment из server-side selected interval;
+- Integration не знает отдельный Yandex Express carrier и не имеет его SFS/CBR mapping;
+- customer-api-web относит к Express только `gjexpress`;
+- Site и Mobile не имеют завершенного активного Express delivery flow.
+
+Получено от Starfish24, но требует contract evidence:
+
+- интеграция Яндекс Экспресс реализована в новых OMS-версиях;
+- GJ требуется настройка, ориентир 1–2 недели.
+
+Локальные BPMN `dispatchProcess`, `carrierRegistryProcess`, `releaseProcess` остаются AS-IS evidence, но не являются доказательством target version Starfish24.
+
+## Target flow
 
 ```mermaid
 flowchart TD
-    CHK["Site / Mobile checkout"] --> CAW["customer-api-web"]
-    CAW -->|"delivery intervals"| IS_INT["Integration: delivery intervals"]
-    IS_INT --> OMS_DELIVERY["OMS Delivery / logistics rules"]
-
-    CHK -->|"create order"| IS_CREATE["Integration: /integration/v4/order/create"]
-    IS_CREATE -->|"fulfillmentTypeId=sfs; carrierId=yandexNextDayDelivery"| OMS_ORDER["OMS createOrder"]
-
-    OMS_ORDER --> BPMN["OMS Camunda SFS processes"]
-    BPMN -->|"SFS export"| IS_EXPORT["Integration: /order/export"]
-    IS_EXPORT -->|"new SFS_YANDEX delivery type"| CBR["1C CBR / retail accounting"]
-
-    BPMN -->|"carrier-specific registry/call"| OMS_CARRIER["OMS Delivery carrier API layer"]
-    OMS_CARRIER -->|"Yandex order/claim/courier flow"| YANDEX["Yandex Delivery"]
-
-    ARM_PULL["ARM / Gloria Retail import"] -->|"POST /integration/orders/points"| IS_POINTS["Integration orders/points"]
-    IS_POINTS --> OMS_ORDER
-    ARM_UI["ARM: выдача заказа курьеру"] -->|"POST /integration/orders/status/1c"| IS_STATUS["Integration updateStatusByArm"]
-    IS_STATUS --> OMS_ORDER
+    U["Site / Mobile"] --> BFF["customer-api-web"]
+    BFF --> INT["Integration delivery/pre-checkout"]
+    INT --> OMSL["Starfish24 OMS Logistics"]
+    OMSL --> RANK["SFS stores: fullness desc, distance asc"]
+    RANK --> HOURS{"Store open and enough time before close?"}
+    HOURS -->|No| NOFFER["No Express offer"]
+    HOURS -->|Yes| YQ["Yandex dynamic quote"]
+    YQ -->|Unavailable| NOFFER
+    YQ -->|Available| OFFER["Express interval: store, price, prepaid, TTL"]
+    OFFER --> BFF
+    BFF --> CARD["Separate Yandex Express card"]
+    CARD --> COMMIT["Server-side order commit/revalidation"]
+    COMMIT -->|Offer valid| OMSO["OMS order: SFS + Yandex Express carrier"]
+    COMMIT -->|Expired/unavailable| UX["Ask client to choose delivery again"]
+    OMSO --> STORE["Existing store SFS assembly"]
+    STORE --> YC["Starfish24 carrier registration/courier call"]
+    YC --> HANDOVER["Store hands order to Yandex courier"]
+    HANDOVER --> DELIVERY["Delivery / status / cancellation"]
 ```
 
-## Договоренность по идентификаторам
+## Availability and source-store selection
 
-### Carrier
+Starfish24/OMS Logistics is source of truth. Frontend and Integration must not calculate store opening hours or select a store independently.
 
-Используем существующий OMS carrier:
-
-- `yandexNextDayDelivery`
-- Integration enum: `platform/integration/integration/www/app/Service/Consts/Enums/Delivery/Oms/CarrierIdEnum.php`
-- OMS Delivery enum: `platform/starfish24/core/Delivery/src/main/java/com/starfish24/delivery/service/carrier/CarrierEnum.java`
-
-Это важно, потому что в OMS Delivery уже есть реализации под этот carrier:
-
-- `YandexNextDayDeliveryCalculationServiceImpl`
-- `YandexAnotherDayOrderRegistrationServiceImpl`
-- `YandexAnotherDayOrderCancellationServiceImpl`
-- `YandexAnotherDayTrackingRequestServiceImpl`
-- `YandexClientImpl`
-
-### Delivery type
-
-Нужен новый справочный тип доставки для комбинации:
+Eligibility:
 
 ```text
-deliveryTypeId = delivery
-fulfillmentTypeId = sfs
-carrierId = yandexNextDayDelivery
+store can assemble selected basket
+AND store participates in pilot/Yandex Express
+AND store is open in source-store timezone
+AND now + picking SLA + handover buffer <= store close
+AND Yandex returned a valid quote
+AND availablePaymentTypes = [prepaid]
 ```
 
-Существующий `DeliveryTypeCodeEnum::YANDEX = 10` использовать для SFS нельзя без подтверждения 1C/retail: он уже используется как отдельный Яндекс-тип не-SFS сценария. Для SFS рядом с текущими кодами логично добавить новый тип, например:
+Selection priority:
 
-```text
-SFS_CDEK = 111
-SFS_PICKPOINT = 112
-SFS_RUSSIANPOST = 113
-SFS_GLORIAJEANS_EXPRESS = 114
-SFS_YANDEX = <новый код из справочника>
-```
+1. Quantity/fullness descending.
+2. Distance from store to client ascending.
+3. Applicable carrier tariff priority.
+4. Delivery date/time.
 
-Открытый вопрос: фактический код и название должен дать владелец справочника 1C/retail. Рабочее имя в ecom-документации: `SFS_YANDEX`, название: `SFS курьером Яндекс` или `SFS Яндекс Express`.
+Important edge cases:
 
-## Integration Service: ожидаемые изменения
+- warehouse availability must not suppress Express;
+- CDEK and Yandex Express may both be shown;
+- missing timezone/schedule should be fail-closed for Express, not treated as 24/7;
+- holiday/special schedule overrides regular hours;
+- an open store may still be ineligible near closing;
+- delivery to the client may finish after store close if the order was handed over before close.
 
-Integration не должен выбирать между CDEK и Yandex как операционный переключатель. Его роль в целевой схеме: принять уже выбранный carrier от checkout/OMS, корректно создать заказ и корректно отдать справочный тип в 1C/CBR/ecom export.
+## Starfish24 contract boundary
 
-Точки изменения:
+Starfish24 owns:
 
-- `DeliveryTypeCodeEnum.php`
-  - добавить новый `SFS_YANDEX = <код из справочника>`.
-- `DeliveryTypeCodeNameEnum.php`
-  - добавить имя для нового SFS-типа.
-- `DeliveryTypeCodeMapByRulesContract.php` в `GloriaJeans`
-  - добавить правило `DELIVERY + SFS + YANDEX -> SFS_YANDEX`;
-  - для barcode вероятно использовать существующий `CarrierBarcodeEnum::YANDEX`, но это нужно подтвердить с 1C/retail.
-- `DeliveryTypeCodeNameMapByRulesContract.php`
-  - добавить имя для `DELIVERY + SFS + YANDEX`.
-- `DeliveryTypeCodeMapByRulesContract.php` в `Cbr`
-  - добавить правило `DELIVERY + SFS + YANDEX -> SFS_YANDEX`.
-- `UserApi/Services/V1/Order/OrderService.php`
-  - в старом resolver-е SFS сейчас есть CDEK и `gjexpress`, но нет Yandex.
-- `UserApi/Mutators/V1/Order/OrderExportCbrMutator.php`
-  - добавить SFS Yandex для CBR export.
-- При необходимости проверить `OrderExportEcomMutator.php`
-  - если новый тип должен уходить в ecom/1C-ecom export, а не только CBR.
+- carrier and tariff configuration;
+- pilot availability and independent disable switch;
+- store ranking and working-hours/cutoff logic;
+- Yandex quote and its TTL;
+- prepaid restriction in the delivery option;
+- carrier registration/courier call/cancel/tracking;
+- OMS/Camunda state transitions and retries;
+- test-stand evidence that CDEK SFS is unchanged.
 
-Подтвержденные разрывы сейчас:
+Open question to ask Starfish24:
 
-- `CarrierIdEnum::YANDEX = 'yandexNextDayDelivery'` есть.
-- `DeliveryTypeCodeEnum::YANDEX = 10` есть.
-- `SFS_CDEK`, `SFS_PICKPOINT`, `SFS_RUSSIANPOST`, `SFS_GLORIAJEANS_EXPRESS` есть.
-- Правила `DELIVERY + SFS + YANDEX` не найдено.
-- `DeliveryGoodIdMap` уже содержит `YANDEX => 'UPR010640F0001'`, но это good_id доставки, а не доказательство готовности SFS-типа.
+> Provide one real test payload for delivery interval and resulting OMS order, including carrier/tariff/delivery/fulfillment ids, store id, dynamic price, payment types, interval timestamps, timezone semantics and offer expiration. Also identify the OMS version/configuration where this is supported.
 
-## OMS/Camunda: ожидаемые изменения
+Until this answer, all field names in target examples are placeholders.
 
-### 1. Не заводить OTS для SFS
+## Integration Service target
 
-По as-is SFS идет в магазинный контур, а не в OTS:
+### Pre-checkout and order create
 
-- `releaseProcess.bpmn`: `${fulfillmentType == 'sfs'}` ведет в экспорт `1c-cbr`.
-- OTS export остается в складских/других ветках.
+- Preserve the server-side selected interval as source of truth.
+- Pass exact `carrierId`, `carrierTariffId`, `fulfillmentTypeId`, interval id/store and cost to OMS.
+- Revalidate delivery option at commit.
+- Do not substitute CDEK automatically if Express disappeared.
+- Return a business error that lets Site/Mobile refresh delivery methods.
 
-Для Яндекс SFS это должно сохраниться.
+The active V4 code already assigns `fulfillmentTypeId`, `carrierId` and `deliveryIntervalId` from selected interval; expected work here is contract testing rather than carrier-specific branching.
 
-### 2. Отдельный процесс или отдельная ветка
+### Accounting/export
 
-Минимальная доработка: расширить существующий SFS/CDEK carrier registry на Yandex.
+After receiving Starfish24 and Retail/1C values:
 
-Более чистая доработка: сделать carrier-specific subprocess/ветку для Yandex SFS, если внешний протокол отличается от CDEK. По текущим признакам он отличается:
+- add a separate OMS carrier enum;
+- add/confirm `SFS_YANDEX_EXPRESS` accounting code and name;
+- add GloriaJeans and CBR mapping rules;
+- update active legacy V1 resolver/CBR mutator branches;
+- add/confirm ARM delivery good id/barcode mapping;
+- do not add OTS mapping for the SFS route;
+- regression-test CDEK SFS and historical Yandex Next Day.
 
-- CDEK SFS использует `CourierRequestService` через endpoint OMS Delivery `/carrier/{carrierId}/couriercall/request`;
-- для CDEK найден `CdekCourierRequestServiceImpl` и `CdekCallCourierStatusServiceImpl`;
-- для `yandexNextDayDelivery` найдены order registration/cancellation/tracking/calculation, но не найден `CourierRequestService` и `CallCourierStatusService`.
+## customer-api-web target
 
-Поэтому гипотеза про "отдельный процесс в Camunda" выглядит обоснованной, но точнее формулировать так:
+Support both contract generations:
 
-```text
-Нужна отдельная carrier-specific ветка в Camunda для SFS Yandex.
-Отдельный BPMN process нужен, если Yandex не может быть выражен теми же activity:
-carrierCourierCallActivity + carrierCourierCallTracking.
-```
+- old delivery response: classify the new carrier into `deliveryExpress`;
+- General Data: expose separate delivery method `express`;
+- do not classify `yandexNextDayDelivery` as Express;
+- fix `DeliveryType::toClientResponse()` for `EXPRESS`;
+- pass dynamic price, `prepaid`, interval/store and selected state;
+- keep warehouse courier options alongside Express;
+- on commit failure refresh methods and require explicit reselection.
 
-### 3. Файловые точки в BPMN
+Carrier classification should be an explicit allowlist/config or semantic backend field. A global rename of `EXPRESS_CARRIER_ID=gjexpress` is unsafe if GJ Express remains active.
 
-- `platform/starfish24/awg/bpmn-process/process/gloriajeans/releaseProcess.bpmn`
-  - gateway "SFS и CDEK?" сейчас проверяет `${fulfillmentType == 'sfs' && carrierId == 'cdek'}`;
-  - для Yandex надо решить, должен ли он вести себя как CDEK в этом gateway;
-  - если да, условие расширить до CDEK/Yandex или заменить на вычисляемый признак SFS courier carrier.
-- `platform/starfish24/awg/bpmn-process/process/gloriajeans/dispatchProcess.bpmn`
-  - SFS ветка запускает `carrierRegistryProcess`;
-  - есть особые условия для `carrierId == 'gjexpress'`;
-  - надо добавить маршрут для `carrierId == 'yandexNextDayDelivery'`.
-- `platform/starfish24/awg/bpmn-process/process/gloriajeans/carrierRegistryProcess.bpmn`
-  - сейчас carrier-specific условия найдены для `carrierId == 'cdek'`;
-  - надо добавить Yandex route или вынести в отдельный `carrierRegistryYandexSfsProcess`.
+## Site target
 
-### 4. OMS Delivery
+- Add `EXPRESS` to active delivery method/state contracts.
+- Render a separate card «Яндекс Экспресс» with SLA and dynamic price.
+- Reuse courier address where appropriate, but keep a distinct selected method/interval.
+- Never apply generic free-delivery threshold to Express.
+- Show only prepaid methods and reset previously selected COD.
+- Preserve both Express and standard courier cards.
+- Handle disappearing/expired offer without silent fallback.
+- Send analytics for impression, select, price, unavailable and order success/failure.
 
-Нужно подтвердить, какой API Яндекса должен использоваться для SFS:
+## Mobile target
 
-- если SFS Yandex должен создавать order/claim и дальше отслеживать order status, то надо переиспользовать/адаптировать `YandexAnotherDayOrderRegistrationServiceImpl` и tracking;
-- если SFS Yandex требует именно вызова курьера из магазина, аналогично CDEK intake, то в OMS Delivery не хватает реализации `CourierRequestService` под `yandexNextDayDelivery`;
-- если вызов курьера происходит не отдельным courier-call endpoint, а через создание/подтверждение заказа в Яндексе, Camunda activity должны отражать это явно, а не называться "Вызов курьера" по CDEK-смыслу.
+- Add Express method, route/screen mode, state and selection handling.
+- Reuse courier interval UI only if carrier/method identity remains distinct.
+- Implement the same price/payment/availability/stale-offer rules as Site.
+- Define compatibility for old app versions: backend must not auto-select an unsupported Express method.
+- Roll out behind server/config gating and collect versioned analytics.
 
-## Включение и отключение CDEK/Yandex для SFS
+The existing text label «Экспресс» is not evidence of implemented checkout support.
 
-Правильная точка переключения: не Integration.
+## Retail/ARM/1C target
 
-Рекомендуемая модель:
+The business requirement says the store process does not materially change. This still requires technical confirmation:
 
-- OMS Delivery/logistics rules отдают доступные SFS-интервалы по carrier;
-- CDEK и Yandex могут быть включены одновременно, по магазинам/городам/тарифам/датам;
-- checkout выбирает конкретный interval, а в заказ уходит конкретный `carrierId`;
-- Integration только мапит выбранную комбинацию в справочник.
-
-Почему не глобальный флаг в Integration:
-
-- Integration не владеет расчетом доступности интервалов;
-- в заказе уже есть `fulfillmentTypeId`, `carrierId`, `carrierTariffId`;
-- глобальный switch сломает сценарий, где часть магазинов работает на CDEK, часть на Yandex.
-
-Допустимый дополнительный guard в Integration:
-
-- временный feature flag "разрешить создание SFS_YANDEX" для безопасного rollout;
-- он не должен быть основным механизмом выбора ТК.
-
-## customer-api-web / фронт
-
-Риск: сейчас express-блок в customer-api-web завязан на `carrierId == 'gjexpress'`:
-
-- `CommonDeliveryData::EXPRESS_CARRIER_ID = 'gjexpress'`;
-- `isExpressDelivery()` возвращает true только для `gjexpress`.
-
-Если SFS Yandex должен отображаться как "Экспресс-доставка" отдельной кнопкой/блоком, то есть развилка:
-
-1. Считать `yandexNextDayDelivery` express carrier для UI.
-2. Не трогать express-блок, а показывать Yandex SFS как обычную курьерскую доставку с отдельным названием/интервалом.
-
-С учетом пользовательской постановки "Яндекс Express SFS" вероятнее нужен вариант 1, но он конфликтует с текущей жесткой проверкой `gjexpress`. Это отдельная задача customer-api-web/site/mobile, а не Integration.
-
-## ARM / Gloria Retail / 1C
-
-По найденному main-коду retail SFS сейчас выглядит CDEK-only:
-
-- import SFS orders создает документ с `Tk.CDEK`;
-- UI выдачи курьеру использует `cdek`;
-- `finishIssuingOrders` отправляет статус в OMS через Integration.
-
-Вводная по расследованию: розница делала тестовые доработки для КСЕ/Яндекс, но в main-ветке это не доказано. Для ecom-проекта нужно получить от retail команды:
-
-- новый код delivery type для SFS Yandex;
-- barcode/transport company id для 1C/ARM;
-- подтверждение, что import SFS order умеет `yandexNextDayDelivery`;
-- подтверждение, что кнопка "выдача заказа курьеру" и обратные статусы работают для Yandex;
-- целевую ветку/релиз retail, где это реализовано.
-
-## Целевой lifecycle
-
-1. OMS Delivery/logistics rules возвращает SFS-интервалы CDEK и/или Yandex в зависимости от включения carrier для магазина.
-2. customer-api-web/site/mobile показывает пользователю доступную доставку.
-3. При создании заказа Integration получает выбранный interval и передает в OMS:
-   - `deliveryTypeId = delivery`;
-   - `fulfillmentTypeId = sfs`;
-   - `carrierId = yandexNextDayDelivery`;
-   - `carrierTariffId = <из интервала>`.
-4. Integration при export/order mapping определяет новый справочный тип `SFS_YANDEX`.
-5. OMS release process ведет заказ по SFS-ветке и экспортирует его в `1c-cbr`.
-6. ARM/Gloria Retail забирает заказ из OMS через Integration `/integration/orders/points`, видит ТК Yandex и создает магазинный документ.
-7. OMS dispatch/carrier registry запускает Yandex-specific регистрацию/вызов курьера.
-8. Магазин собирает и выдает заказ курьеру.
-9. ARM отправляет статус в Integration через `/integration/orders/status/1c` или `/integration/v2/orders/status/1c`.
-10. Integration обновляет OMS order status и item statuses.
-11. OMS/Delivery получает дальнейшие статусы от Yandex или проверяет tracking по carrier-specific механике.
-
-## Гипотезы под проверку
-
-### H1. `yandexNextDayDelivery` можно использовать для SFS без нового carrier
-
-Что проверить:
-
-- OMS Delivery registration/tracking API подходит для отправки из магазина;
-- credentials/legal entity работают для магазинов, а не только склада;
-- тарифы/интервалы могут быть ограничены магазином.
-
-### H2. Нужен новый SFS delivery type, но не новый carrier
-
-Что проверить:
-
-- 1C/retail справочник содержит новый код;
-- CBR export ожидает именно новый delivery type;
-- barcode должен быть `CarrierBarcodeEnum::YANDEX` или новый.
-
-### H3. Camunda лучше расширять отдельной Yandex SFS веткой
-
-Что проверить:
-
-- может ли Yandex flow лечь в `carrierCourierCallActivity`;
-- есть ли готовая реализация courier-call в других ветках/релизах;
-- какой статус должен выставляться после успешной регистрации/вызова courier.
-
-### H4. Переключение CDEK/Yandex должно жить в OMS Delivery rules
-
-Что проверить:
-
-- где сейчас для SFS CDEK включаются магазины/тарифы;
-- есть ли админка/конфиг для carrier availability;
-- как отключить carrier для одного магазина без деплоя Integration.
-
-### H5. customer-api-web должен расширить понятие express
-
-Что проверить:
-
-- должен ли `yandexNextDayDelivery` попадать в express-блок ответа;
-- не используется ли `yandexNextDayDelivery` в других сценариях, где его нельзя показывать как express;
-- нужна ли классификация по `fulfillmentTypeId=sfs` + carrier, а не только по carrier.
-
-## Открытые вопросы
-
-- Какой точный код нового delivery type в справочнике 1C?
-- Какое пользовательское название должно быть у типа: "SFS курьером Яндекс", "Яндекс Express", другое?
-- Нужен ли отдельный courier-call в Yandex API или достаточно order registration/confirmation?
-- Кто владеет включением carrier по магазинам: OMS delivery config, logistics service, retail master data?
-- Нужно ли одновременно показывать CDEK и Yandex SFS, или всегда выбирать один carrier по правилу?
-- Какие статусы от Yandex должны менять OMS order/item statuses, а какие остаются информационными?
-- Есть ли retail-ветка с готовым Yandex SFS и как она называется?
-
-## Команды для продолжения расследования
-
-```bash
-rg -n "DELIVERY.*SFS.*YANDEX|SFS_YANDEX|yandexNextDayDelivery" platform/integration/integration/www/app/Service
-rg -n "yandexNextDayDelivery|carrierId == 'cdek'|carrierRegistryProcess|carrierCourierCall" platform/starfish24/awg/bpmn-process/process/gloriajeans
-rg -n "implements CourierRequestService|implements CallCourierStatusService|YANDEX_NEXT_DAY_DELIVERY" platform/starfish24/core/Delivery/src/main/java
-rg -n "EXPRESS_CARRIER_ID|isExpressDelivery|gjexpress|yandexNextDayDelivery" platform/ensi/apps/customers-api-web/app
-rg -n "Tk\\.CDEK|yandex|яндекс|courier|ВыдачаКурьеру" platform/1s8-enterprise platform/arm
-```
-
+- order import accepts the new carrier/accounting type;
+- store sees the usual SFS assembly task;
+- courier handover action is not CDEK-hardcoded;
+- delivery good/barcode is correct;
+- statuses return through the existing Integration route;
+- Yandex callbacks and ARM statuses do not conflict at finalization.
+
+If Retail can treat the carrier as ordinary SFS without a new accounting type, document that explicit decision and remove unnecessary Integration mappings.
+
+## Error handling
+
+| Situation | Expected behavior |
+|---|---|
+| Store closed / cutoff passed | OMS does not return Express offer. |
+| Missing store timezone/schedule | Fail closed for Express and alert on configuration. |
+| Yandex quote unavailable | Hide Express; leave other methods. |
+| Quote expires before commit | Reject Express selection as a business error; refresh methods. |
+| Dynamic price changes | Show refreshed price and require confirmation if contract requires it. |
+| Carrier registration fails after order creation | Starfish24 retry/incident/compensation contract; no silent CDEK switch. |
+| Cancellation after Yandex registration | Cancel external claim idempotently, then continue SFS compensation. |
+
+## Rollout
+
+1. Configure one test store per pilot timezone with Yandex Express disabled by default.
+2. Validate interval/order payload contract.
+3. Deploy backward-compatible Integration/BFF changes.
+4. Release Site and supported Mobile versions behind gating.
+5. Enable test stores, run E2E happy/cancel/stale-offer/closed-store cases.
+6. Enable pilot cities in waves; keep CDEK independently available.
+7. Rollback by disabling Starfish24 availability for new orders; existing orders continue their carrier lifecycle.
+
+## Open questions
+
+1. Exact payload and carrier/tariff/delivery identifiers from Starfish24.
+2. Exact OMS version and scope of the stated 1–2 week configuration.
+3. Whether quote TTL exists and how price change is represented.
+4. Minimum picking/handover buffer before store close.
+5. Holiday/special schedule source and freshness.
+6. Retail accounting code/name/barcode/good id decision.
+7. Site/Mobile launch waves and minimum supported app version.
+8. Final status owner when ARM and Yandex callbacks arrive in different order.

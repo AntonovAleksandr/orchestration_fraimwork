@@ -1,72 +1,67 @@
 # Yandex Express SFS research pack
 
-Дата: 2026-06-28
+Дата актуализации: 2026-07-10
+Основание: Jira `OPSOMN002-46`, локальный e-commerce код и уточнения владельца инициативы.
 
-Цель пакета: дать аналитикам и разработчикам компактный вход в задачу интеграции Яндекс-доставки для SFS, где текущая рабочая гипотеза такая:
+## Цель и границы
 
-- OMS carrier остается существующим `yandexNextDayDelivery`;
-- для SFS нужен новый справочный delivery type, условно `SFS_YANDEX`;
-- OTS в SFS-поток не добавляем;
-- включение CDEK/Yandex для SFS должно жить в OMS Delivery/logistics rules, а не в Integration.
+Нужно вывести в checkout отдельный способ **«Яндекс Экспресс»**: доставка день в день курьером домой из магазина по существующему SFS lifecycle.
 
-## Как читать
+Ключевое разграничение:
 
-0. `ONE-PAGER.md` - **для руководства**: суть, что готово, индикативные сроки (~3–4 нед оптимистично / ~5–8 нед с рисками), 5 блокеров. Опирается на материалы ниже.
-1. `sfs-cdek-as-is.md` - текущий рабочий SFS CDEK lifecycle: кто создает заказ, кто вызывает курьера, кто обновляет статусы.
-2. `sfs-yandex-target-process.md` - целевой SFS Yandex process и ключевые гипотезы.
-3. `code-space-mapping.md` - разные кодовые пространства и где может сломаться маппинг.
-4. `gap-matrix.md` - список разрывов между as-is и target process.
-5. `implementation-slices.md` - как раскладывать задачу по командам и подсистемам.
-6. `acceptance-and-test-plan.md` - приемочные сценарии и тестовые проверки.
+- `yandexNextDayDelivery` — существующая доставка со склада в ПВЗ; это не целевой carrier;
+- Яндекс Экспресс — отдельная интеграция/carrier Starfish24 для доставки из магазина клиенту;
+- `fulfillmentTypeId` целевого заказа — `sfs`;
+- стандартный CDEK SFS и Яндекс Экспресс должны сосуществовать как разные варианты в checkout;
+- складская комплектация не должна скрывать Express, если есть подходящая SFS-комплектация;
+- OTS не добавляется в target flow, если Starfish24 подтверждает текущий SFS-маршрут через `1c-cbr`.
 
-## Текущие выводы
+## Новая вводная по OMS
 
-Подтверждено кодом:
+Команда Starfish24 сообщила, что в новых версиях OMS интеграция Яндекс Экспресс уже реализована и для запуска требуется настройка сроком ориентировочно 1–2 недели.
 
-- Integration знает carrier `yandexNextDayDelivery`, но не имеет SFS-маппинга `DELIVERY + SFS + YANDEX`.
-- Integration уже имеет SFS-типы для CDEK/PickPoint/RussianPost/GJ Express.
-- OMS BPMN SFS-поток идет в `1c-cbr`, а не в OTS.
-- OMS carrier registry process сейчас содержит CDEK-specific условия.
-- OMS Delivery содержит часть Yandex Next Day поддержки, но не найден courier-call сервис, аналогичный CDEK.
-- customer-api-web считает express только carrier `gjexpress`.
-- main-код ARM/Gloria Retail, который был просмотрен, выглядит SFS CDEK-only.
+Статус этой вводной: **межкомандное заявление, требующее контрактного подтверждения**. Локальный клон OMS может быть старее целевой версии и используется только как AS-IS reference. В e-commerce scope не закладываем разработку Яндекс API или нового сквозного OMS-процесса, пока Starfish24 не сообщит обратное.
 
-Открыто:
+Обязательный открытый вопрос Starfish24:
 
-- точный код и название нового `SFS_YANDEX` в 1C/retail справочнике;
-- фактическая retail-ветка/релиз с Yandex SFS;
-- нужен ли отдельный Yandex courier-call или достаточно order registration/confirmation;
-- где именно операционно включается carrier по магазинам;
-- должен ли `yandexNextDayDelivery` попадать в express UI только для SFS или всегда.
+> Предоставить пример JSON delivery interval и созданного OMS order для настроенного Яндекс Экспресс: `carrierId`, `carrierTariffId`, `deliveryTypeId`, `fulfillmentTypeId`, `deliveryCost`, `availablePaymentTypes`, `dispatchWarehouseId`, даты/время и срок действия оффера.
 
-## Граница ответственности
+## Target business rules
 
-Ecom/Integration:
+- Пилот: Северо-Запад и Сибирь; точный список магазинов/городов открыт.
+- Источник исполнения: только магазин с SFS.
+- Выбор магазина: полнота комплектации по убыванию, затем дистанция до клиента по возрастанию; далее применимые приоритет тарифа и дата.
+- Отображение: отдельная карточка/строка «Яндекс Экспресс» рядом со стандартной доставкой.
+- Цена: динамическая из оффера OMS/Яндекса; фиксированные 299 ₽ и порог бесплатной доставки не применяются.
+- Оплата: только `prepaid`.
+- Доступность: Express показывается только если магазин открыт и успевает собрать и передать заказ курьеру до закрытия.
+- Если OMS не вернул валидный Express offer, кнопка не показывается.
+- Доступность и стоимость повторно валидируются при commit заказа.
 
-- корректно принять selected interval;
-- передать `delivery + sfs + yandexNextDayDelivery` в OMS;
-- замапить комбинацию в новый справочный тип;
-- не выбирать carrier вместо OMS Delivery/logistics.
+## Реальный e-commerce scope
 
-OMS/Camunda/Delivery:
+1. **Integration Service** — новый carrier code-space, учетный mapping для SFS/CBR/ARM, legacy resolvers и contract tests. V4 create-order уже переносит carrier/fulfillment из выбранного interval и должен остаться generic.
+2. **customer-api-web** — классификация нового carrier как `express`, response contracts старого и нового checkout, выбор interval, prepaid-only и commit.
+3. **Site** — новый delivery method/card, выбор Express interval, динамическая цена без free threshold, prepaid-only, analytics и stale-offer handling.
+4. **Mobile** — аналогичная полноценная поддержка; одной существующей строки «Экспресс» недостаточно.
+5. **Retail/ARM/1C** — подтвердить, что новый carrier/учетный тип принимается существующим SFS-процессом без операционного изменения магазина.
+6. **Starfish24** — настроить capability и подтвердить contract/availability/lifecycle на тестовом контуре.
 
-- вернуть доступные SFS Yandex интервалы;
-- вести SFS-заказ по правильному BPMN route;
-- зарегистрировать/вызвать Yandex courier/order;
-- обработать статусы/трекинг.
+Текущая оценка e-commerce `2–3 дня` из старой версии пакета больше не считается валидной: она не учитывала фактические доработки Site и Mobile.
 
-Retail/ARM/1C:
+## Как читать пакет
 
-- принять заказ с новым типом/ТК;
-- показать магазинный процесс выдачи курьеру;
-- отправить статусы обратно через Integration;
-- подтвердить справочные коды.
+1. `ONE-PAGER.md` — управленческое резюме и границы ответственности.
+2. `sfs-cdek-as-is.md` — текущий CDEK SFS lifecycle и локальный OMS AS-IS.
+3. `sfs-yandex-target-process.md` — целевой процесс и системные контракты.
+4. `code-space-mapping.md` — разграничение идентификаторов по системам.
+5. `gap-matrix.md` — подтвержденные разрывы и открытые контракты.
+6. `implementation-slices.md` — нарезка по Starfish24, Integration, BFF, Site, Mobile и Retail.
+7. `acceptance-and-test-plan.md` — бизнес-, contract- и E2E-приемка.
 
 ## Следующий практический шаг
 
-Перед разработкой собрать короткий sync с владельцами OMS и retail:
-
-- OMS: подтвердить Yandex flow в Delivery service и механизм включения carrier.
-- Retail/1C: подтвердить `SFS_YANDEX` code/name/barcode и ветку готовности ARM.
-- Ecom: решить UI-классификацию express для `yandexNextDayDelivery`.
-
+1. Получить от Starfish24 пример interval/order payload и точный `carrierId`.
+2. Получить от Retail/1C учетный код, delivery good id/barcode и подтверждение готовности существующего SFS flow.
+3. После фиксации контрактов оценить три параллельных e-commerce потока: Integration+BFF, Site, Mobile.
+4. Провести E2E на тестовом магазине в каждом часовом поясе пилота.

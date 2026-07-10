@@ -1,162 +1,171 @@
-# Acceptance and test plan: SFS Yandex
+# Acceptance and test plan: Yandex Express SFS
 
-Дата: 2026-06-28
+Дата актуализации: 2026-07-10
 
-Цель: определить, как понять, что интеграция SFS Yandex готова к rollout и не ломает SFS CDEK.
+## Preconditions
 
-## Предусловия
+- Starfish24 provided and approved interval/order payload contract.
+- Exact Express carrier/tariff identifiers are configured on test stand.
+- Retail/1C mapping decision is documented.
+- At least two test stores in different pilot timezones are configured.
+- Site and supported Mobile versions understand `method=express`.
+- CDEK remains enabled for regression/parallel availability.
 
-- Есть тестовый магазин с остатком и включенным SFS Yandex.
-- Есть тестовый магазин с SFS CDEK, где Yandex выключен.
-- В справочнике согласован новый delivery type `SFS_YANDEX`.
-- OMS Delivery/logistics возвращает interval с `carrierId = yandexNextDayDelivery` для SFS.
-- Retail/ARM релиз с Yandex SFS установлен на тестовом контуре.
-- Credentials/config Yandex заведены на тестовом контуре без использования production secrets в документации.
+## Contract acceptance
 
-## Acceptance criteria
+### C1. Starfish24 interval
 
-### A1. Checkout видит Yandex SFS
+For an eligible store/address/cart the response contains:
 
-Дано: адрес клиента и магазин, где включен Yandex SFS.
+- separate Yandex Express carrier id;
+- `fulfillmentTypeId = sfs`;
+- selected source `dispatchWarehouseId`;
+- carrier tariff id;
+- dynamic delivery cost;
+- only `prepaid` payment type;
+- same-day interval/SLA data;
+- quote expiration or documented validity semantics.
 
-Ожидаемо:
+The carrier id must not equal `yandexNextDayDelivery`.
 
-- delivery options содержат SFS Yandex interval;
-- interval содержит `carrierId = yandexNextDayDelivery`;
-- interval содержит `fulfillmentTypeId = sfs`;
-- пользовательское отображение соответствует решению по express/courier grouping.
+### C2. Ranking
 
-### A2. Заказ создается с правильными OMS fields
+- highest quantity/fullness store wins;
+- on equal fullness, nearest store wins;
+- result is deterministic for equal inputs;
+- client is not offered unordered intervals from all SFS stores.
 
-Дано: пользователь выбирает Yandex SFS interval.
+### C3. Working hours
 
-Ожидаемо:
+- local source-store timezone is used;
+- closed store produces no Express offer;
+- open store near closing produces no offer when picking+handover cannot finish;
+- special/holiday schedule overrides regular schedule;
+- missing timezone/hours fails closed and is observable;
+- a store in another timezone is evaluated using its own local time.
 
-- Integration отправляет в OMS заказ с:
-  - `deliveryTypeId = delivery`;
-  - `fulfillmentTypeId = sfs`;
-  - `carrierId = yandexNextDayDelivery`;
-  - `carrierTariffId` из выбранного interval;
-- заказ не попадает в OTS flow.
+### C4. Coexistence
 
-### A3. Integration export использует новый справочный тип
+- warehouse availability does not hide Express;
+- CDEK and Yandex Express can be shown together;
+- disabling Yandex does not disable CDEK.
 
-Дано: OMS запускает export для SFS заказа.
+## E-commerce acceptance
 
-Ожидаемо:
+### E1. customer-api-web
 
-- CBR/export mapping возвращает новый `SFS_YANDEX`;
-- не используется старый `YANDEX = 10`;
-- barcode/name соответствуют справочнику;
-- CDEK SFS продолжает отдавать `SFS_CDEK`.
+- old response groups the new carrier into `deliveryExpress`;
+- General Data exposes separate `method=express`;
+- `yandexNextDayDelivery` is not grouped as Express;
+- dynamic cost and prepaid-only reach clients unchanged;
+- no Express method is returned when there is no valid offer.
 
-### A4. OMS/Camunda проходит SFS Yandex route
+### E2. Site
 
-Дано: созданный Yandex SFS заказ.
+- separate «Яндекс Экспресс» card is visible next to standard delivery;
+- card shows SLA and dynamic price;
+- global free-delivery threshold never changes Express price;
+- only online payment is selectable;
+- selecting Express sends its interval id/store/carrier to commit;
+- warehouse option remains visible;
+- stale offer triggers refresh/reselection, not silent CDEK substitution.
 
-Ожидаемо:
+### E3. Mobile
 
-- `releaseProcess` идет по SFS route в `1c-cbr`;
-- `dispatchProcess` выбирает Yandex-compatible route;
-- `carrierRegistryProcess` или отдельный Yandex process не зависает на CDEK-only condition;
-- статусы заказа и позиций соответствуют согласованному lifecycle.
+- same functional behavior as Site;
+- Express has a real method/route/state, not only a label;
+- unsupported old app versions do not auto-select an unknown method;
+- prepaid-only and dynamic price survive preview and commit.
 
-### A5. OMS Delivery успешно регистрирует/вызывает Yandex
+### E4. Integration
 
-Дано: заказ готов к регистрации/вызову courier/order.
+- V4 order create preserves selected server-side interval fields;
+- resulting OMS order has SFS + exact Starfish24 carrier/tariff/store;
+- dynamic cost is not replaced by 299 ₽/0 ₽ threshold logic;
+- accounting/CBR/ARM mapping resolves to the approved Retail value;
+- SFS order does not enter OTS route;
+- `clientOrderId` remains stable on retry after delivery refresh.
 
-Ожидаемо:
+## Fulfillment acceptance
 
-- OMS Delivery вызывает правильный Yandex API;
-- сохраняется внешний идентификатор заявки/заказа/claim;
-- retry/error handling работает по согласованным правилам;
-- в логах нет ошибок contract mismatch.
+### F1. Store lifecycle
 
-### A6. ARM/Gloria Retail принимает и выдает заказ
+- Retail imports the order;
+- usual SFS assembly task is available;
+- store hands order to Yandex courier without a CDEK-only UI/block;
+- status returns through existing Integration contract;
+- no mandatory new store operation is introduced for MVP.
 
-Дано: Yandex SFS заказ дошел до магазинного контура.
+### F2. Starfish24 carrier lifecycle
 
-Ожидаемо:
+- registration/courier call creates an external id;
+- retries are idempotent;
+- technical failure is observable;
+- cancellation before and after registration is handled;
+- duplicate/out-of-order callbacks do not corrupt OMS state;
+- final order/item state is correct.
 
-- ARM import видит заказ;
-- локальный документ содержит Yandex transport company, а не CDEK;
-- UI выдачи курьеру доступен;
-- после выдачи ARM отправляет статус в Integration;
-- Integration обновляет OMS order status и item statuses.
+## Test matrix
 
-### A7. Status lifecycle закрывается
-
-Дано: заказ выдан курьеру и доставлен/завершен.
-
-Ожидаемо:
-
-- ARM statuses и Yandex tracking не конфликтуют;
-- финальный OMS order status корректен;
-- item statuses корректны;
-- повторные callbacks/polls идемпотентны.
-
-### A8. Carrier switch работает
-
-Дано: Yandex выключают для тестового магазина.
-
-Ожидаемо:
-
-- Yandex SFS interval исчезает;
-- CDEK SFS interval остается, если CDEK включен;
-- новые Yandex SFS заказы не создаются;
-- существующие Yandex SFS заказы продолжают свой lifecycle или обрабатываются по согласованному fallback.
-
-## Regression checks
-
-- SFS CDEK happy path без изменений.
-- CDEK courier-call через `CdekCourierRequestServiceImpl`.
-- Не-SFS Yandex scenario, если он есть на контуре, не начинает отображаться как SFS express.
-- OTS warehouse Yandex/other carrier flows не затронуты.
-- customer-api-web response shape совместим с site/mobile.
-
-## Suggested test cases
-
-| ID | Сценарий | Ожидаемый результат |
+| ID | Scenario | Expected result |
 |---|---|---|
-| T-01 | Получить delivery intervals для магазина с Yandex SFS | Есть interval `sfs + yandexNextDayDelivery`. |
-| T-02 | Создать заказ Yandex SFS | OMS order содержит правильные shipping fields. |
-| T-03 | Проверить CBR export | Delivery type = `SFS_YANDEX`. |
-| T-04 | Пройти Camunda до carrier registry | Выбран Yandex route, нет CDEK-only dead end. |
-| T-05 | Зарегистрировать/вызвать Yandex courier/order | Получен внешний id, process идет дальше. |
-| T-06 | Импортировать заказ в ARM | ARM видит Yandex SFS и создает корректный документ. |
-| T-07 | Выдать заказ курьеру в ARM | Integration получает статус, OMS обновлен. |
-| T-08 | Завершить доставку | Финальные статусы корректны. |
-| T-09 | Отменить до регистрации в Yandex | OMS/retail/Yandex не расходятся. |
-| T-10 | Отменить после регистрации в Yandex | Внешняя отмена и OMS statuses корректны. |
-| T-11 | Выключить Yandex для магазина | Новые intervals не показывают Yandex, CDEK работает. |
-| T-12 | Проверить CDEK SFS regression | Старый flow проходит без изменений. |
+| T-01 | Eligible SFS store, Yandex quote available | Separate Express option with dynamic price and prepaid. |
+| T-02 | Cart available in store and warehouse | Express and standard warehouse delivery both visible. |
+| T-03 | CDEK and Yandex enabled for same store | Both options visible and selectable independently. |
+| T-04 | Several stores, different fullness | Store with greater fullness selected. |
+| T-05 | Equal fullness, different distance | Nearest store selected. |
+| T-06 | Store closed in its timezone | Express absent; other methods remain. |
+| T-07 | Store open but cutoff passed | Express absent. |
+| T-08 | Stores in different timezones | Each evaluated in local source-store time. |
+| T-09 | Special holiday schedule | Special schedule determines availability. |
+| T-10 | Missing timezone/schedule | Express absent and configuration error observable. |
+| T-11 | Yandex quote unavailable | Express absent; CDEK/other delivery unaffected. |
+| T-12 | Dynamic price above/below free threshold | Exact Yandex price displayed and charged. |
+| T-13 | Previously selected COD, then Express | Payment resets/restricts to prepaid. |
+| T-14 | Quote expires before commit | Business error; methods refresh; explicit reselection. |
+| T-15 | Quote price changes before commit | Updated price flow follows approved confirmation contract. |
+| T-16 | Successful Site order | Correct interval/carrier/store/cost in OMS and Retail. |
+| T-17 | Successful Mobile order | Same contract and lifecycle as Site. |
+| T-18 | Cancel before Yandex registration | OMS/Retail/payment consistent; no external orphan. |
+| T-19 | Cancel after Yandex registration | External cancellation idempotent; OMS compensation completes. |
+| T-20 | Duplicate Yandex callback | No duplicate transition/payment side effect. |
+| T-21 | Disable Yandex for store | New Express offers disappear; existing orders continue. |
+| T-22 | CDEK regression | Existing SFS CDEK happy/cancel paths unchanged. |
+| T-23 | Yandex Next Day regression | Warehouse→PVZ behavior and UI classification unchanged. |
+| T-24 | Unsupported Mobile version | No broken/auto-selected Express state. |
 
-## Evidence to collect during QA
+## Evidence to collect
 
-- order id / client order id;
-- selected delivery interval payload without personal data;
-- Integration create-order request fields without personal data;
-- OMS order shipping fields;
-- Camunda process instance id;
-- OMS Delivery Yandex request/response summary without secrets;
-- ARM document id;
-- status update request from ARM to Integration;
-- final OMS order/item statuses.
+- Jira issue `OPSOMN002-46` and approved payload contract reference;
+- Starfish24 OMS version/config id;
+- interval response without personal data;
+- source-store timezone/hours/ranking evidence;
+- BFF response for Site and Mobile;
+- Integration order-create fields;
+- OMS order/process/external carrier id;
+- Retail/ARM document and handover event;
+- payment type and charged delivery cost;
+- cancellation/status traces;
+- CDEK and NDD regression results.
 
 ## Go/no-go
 
 Go:
 
-- все A1-A8 выполнены на тестовом контуре;
-- CDEK regression зеленый;
-- есть понятный operational switch для Yandex;
-- retail и OMS подтверждают готовность своих релизов.
+- C1–C4, E1–E4 and F1–F2 passed;
+- required Site/Mobile wave passed its client tests;
+- closed/cutoff stores do not produce offers;
+- dynamic price and prepaid-only are proven end to end;
+- CDEK/NDD regressions are green;
+- independent disable switch and rollback owner are known.
 
 No-go:
 
-- нет нового справочного delivery type;
-- Yandex route в Camunda зависает или проходит через CDEK-only logic;
-- ARM не может принять/выдать Yandex SFS;
-- невозможно отключить Yandex отдельно от CDEK;
-- статусы ARM/Yandex конфликтуют и ломают финализацию заказа.
-
+- no exact payload contract from Starfish24;
+- target carrier is confused with `yandexNextDayDelivery`;
+- Express can be created from a closed/late store;
+- warehouse availability hides Express;
+- frontend applies free-delivery threshold or allows COD;
+- Site/Mobile cannot persist selected Express interval;
+- Retail cannot accept/handover the order;
+- cancellation/status ownership is unresolved.

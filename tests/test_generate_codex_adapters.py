@@ -59,10 +59,45 @@ class GenerateCodexAdaptersTest(TestCase):
         self.assertIn('name = "demo-agent"', agent_toml)
         self.assertIn('description = "Use for demo tasks."', agent_toml)
         self.assertNotIn('model = "sonnet"', agent_toml)
-        self.assertIn('developer_instructions = """', agent_toml)
+        self.assertIn("developer_instructions = '''", agent_toml)
         self.assertIn("You are the demo agent.", agent_toml)
         self.assertIn("Read `.agents/skills/demo-skill/SKILL.md` before acting.", agent_toml)
         self.assertNotIn("tools:", agent_toml)
+
+    def test_preserves_backslash_heavy_instructions_as_literal_toml(self) -> None:
+        (self.tmpdir / ".claude" / "agents" / "regex-agent.md").write_text(
+            textwrap.dedent(
+                """\
+                ---
+                name: regex-agent
+                description: Use for regex tasks.
+                ---
+
+                ```bash
+                grep -rn "function checkoutAction\\|class CheckoutController" platform/integration/
+                grep -rn "process\\.env\\.|Config\\." platform/mobile-app/
+                ```
+
+                Convert `App\\Domain\\Foo\\Bar` to `app/Domain/Foo/Bar.php`.
+                """
+            ),
+            encoding="utf-8",
+        )
+        (self.tmpdir / ".claude" / "skills" / "demo-skill" / "SKILL.md").write_text(
+            "# Demo Skill\n",
+            encoding="utf-8",
+        )
+
+        result = self.run_generator()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        agent_toml = (self.tmpdir / ".codex" / "agents" / "regex-agent.toml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("developer_instructions = '''", agent_toml)
+        self.assertIn('checkoutAction\\|class CheckoutController', agent_toml)
+        self.assertIn('process\\.env\\.|Config\\.', agent_toml)
+        self.assertIn('App\\Domain\\Foo\\Bar', agent_toml)
 
     def test_syncs_claude_skills_to_agents_skills_and_removes_stale_files(self) -> None:
         (self.tmpdir / ".claude" / "agents" / "demo-agent.md").write_text(

@@ -1,78 +1,95 @@
-# Code-space mapping: SFS Yandex
+# Code-space mapping: Yandex Express SFS
 
-Дата: 2026-06-28
+Дата актуализации: 2026-07-10
 
-Цель: не смешивать разные идентификаторы доставки. Для этой задачи похожие значения живут в разных системах и не являются взаимозаменяемыми.
+Цель: не смешивать frontend method, OMS carrier, fulfillment, учетный тип Retail/1C и исторический Yandex Next Day.
 
-## Основная таблица
+## Target mapping
 
-| Пространство | Текущее/целевое значение | Где живет | Статус | Комментарий |
-|---|---|---|---|---|
-| OMS carrier id | `yandexNextDayDelivery` | OMS / Integration | подтверждено | Carrier уже есть в Integration и OMS Delivery. |
-| Integration OMS carrier enum | `CarrierIdEnum::YANDEX = 'yandexNextDayDelivery'` | `platform/integration/integration/www/app/Service/Consts/Enums/Delivery/Oms/CarrierIdEnum.php` | подтверждено | Это carrier, а не delivery type. |
-| OMS Delivery carrier enum | `YANDEX_NEXT_DAY_DELIVERY("yandexNextDayDelivery")` | `platform/starfish24/core/Delivery/src/main/java/com/starfish24/delivery/service/carrier/CarrierEnum.java` | подтверждено | Используется в Yandex Next Day сервисах. |
-| OMS delivery type | `delivery` | order shipping payload | гипотеза target | Как у SFS CDEK courier delivery. |
-| OMS fulfillment type | `sfs` | order shipping payload | гипотеза target | Доставка из магазина. |
-| Новый 1C/retail delivery type | `SFS_YANDEX = <код>` | 1C/retail справочник, Integration enum | открыто | Код должен дать владелец справочника. |
-| Существующий Integration delivery type | `YANDEX = 10` | `DeliveryTypeCodeEnum.php` | подтверждено | Не переиспользовать для SFS без подтверждения. |
-| Существующий SFS CDEK type | `SFS_CDEK = 111` | `DeliveryTypeCodeEnum.php` | подтверждено | Эталон для нового SFS Yandex правила. |
-| Существующий SFS GJ Express type | `SFS_GLORIAJEANS_EXPRESS = 114` | `DeliveryTypeCodeEnum.php` | подтверждено | Не равен Yandex SFS. |
-| Carrier barcode | `CarrierBarcodeEnum::YANDEX = '4660651329002'` | Integration GloriaJeans mapping | подтверждено | Нужно подтвердить, использовать ли его для `SFS_YANDEX`. |
-| Delivery good id | `YANDEX => 'UPR010640F0001'` | `DeliveryGoodIdMap.php` | подтверждено | Good id доставки не доказывает готовность SFS-типа. |
-| OTS carrier id | `9` для Yandex | Integration OTS mapping | подтверждено, но не target | Для SFS OTS не должен участвовать. |
-| customer-api-web express carrier | `gjexpress` | `CommonDeliveryData::EXPRESS_CARRIER_ID` | подтверждено | Сейчас `yandexNextDayDelivery` не попадет в express-блок. |
-| ARM transport company enum | `Tk.CDEK` в найденном SFS main-коде | Gloria Retail / ARM | подтверждено для CDEK, открыто для Yandex | Нужна retail-ветка/релиз с Yandex. |
+| Пространство | Значение | Статус | Комментарий |
+|---|---|---|---|
+| Frontend delivery method | `express` | принято | Отдельная карточка «Яндекс Экспресс», не обычный courier/CDEK. |
+| customer-api-web grouping | новый Express carrier → `express` / `deliveryExpress` | требуется доработка | Сейчас Express определяется только через `gjexpress`. |
+| OMS carrier id | `<STARFISH_YANDEX_EXPRESS_CARRIER_ID>` | **открытый вопрос Starfish24** | Должен быть отдельным от `yandexNextDayDelivery`. |
+| OMS carrier tariff id | `<STARFISH_YANDEX_EXPRESS_TARIFF_ID>` | **открытый вопрос Starfish24** | Берется из delivery interval. |
+| OMS delivery type | ожидаемо `delivery` | требует payload | Сохраняет CDEK-like SFS lifecycle; не фиксировать до примера Starfish24. |
+| OMS fulfillment type | `sfs` | бизнес-требование | Источник — магазин. |
+| OMS dispatch warehouse | id выбранного магазина | бизнес-требование | Магазин выбирается ranking rules, не фронтом. |
+| Delivery cost | динамическая цена interval | бизнес-требование | Front/Integration не заменяют ее на 299 ₽ и не применяют free threshold. |
+| Payment types | только `prepaid` | бизнес-требование | Должно приходить в server-side option contract. |
+| Integration carrier enum | новый `YANDEX_EXPRESS = <carrierId Starfish24>` | требуется | Не менять значение существующего `YANDEX`. |
+| Retail/1C delivery type | `SFS_YANDEX_EXPRESS = <код>` либо согласованный существующий SFS-код | открыто | Решение владельца справочника; отдельный UI method сам по себе не требует нового 1C-кода. |
+| Delivery good id / barcode | `<подтвердить Retail/1C>` | открыто | Существующее значение Яндекса не доказывает совместимость с Express SFS. |
+| OTS transport id | не используется | target boundary | SFS остается вне OTS при подтверждении Starfish24. |
 
-## Target mapping rule
+## Что уже существует и не является target
 
-Целевое правило в Integration:
+| Значение | Значение в системе | Почему нельзя переиспользовать автоматически |
+|---|---|---|
+| `CarrierIdEnum::YANDEX` | `yandexNextDayDelivery` | Склад → ПВЗ, другой продукт и lifecycle. |
+| `DeliveryTypeCodeEnum::YANDEX` | `10` | Учетный тип существующего не-SFS Яндекса. |
+| `SFS_GLORIAJEANS_EXPRESS` | `114` | Существующий GJ Express, не доказано соответствие Яндекс Экспресс. |
+| `CommonDeliveryData::EXPRESS_CARRIER_ID` | `gjexpress` | Текущая BFF-классификация только одного carrier. |
+| `DeliveryGoodIdMap::YANDEX` | `UPR010640F0001` | Может относиться к текущему Яндекс-контракту; подтвердить у Retail/1C. |
 
-```text
-deliveryTypeId = delivery
-fulfillmentTypeId = sfs
-carrierId = yandexNextDayDelivery
-=> delivery_type_code = SFS_YANDEX
-=> delivery_type_name = <название из справочника>
-=> barcode = <подтвердить: CarrierBarcodeEnum::YANDEX или новый код>
+## Ожидаемый server-side contract
+
+До ответа Starfish24 это шаблон, а не финальная спецификация:
+
+```json
+{
+  "carrierId": "<STARFISH_YANDEX_EXPRESS_CARRIER_ID>",
+  "carrierTariffId": "<STARFISH_YANDEX_EXPRESS_TARIFF_ID>",
+  "deliveryTypeId": "delivery",
+  "fulfillmentTypeId": "sfs",
+  "dispatchWarehouseId": "<store-id>",
+  "deliveryCost": "<dynamic-price>",
+  "availablePaymentTypes": ["prepaid"],
+  "date": "<same-day>",
+  "from": "<time>",
+  "to": "<time>",
+  "offerExpiresAt": "<if-supported>"
+}
 ```
 
-## Что нельзя считать эквивалентным
+## Integration mapping rule
 
-- `CarrierIdEnum::YANDEX` не равен `DeliveryTypeCodeEnum::YANDEX`.
-- `DeliveryTypeCodeEnum::YANDEX = 10` не равен новому `SFS_YANDEX`.
-- OTS Yandex carrier id `9` не означает, что OTS участвует в SFS.
-- `DeliveryGoodIdMap` не заменяет delivery type mapping.
-- `gjexpress` в customer-api-web не означает Yandex Express.
+После ответа Starfish24 и Retail/1C:
 
-## Файлы для проверки при реализации
+```text
+deliveryTypeId = <from Starfish24>
+fulfillmentTypeId = sfs
+carrierId = <STARFISH_YANDEX_EXPRESS_CARRIER_ID>
+=> delivery_type_code = <Retail/1C decision>
+=> delivery_type_name = <Retail/1C decision>
+=> delivery_good_id/barcode = <Retail/1C decision>
+```
+
+V4 create-order не должен самостоятельно подменять carrier/tariff/cost: server-side selected interval остается source of truth.
+
+## Файлы e-commerce для реализации
 
 Integration:
 
 - `platform/integration/integration/www/app/Service/Consts/Enums/Delivery/Oms/CarrierIdEnum.php`
 - `platform/integration/integration/www/app/Service/Consts/Enums/Delivery/GloriaJeans/DeliveryTypeCodeEnum.php`
-- `platform/integration/integration/www/app/Service/Consts/Enums/Delivery/GloriaJeans/DeliveryTypeCodeNameEnum.php`
-- `platform/integration/integration/www/app/Service/Consts/Enums/Delivery/GloriaJeans/CarrierBarcodeEnum.php`
-- `platform/integration/integration/www/app/Service/Consts/Maps/Delivery/Arm/DeliveryGoodIdMap.php`
 - `platform/integration/integration/www/app/Service/Consts/Contracts/Maps/Delivery/GloriaJeans/DeliveryTypeCodeMapByRulesContract.php`
-- `platform/integration/integration/www/app/Service/Consts/Contracts/Maps/Delivery/GloriaJeans/DeliveryTypeCodeNameMapByRulesContract.php`
 - `platform/integration/integration/www/app/Service/Consts/Contracts/Maps/Delivery/Cbr/DeliveryTypeCodeMapByRulesContract.php`
+- `platform/integration/integration/www/app/Service/Consts/Maps/Delivery/Arm/DeliveryGoodIdMap.php`
 - `platform/integration/integration/www/app/Service/UserApi/Services/V1/Order/OrderService.php`
 - `platform/integration/integration/www/app/Service/UserApi/Mutators/V1/Order/OrderExportCbrMutator.php`
-
-OMS:
-
-- `platform/starfish24/core/Delivery/src/main/java/com/starfish24/delivery/service/carrier/CarrierEnum.java`
-- `platform/starfish24/core/Delivery/src/main/java/com/starfish24/delivery/service/carriers/yandexNextDayDelivery/YandexNextDayDeliveryCalculationServiceImpl.java`
-- `platform/starfish24/core/Delivery/src/main/java/com/starfish24/delivery/service/carriers/yandexAnotherDay/YandexAnotherDayOrderRegistrationServiceImpl.java`
-- `platform/starfish24/core/Delivery/src/main/java/com/starfish24/delivery/service/carriers/yandexAnotherDay/YandexAnotherDayTrackingRequestServiceImpl.java`
-- `platform/starfish24/awg/bpmn-process/process/gloriajeans/releaseProcess.bpmn`
-- `platform/starfish24/awg/bpmn-process/process/gloriajeans/dispatchProcess.bpmn`
-- `platform/starfish24/awg/bpmn-process/process/gloriajeans/carrierRegistryProcess.bpmn`
 
 customer-api-web:
 
 - `platform/ensi/apps/customers-api-web/app/Domain/Orders/Data/Checkout/CommonDeliveryData.php`
-- `platform/ensi/apps/customers-api-web/app/Domain/Orders/Actions/GetDeliveryDataAction.php`
-- `platform/ensi/apps/customers-api-web/app/Domain/Orders/Actions/GetDeliveryDataV2Action.php`
-- `platform/ensi/apps/customers-api-web/app/Domain/Orders/Actions/GetCheckoutGeneralDataDeliveryDataAction.php`
+- `platform/ensi/apps/customers-api-web/app/Domain/Orders/Data/Enums/DeliveryType.php`
+- `platform/ensi/apps/customers-api-web/app/Domain/Orders/Data/Checkout/DeliveryMethodData.php`
+- `platform/ensi/apps/customers-api-web/app/Domain/Orders/Data/Checkout/GeneralDeliveryMethodData.php`
 
+Site/Mobile:
+
+- активные delivery method enums;
+- checkout state/mappers;
+- delivery cards and interval selection;
+- order preview/commit payload;
+- payment and analytics handling.

@@ -1,181 +1,190 @@
-# Implementation slices: SFS Yandex
+# Implementation slices: Yandex Express SFS
 
-Дата: 2026-06-28
+Дата актуализации: 2026-07-10
 
-Цель: разложить интеграцию по независимым зонам работ. Это не финальный implementation plan с кодом, а аналитическая нарезка для заведения задач.
+Это аналитическая нарезка для Epic/Jira, не implementation plan. Оценки выдаются после Slice 0.
 
-## Slice 0. Справочники и договоренности
+## Slice 0. Contract freeze
 
-Владелец: 1C/retail + аналитик.
+Владельцы: Starfish24 + e-commerce analyst + Retail/1C.
 
-Вход:
+Получить:
 
-- подтверждено, что carrier в OMS остается `yandexNextDayDelivery`;
-- подтверждено, что нужен новый SFS delivery type.
-
-Что сделать:
-
-- назначить код нового delivery type `SFS_YANDEX`;
-- назначить пользовательское и учетное название;
-- подтвердить barcode ТК;
-- подтвердить delivery good id или необходимость нового;
-- описать, как новый тип должен отображаться в 1C/ARM.
+- test delivery interval и resulting OMS order от Starfish24;
+- точные carrier/tariff/delivery/fulfillment ids;
+- поля dynamic price, payment types и quote TTL;
+- OMS version и перечень конфигурации на 1–2 недели;
+- источник timezone/working hours/special schedule и cutoff formula;
+- Retail/1C решение по accounting type, name, barcode и delivery good id;
+- пилотные магазины/города и Mobile release wave.
 
 Выход:
 
-- таблица справочных значений;
-- ссылка на задачу/заявку справочника;
-- дата/релиз готовности retail/1C.
+- заполненный `code-space-mapping.md` без placeholder в target contract;
+- payload examples без персональных данных/секретов;
+- owners и test-stand dates;
+- обновленная оценка четырех потоков.
 
-## Slice 1. OMS Delivery/logistics availability
+Статус: **открытый вопрос Starfish24 намеренно оставлен блокером**.
 
-Владелец: OMS Delivery/logistics.
+## Slice 1. Starfish24 configuration and acceptance
 
-Что сделать:
+Владелец: Starfish24.
 
-- понять, где сейчас включается SFS CDEK по магазинам/городам/тарифам;
-- добавить или настроить availability для `yandexNextDayDelivery` в SFS;
-- обеспечить возможность отключить Yandex без отключения CDEK;
-- проверить, что checkout получает selected interval с:
-  - `deliveryTypeId = delivery`;
-  - `fulfillmentTypeId = sfs`;
-  - `carrierId = yandexNextDayDelivery`;
-  - корректным `carrierTariffId`.
+Scope по заявлению команды — настройка существующего capability, ориентир 1–2 недели:
 
-Выход:
+- отдельный carrier Яндекс Экспресс для GJ;
+- пилот СЗ/Сибирь и независимый enable/disable по магазинам;
+- ranking: fullness desc, distance asc;
+- store timezone, regular/special hours, picking SLA и handover cutoff;
+- fail-closed при неполной конфигурации магазина;
+- dynamic Yandex quote и prepaid-only;
+- coexistence с CDEK и warehouse option;
+- registration/courier call/cancel/status flow;
+- test evidence и rollback switch.
 
-- документированная точка управления включением carrier;
-- тестовый магазин/город, где Yandex SFS включен;
-- тестовый магазин/город, где остается только CDEK.
+Не включать в e-commerce estimate разработку Yandex connector без отдельного change request от Starfish24.
 
-## Slice 2. OMS Delivery Yandex carrier flow
+## Slice 2. Retail/ARM/1C readiness
 
-Владелец: OMS Delivery.
+Владелец: Retail/ARM/1C.
 
-Что сделать:
+- определить, нужен ли новый `SFS_YANDEX_EXPRESS` accounting type;
+- назначить code/name/barcode/good id либо подтвердить переиспользование общего SFS-кода;
+- проверить import нового carrier;
+- проверить обычную сборку SFS;
+- убрать/расширить CDEK-only ограничения выдачи курьеру;
+- подтвердить обратные статусы через Integration;
+- провести store UAT без изменения операционной инструкции, если процесс действительно идентичен CDEK SFS.
 
-- выбрать целевой API-паттерн для SFS Yandex:
-  - courier-call service;
-  - order registration/confirmation;
-  - claim create/accept/info;
-  - отдельный комбинированный flow;
-- проверить, подходят ли существующие `YandexAnotherDay*` сервисы для pickup from store;
-- если нужен courier-call, реализовать сервисы, аналогичные CDEK contract:
-  - `CourierRequestService`;
-  - `CallCourierStatusService`;
-- определить статусную модель Yandex: какие внешние статусы обновляют OMS, какие только логируются.
+Выход: release/config evidence и один тестовый документ заказа.
 
-Выход:
-
-- API contract для Camunda activities;
-- happy-path request/response examples без секретов;
-- список ошибок и retry behavior.
-
-## Slice 3. OMS/Camunda process
-
-Владелец: OMS/Camunda.
-
-Что сделать:
-
-- обновить `releaseProcess.bpmn`, если gateway "SFS и CDEK?" должен покрывать Yandex;
-- обновить `dispatchProcess.bpmn` для `carrierId == 'yandexNextDayDelivery'`;
-- обновить `carrierRegistryProcess.bpmn` или создать отдельный process для Yandex SFS;
-- зафиксировать, какие статусы выставляются до и после регистрации/вызова курьера;
-- проверить отмену заказа после регистрации в Yandex.
-
-Выход:
-
-- BPMN route для SFS Yandex;
-- тест процесса на Camunda test stand;
-- rollback: отключить Yandex availability без изменения CDEK.
-
-## Slice 4. Integration Service mapping
+## Slice 3. Integration Service
 
 Владелец: Integration.
 
-Что сделать после Slice 0:
+### Carrier and accounting mappings
 
-- добавить `SFS_YANDEX` в `DeliveryTypeCodeEnum.php`;
-- добавить имя в `DeliveryTypeCodeNameEnum.php`;
-- добавить rule `DELIVERY + SFS + YANDEX -> SFS_YANDEX` в GloriaJeans mapping;
-- добавить name mapping;
-- добавить CBR mapping;
-- добавить ветки в старом V1 order resolver и CBR mutator, если они остаются активными;
-- проверить, нужен ли ecom export mapping.
+- добавить отдельный carrier enum после ответа Starfish24;
+- не менять `YANDEX = yandexNextDayDelivery`;
+- добавить/подтвердить `SFS_YANDEX_EXPRESS` code/name;
+- добавить GloriaJeans/CBR rules;
+- обновить active V1 SFS resolver and CBR mutator hardcodes;
+- добавить/подтвердить ARM delivery good/barcode mapping;
+- проверить recon/export paths;
+- не добавлять OTS mapping, если target route — `1c-cbr`.
 
-Файлы-кандидаты:
+### Order create contract
 
-- `platform/integration/integration/www/app/Service/Consts/Enums/Delivery/GloriaJeans/DeliveryTypeCodeEnum.php`
-- `platform/integration/integration/www/app/Service/Consts/Enums/Delivery/GloriaJeans/DeliveryTypeCodeNameEnum.php`
-- `platform/integration/integration/www/app/Service/Consts/Contracts/Maps/Delivery/GloriaJeans/DeliveryTypeCodeMapByRulesContract.php`
-- `platform/integration/integration/www/app/Service/Consts/Contracts/Maps/Delivery/GloriaJeans/DeliveryTypeCodeNameMapByRulesContract.php`
-- `platform/integration/integration/www/app/Service/Consts/Contracts/Maps/Delivery/Cbr/DeliveryTypeCodeMapByRulesContract.php`
-- `platform/integration/integration/www/app/Service/UserApi/Services/V1/Order/OrderService.php`
-- `platform/integration/integration/www/app/Service/UserApi/Mutators/V1/Order/OrderExportCbrMutator.php`
+- доказать тестом, что V4 переносит selected interval carrier/tariff/fulfillment/store/cost;
+- revalidate selected interval at commit;
+- возвращать business error при expired/unavailable Express option;
+- не подменять Express на CDEK автоматически;
+- сохранить `clientOrderId` при повторном выборе доставки/retry.
 
-Выход:
+### Tests
 
-- unit/contract tests на mapping;
-- тестовый create/export order с `delivery + sfs + yandexNextDayDelivery`;
-- подтверждение, что CDEK SFS не изменился.
+- mapping tests для нового carrier;
+- create-order contract fixture из Starfish24 payload;
+- stale quote/unavailable interval;
+- CDEK SFS regression;
+- Yandex Next Day regression.
 
-## Slice 5. customer-api-web / Site / Mobile
+## Slice 4. customer-api-web
 
-Владелец: customer-api-web + frontend.
+Владелец: ENSI customer-api-web.
 
-Что решить:
+- классифицировать новый carrier как Express, не затрагивая NDD;
+- old APIs: вернуть его в `deliveryExpress`;
+- General Data: вернуть delivery method `express`;
+- обработать `EXPRESS` в `DeliveryType::toClientResponse()`;
+- передать dynamic cost, prepaid-only, store/interval identity;
+- сохранить warehouse and standard courier options;
+- поддержать explicit selected Express interval;
+- обработать commit error и refresh/reselection;
+- contract tests для Site APIs и Mobile V4/V5.
 
-- Yandex SFS должен быть отдельным express-блоком или обычной courier delivery?
-- Если express-блоком, классификация должна учитывать только carrier или carrier + fulfillment type?
+Рекомендуемая модель: reusable semantic method `express`, а не новый frontend API method с carrier-specific именем.
 
-Что сделать:
+## Slice 5. Site
 
-- расширить `CommonDeliveryData::isExpressDelivery()` или завести более точную классификацию;
-- обновить grouping в delivery data actions;
-- обновить тесты response shape;
-- согласовать текст/название для пользователя.
+Владелец: Site frontend.
 
-Риск:
+- добавить `EXPRESS` в active `DeliveryMethodEnum` и checkout state;
+- преобразовать BFF `method=express`/`deliveryExpress` в отдельную card;
+- показать название, SLA и dynamic price;
+- реализовать выбор Express interval/store id;
+- переиспользовать courier address без смешения selected methods;
+- не применять free-delivery threshold;
+- оставить только prepaid и сбросить COD при переключении;
+- не скрывать Express из-за warehouse/courier alternative;
+- stale offer: refresh и явный выбор клиента;
+- analytics: impression/select/unavailable/price/order result;
+- component/state/e2e tests.
 
-- `yandexNextDayDelivery` может использоваться не только для SFS. Если просто добавить его в express carriers, можно изменить отображение других сценариев.
+## Slice 6. Mobile
 
-## Slice 6. Retail/ARM/1C
+Владелец: Mobile.
 
-Владелец: retail/ARM/1C.
+- добавить Express delivery method;
+- добавить route/screen mode или безопасно переиспользовать courier screen;
+- добавить Express в checkout state, preview и commit;
+- показать dynamic price/SLA;
+- не применять free threshold;
+- prepaid-only и reset incompatible payment;
+- coexistence with standard courier;
+- stale offer UX;
+- analytics и tests;
+- server/config gating по поддерживаемым версиям приложения.
 
-Что подтвердить:
+Текущая строка `express: "Экспресс"` не уменьшает этот slice: активный method/routing/selection flow отсутствует.
 
-- import SFS order понимает `yandexNextDayDelivery`;
-- локальный документ создается не только с `Tk.CDEK`;
-- UI выдачи курьеру работает для Yandex;
-- статусы уходят в Integration тем же contract;
-- документ "ВыдачаКурьеру" в 1C/Rabbit содержит корректную ТК;
-- релиз retail синхронизирован с ecom/OMS rollout.
+## Slice 7. Cross-system QA
 
-Выход:
+Владельцы: QA + все команды.
 
-- ссылка на retail задачу/ветку;
-- тестовый сценарий выдачи курьеру;
-- подтверждение обратных статусов в OMS.
+Подготовить:
 
-## Slice 7. QA / E2E rollout
+- по одному test store в нескольких timezone пилота;
+- store with regular hours, closed store, near-cutoff store, special-day schedule;
+- cart available in store and warehouse simultaneously;
+- cart available in several stores with different fullness/distance;
+- Yandex quote success/unavailable/expired/changed price;
+- CDEK-only store and store with both carriers;
+- supported Site and Mobile clients.
 
-Владелец: QA + все команды.
+Собрать evidence:
 
-Что сделать:
+- raw interval payload;
+- selected interval at BFF/Integration;
+- OMS order shipping fields;
+- Retail document;
+- Yandex external id without secrets;
+- status/cancellation traces;
+- final order/item/payment state.
 
-- подготовить тестовый магазин с CDEK-only;
-- подготовить тестовый магазин с Yandex SFS;
-- подготовить товар/остаток/адрес клиента;
-- выполнить happy path;
-- выполнить cancellation path до и после регистрации в Yandex;
-- выполнить fallback: отключение Yandex, CDEK продолжает работать;
-- проверить логи Integration, OMS, OMS Delivery, retail.
+## Slice 8. Rollout and operations
 
-Выход:
+Владельцы: Product + Operations + Starfish24 + e-commerce.
 
-- e2e протокол;
-- список order ids;
-- trace/log anchors без персональных данных;
-- go/no-go по rollout.
+- independent enable switch per store/region;
+- dashboards for quote availability, commit rejection, registration failure and delivery SLA;
+- staged enablement across СЗ/Сибирь;
+- customer support scripts for stale/unavailable Express;
+- rollback by disabling new offers while existing orders finish;
+- CDEK availability preserved.
 
+## Dependency graph
+
+```text
+Slice 0 Contract freeze
+  ├── Slice 1 Starfish24 config
+  ├── Slice 2 Retail readiness
+  ├── Slice 3 Integration
+  ├── Slice 4 customer-api-web
+  │      ├── Slice 5 Site
+  │      └── Slice 6 Mobile
+  └── all ready → Slice 7 E2E → Slice 8 Rollout
+```
+
+Site and Mobile should be estimated independently; they may run in parallel after the BFF contract is fixed.

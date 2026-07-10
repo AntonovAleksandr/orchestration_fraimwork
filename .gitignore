@@ -73,4 +73,7 @@ platform-next/
 logs/*
 !logs/README.md
 
+# Local long-running research for ignored platform-next workspace.
+docs/research/platform-next-ecom/
+
 .superpowers
