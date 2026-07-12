@@ -175,7 +175,7 @@ transfer:orders:recon cbr
 Kubernetes CronJob
        │ запускает Job/Pod
        ▼
-ecom-exporter --type=export-cbr [--dry-run]
+ecom-exporter --type=export-cbr-recon [--dry-run]
        │
        ├─ фиксирует cutoff_time и run_id
        ├─ читает базовые заказы из OMS read replica
@@ -210,8 +210,8 @@ ecom-exporter --type=export-cbr [--dry-run]
 ### 7.2 CLI-контракт
 
 ```bash
-ecom-exporter --type=export-cbr
-ecom-exporter --type=export-cbr --dry-run
+ecom-exporter --type=export-cbr-recon
+ecom-exporter --type=export-cbr-recon --dry-run
 ```
 
 Новые выгрузки подключаются новыми значениями `--type` и отдельными bounded contexts. CLI обязан отклонять неизвестный тип до подключения к внешним системам.
@@ -316,7 +316,7 @@ Prometheus-метрики и alert rules не входят в MVP, но стру
 
 1. Зафиксировать одинаковый `cutoff_time` для обоих путей.
 2. Получить reference CSV текущей реализации.
-3. Запустить `ecom-exporter --type=export-cbr --dry-run`.
+3. Запустить `ecom-exporter --type=export-cbr-recon --dry-run`.
 4. Сравнить нормализованные CSV; разобрать каждое расхождение.
 5. Выполнить несколько последовательных параллельных прогонов.
 6. Провести один контролируемый production-запуск нового экспортёра.
