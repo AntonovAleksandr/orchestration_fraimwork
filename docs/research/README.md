@@ -2,6 +2,13 @@
 
 Краткие выводы cross-system расследований — в **git** (`docs/research/`). Длинные autopsy — в **`logs/research/`** (gitignored). Описание каталога: tracked [`logs/README.md`](../../logs/README.md).
 
+## Живые release/research проекты
+
+| Проект | Основной документ | Назначение |
+|---|---|---|
+| Beauty / COSMETICS | [`beauty-cosmetics-release/RELEASE-SPEC.md`](beauty-cosmetics-release/RELEASE-SPEC.md) | Порядок кодовых релизов, мастер-данных, replay 74 товаров, reindex и MD-006 acceptance |
+| Маркетплейсы | [`marketplaces/README.md`](marketplaces/README.md) | Evidence-led карта DataBird, площадок, FBO/FBS, поставок, учёта, WB FBS fast-track и контура идентификаторов/остатков WB |
+
 ## Naming (tracked summary)
 
 `docs/research/<YYYY-MM-DD>-<topic>.md` — **один файл на тему**, ~1–2 экрана: Summary, приоритеты, traceId, «куда копать», ссылки на BP.
