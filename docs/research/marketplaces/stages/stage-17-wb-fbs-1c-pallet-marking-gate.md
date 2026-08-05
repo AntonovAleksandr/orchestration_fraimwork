@@ -619,6 +619,12 @@ WMS проверяет переход владельца всех КМ и зап
    `ClickAndCollect=0 → Доставка`, но WB-specific contract ещё не утверждён.
 5. **Вывод из оборота.** Нельзя автоматически перенести eCom `DO/OUT SALE`
    или historical WB batch УПД2 без решения Legal/Marking.
+   **Разобрано 2026-08-05** в `MARKING-WB-FBS-WITHDRAWAL.md`: механизм есть
+   (`AddMarkTransaction`, `OUT`/`SALE` → ЧЗ `DISTANCE`/`OTHER`), отсутствие
+   документа 1С не блокер. Но всплыло большее: возврата после `sold` в FBS API
+   нет вообще — он в разделе коммуникаций (`claims`), поэтому вывод на `sold`
+   без отдельного возвратного контура даёт молча накапливающееся расхождение
+   с ЧЗ (`MP-WB-FBS-081`..`084`).
 6. **WMS owner gate.** Проверить URL/сертификат/config switch
    `GetCheckOrder` и реальный `false/unavailable` hard-block выбранного ЛЦ.
 7. **Обработка 1С.** Установить, запускается ли EPF вручную, по расписанию

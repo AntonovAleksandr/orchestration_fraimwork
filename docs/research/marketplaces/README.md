@@ -1,10 +1,13 @@
 # Маркетплейсы Gloria Jeans — evidence-led исследование
 
 **Старт:** 2026-07-23  
-**Статус:** первый и второй evidence-pass завершены; WB FBS GJ fit-gap,
-история eCommerce order identity и контур идентификаторов/остатков WB
-детализированы; требуется sandbox smoke, проверка prod-кабинета и production
-walkthrough по конкретным карточкам, поставкам, FBS-заказу и периодам  
+**Статус:** первый и второй evidence-pass завершены; контракт WB FBS снят со
+свежей спеки, sandbox smoke и скан прод-каталога выполнены (Stage 20), перенос
+заданий между поставками подтверждён фактом, цепочка идентификаторов
+(PIM + WB Content, без WebApi) и отсечка статусов `WB_FBS` от OMS утверждены;
+в коде — миграция машины состояний `wb_supplies` и клиент `wbapi`.
+Открыты: prod-проверки кабинета (пункты выдачи, `decision`-статусы,
+маркировочный шлюз), technical spike станции, RACI и production walkthrough
 **Область:** направление маркетплейсов GJ, включая площадки, DataBird, карточки, цены,
 остатки, заказы, поставки, маркировку, возвраты, взаиморасчёты и отчётность.
 
@@ -29,6 +32,8 @@ walkthrough по конкретным карточкам, поставкам, FB
 | [`00-source-inventory.md`](00-source-inventory.md) | Реестр Jira, Confluence, кода и других источников |
 | [`EVIDENCE-LEDGER.md`](EVIDENCE-LEDGER.md) | Сквозные факты, противоречия, гипотезы и пробелы |
 | [`TEMPLATE-stage.md`](TEMPLATE-stage.md) | Шаблон атомарного исследования |
+| [`OTS-CHANGES-WB-FBS.md`](OTS-CHANGES-WB-FBS.md) | Задание на правки OTS для WB FBS (гибрид от 2026-08-03): роль OTS в потоке, 4 правки P0 + настройка мастер-данных + 3 P1 с якорями file:line, контракт вызова, приёмка |
+| [`MARKING-WB-FBS-WITHDRAWAL.md`](MARKING-WB-FBS-WITHDRAWAL.md) | Вопросы команде маркировки (2026-08-05): вывод КМ из оборота на `sold` через `AddMarkTransaction` (`OUT`/`SALE` → ЧЗ `DISTANCE`/`OTHER`), что хранить, и главный разрыв — возврата после `sold` в FBS API нет, он в разделе коммуникаций (`claims`) |
 | [`stages/stage-01-overview.md`](stages/stage-01-overview.md) | Общий контур и организационная карта |
 | [`stages/stage-02-databird.md`](stages/stage-02-databird.md) | DataBird: роль, обмены и процессы |
 | [`stages/stage-03-ozon.md`](stages/stage-03-ozon.md) | Ozon |
@@ -157,26 +162,49 @@ walkthrough по конкретным карточкам, поставкам, FB
   поставка». Она не покрывает реальный стикер, шлюз по маркировке и настоящие
   лимиты, а на production есть отдельный шлюз доступа по пунктам выдачи для
   возвратов.
+- Smoke 2026-07-27 подтвердил фактом: перенос задания между поставками
+  атомарен (включая reshipment из закрытой), `deliver` пустой поставки —
+  `SupplyHasZeroOrders`, добавление в закрытую поставку WB не отклоняет
+  (запрет — в Connector), песочница отдаёт старую схему meta без `decision`.
+- Скан прод-каталога WB (2026-07-27): 82 228 карточек, 359 885 размеров;
+  мультибаркодных размеров 19 (0,005%), дублей баркода между nmID нет;
+  `needKiz=true` у 91% — шлюз маркировки для GJ основной рабочий случай.
+- Цепочка идентификаторов утверждена: мастер `баркод ↔ vendor_code` — ENSI
+  PIM; `баркод → chrtID` — WB Content; WebApi не является зависимостью
+  wbconnector ни в одном варианте (целевая схема 1С → WebApi → PIM → сервисы).
+- Статусы OTS→OMS идут Kafka → Integration → OMS REST → Camunda, сепарация
+  только в OTS по `source`; для `WB_FBS` обязательны явный source и skip-лист
+  в `OrderLaterNotificationService` (иначе вечный backlog, как у RSG), плюс
+  своя prefix policy вместо default `0000337`.
 
 ## Resume pointer
 
 См. progress tracker в [`00-PLAN.md`](00-PLAN.md). При продолжении сначала читать
 `EVIDENCE-LEDGER.md`, затем брать не новый широкий поиск, а самый приоритетный
-непроверенный runtime-gap с конкретным business key. Для WB FBS следующий
-артефакт — двухдневный technical spike Stage 16 уже на выделенной WB-станции:
-official WB sticker и его физическая печать на целевом принтере, companion
-scan-print с reprint, полный KM/GS со станции и OTS handover + 1С registry.
-Stage 17 добавляет обязательный marked-order walkthrough:
+непроверенный runtime-gap с конкретным business key.
+
+**Состояние на 2026-07-27 (Stage 20).** Контракт WB FBS снят со свежей спеки,
+sandbox smoke пройден целиком (перенос заданий подтверждён фактом — дизайн
+Stage 19 разблокирован), прод-каталог снят (мультибаркод 0,005%, `needKiz` у
+91%), цепочка идентификаторов утверждена (PIM + WB Content, WebApi — не
+зависимость), статусная цепочка OTS→OMS и отсечка `WB_FBS` подтверждены кодом.
+В коде `platform-new/wbconnector`: миграция машины состояний `wb_supplies`,
+клиент `wbapi` с контрактными тестами, снимок каталога в `dev/catalog/`.
+
+Следующие шаги по коду: `clients/pim` + таблица `product_identifiers`
+(отдельная задача; основа — `platform/ensi/packages/pim-client-php`),
+обработчики outbox, логика волны.
+
+Следующие проверки (дешёвые, до спайка): prod-кабинет — пункты выдачи для
+возвратов (шлюз 403), реальные `decision`-статусы и `isCancellable`, отзыв
+токена со страницы `88508013`, выборка `api/Ref/IdMp` по пилотным SKU.
+
+Далее по-прежнему актуален двухдневный technical spike Stage 16 на выделенной
+WB-станции: official WB sticker и его физическая печать на целевом принтере,
+companion scan-print с reprint, полный KM/GS со станции и OTS handover +
+1С registry. Stage 17 добавляет обязательный marked-order walkthrough:
 печать→PKS/ECOMAUFSTAT, `ОтборЛистПеремещ`→GJMarkUpdate,
 WMS `GetCheckOrder`, `AUFSHPPAL`→1С status 50→`wms_shipment`→OTS
 `DELIVERING` и поздний WB `deliver`.
 Для numbering следующий артефакт — Redmine `#99027`, sanitized OMS
 `client_order_id_template` и E2E boundary matrix вокруг Int32/10-digit limits.
-Stage 18 даёт два действия, которые дешевле спайка и должны идти первыми:
-sandbox smoke «карточка → `chrtID` → склад → остаток → контрольное чтение» и
-проверка prod-кабинета на пункты выдачи для возвратов с отзывом токена со
-страницы `88508013`.
-Stage 19 добавляет к тому же smoke самый дешёвый архитектурный вопрос:
-существует ли перенос задания между поставками. От ответа зависят длительность
-волны, стратегия недосбора и модель данных поставки, поэтому его надо закрыть
-до кода.
