@@ -1,3 +1,65 @@
+> **Дополнение 2026-07-27.** Механизм «статусы OTS → OMS» подтверждён кодом
+> end-to-end. Цепочка из четырёх звеньев: OTS `OrderLaterNotificationService`
+> (пропускает `SPL/Unknown/Hybris`, остальное отдаёт notifier'ам) →
+> `StarfishOrderStatusNotifier` шлёт **только** `source=Starfish` в Kafka-топик
+> `prod.all.ecom.fct.order-status.0` → daemon Integration
+> `transfer:order-status:daemon` (`TransferService.transferOtsOrderStatus`)
+> → OMS REST `POST /client/order/status/{clientOrderId}/{statusId}/update` →
+> топик `settings` → Settings → BPM → `camunda-message` → Camunda BPMN
+> (`pickingProcess`, `releaseProcess`, `dispatchProcess` и др. реально
+> построены на этих статусах). Integration — обязательный мост: топик OTS
+> больше никто не читает, фильтрации по source в Integration нет.
+>
+> Три следствия для `WB_FBS`:
+>
+> 1. `POST /v2` без поля source принудительно ставит `Starfish`
+>    (`OrderController.cs:177`) — заказ без явного `WB_FBS` станет источником
+>    статусов в OMS, где Integration получит 404 и зациклит retry.
+> 2. Skip-лист `OrderLaterNotificationService.cs:50-57` надо расширить на
+>    `WB_FBS`: иначе статусы нового source молча не уведомляются и
+>    перечитываются бесконечно — накапливающийся backlog (ровно эта ситуация
+>    сегодня у RSG).
+> 3. Номер для WMS/1С: `GetPrefix()` (`OTSRequestParams.cs:50-62`) отдаёт
+>    `0000337` всему, кроме Starfish/RSG — для `WB_FBS` нужна явная prefix
+>    policy (см. §7).
+>
+> Вывод §5.2 уточняется: «статусы WB_FBS просто не должны покидать OTS» —
+> это две точечные правки OTS (enum + skip-лист), а не «Integration вне
+> контура» в целом: для обычного eCom Integration остаётся в критическом
+> пути, для WB FBS он отсекается на стороне OTS.
+>
+> **Дополнение 2 (2026-07-27), создание заказа — Integration тоже в пути.**
+> Цепочка «заказ → OTS» подтверждена кодом по звеньям: ENSI checkout →
+> Integration UserApi (`/integration/v4/order/create`) → OMS → BPMN
+> `exportForPicking.bpmn` (external task `orderExportWithFeedbackActivity`,
+> `destination=ots`) → camunda-worker `OrderExportWithFeedbackHandler` →
+> OMS Order `/order/export?destination=ots` → RestTemplate
+> `http://integration-oms/order/export?destination=ots` → Integration
+> `OrderActionController@export` → `OrderExportOtsMutator` →
+> `OtsClient::createOrder` → POST в OTS. Прямого клиента OTS в OMS нет
+> (ни Feign, ни URL). Фактический путь (`/` vs `/v2`) определяется
+> деплой-значением `OTS_SERVICE_CLIENT_BASE_URL`, но косвенно доказано,
+> что это `/v2` (source=Starfish): mutator шлёт `business_unit_id`
+> (контракт v2), а Kafka-нотификатор статусов работает только для
+> Starfish. Развязка по шагам: `ON_VALIDATION` и
+> `WAIT_EXPORT_TO_WAREHOUSE` — не action types, а статусы одного флоу
+> `ORDER_TO_CHECK`; второй шаг — повторный экспорт в тот же endpoint.
+> Следствие для WB FBS: wbconnector становится **вторым прямым
+> потребителем** OTS API (первый — Integration). Это легитимно, но
+> означает, что контракт `ORDER_TO_CHECK` (mutator, обязательные поля
+> `OtsRequiredFieldsEnum`, prefix `0000352`) надо воспроизвести в
+> Go-адаптере, а не «переиспользовать вызов OMS» — его не существует.
+>
+> **Решение (2026-07-27): маршрут подтверждён — wbconnector → OTS
+> напрямую.** Складское переиспользование обеспечивается не Integration, а
+> самим OTS: телеграммы `WMS.ECOMAUF/ECOMAUP`, 1С registry, статусы
+> `AufStatus`, `AUFSHPPAL` формируются внутри OTS и не зависят от
+> вызывающего. Полный OMS-флоу отклонён: payment/уведомления/dispatch
+> BPMN для WB FBS вредны и требуют параметризации. Вариант «через
+> Integration `/order/export`» отклонён: Integration в критическом пути
+> плюс OMS-образный payload без OMS. Integration остаётся эталоном
+> контракта `ORDER_TO_CHECK` для Go-адаптера, но не звеном рантайма.
+
 # Stage 16 — WB FBS fast-track через текущие OTS/WMS
 
 **Дата среза:** 2026-07-24  
@@ -352,12 +414,20 @@ auto-print только по `ORDER_PICKUP` невозможен без допо
 
 #### Что осталось определить по станции
 
-1. **Ключ скана.** Что сканирует упаковщик, чтобы получить нужный стикер.
-   Значение обязано разрешаться в `wb_order_id`, владелец сопоставления —
-   Connector. Кандидаты: внутренний `OrderNr`, tracking-баркод нашей этикетки.
-2. **Канал печати.** С выделенным принтером предпочтителен raw ZPL через
-   локальный print-agent, а не браузерная печать: точный физический размер без
-   масштабирования. Нужны модель принтера и размер этикетки.
+1. ~~**Ключ скана.**~~ **Закрыто 2026-08-03:** сканируется наша этикетка, ключ —
+   `gj_order_id`. Менять этикетку не потребуется: по трассировке прода WMS уже
+   печатает наш номер как `shipment_barcode` (в `TgwCreateOrderEvent` заказа
+   `2010843731` стоит `("shipmentBarcode": "2010843731")` = `order_id`).
+   Разрешение `gj_order_id` → `wb_order_id` — на стороне Connector, реализовано
+   в приёмнике скана.
+2. ~~**Канал печати.**~~ **Закрыто 2026-08-03:** склад дорабатывает софт сканера
+   на месте (сканеры докуплены), печать — **raw ZPL, 58×40**. Connector отдаёт
+   в ответе на скан `format` и `payload` (base64) из кеша. Следствие: кеш
+   стикеров должен держать именно ZPL, а не SVG, поэтому формат вынесен в
+   конфигурацию (`WB_STICKER_FORMAT`/`WIDTH`/`HEIGHT`, по умолчанию `zplv` 58×40)
+   и сверяется в момент скана — SVG на ZPL-принтере даёт пустую наклейку без
+   какой-либо ошибки. Остаётся модель принтера и выбор `zplv` против `zplh`:
+   это ориентация рендера на стороне WB, меняется настройкой без правки кода.
 3. **Реальный размер и символы WB ZPL** выбранного кабинета остаются
    `unknown` и в песочнице не проверяются (методы стикеров отдают пустой
    `200`). Первая физическая печать — приёмочный тест на контролируемом

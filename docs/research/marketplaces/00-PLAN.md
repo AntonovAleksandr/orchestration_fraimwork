@@ -97,9 +97,11 @@ WMS `GetCheckOrder`, order/box/`PalNam`,
 Отдельные blocking checks: idempotent reserve retry, conservative WB ATS,
 legacy `ОбменWB` cutover, order range/prefix и один закрытый `wb_weekly`
 период.
-Для order identity отдельно нужны исходная Redmine `#99027`, sanitized
-`client_order_id_template`, централизованный prefix registry и boundary E2E
-matrix до выбора диапазона WB FBS.
+Для order identity диапазон WB FBS выбран: блок «31», ADR
+`docs/architecture/2026-07-31-adr-wb-fbs-order-id.md` (proposed,
+`MP-ID-011`); остаются условия фиксации — SIT-граница `3100000001`, реестр
+пространств номеров, согласования 1С/OTS/DWH. Исторические хвосты (Redmine
+`#99027`, sanitized `client_order_id_template`) больше не блокируют.
 Stage 18 добавляет два дешёвых действия перед technical spike: sandbox smoke
 «карточка → `chrtID` → склад → остаток → контрольное чтение» с негативными
 тестами на `sku` и на неверные имена параметров, и проверку prod-кабинета на

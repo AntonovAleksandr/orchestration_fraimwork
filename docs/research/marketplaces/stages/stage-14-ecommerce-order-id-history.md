@@ -368,7 +368,21 @@ Current Confluence contract:
 - Jira `MWHNSK-1106/1107` назывались `INT32. 1C7 - WMS`, но описания полей
   отсутствуют;
 - Jira `OPSOMN-13708` зафиксировала реальный overflow при
-  `fiscal_document_number > 2_147_483_647` в 1С/WebAPI;
+  `fiscal_document_number > 2_147_483_647` в 1С/WebAPI. Уточнение по
+  комментариям (перечитано 2026-07-31): падал **приёмный контур**
+  (`gloria_jeans_1c_ecom`, IIS/.NET, «Value was either too large or too small
+  for an Int32») на маршруте OMS→IS→WebApi при экспорте `COMPLETED`; сам
+  парсер не чинился — значение ограничили у источника (ЮKassa), сначала до
+  Int32 max, по итоговому комментарию 2026-04-27 — до `4 294 967 295`
+  (UInt32 max). То есть парсер этого поля сейчас терпит до UInt32, но это
+  контракт одного поля (`fiscal_document_number`), а не `idd`.
+  Код-подтверждение (2026-07-31, `project/ApiGW`, master): WebApi = **ApiGW**,
+  `StarfishController` принимает `/api/Starfish/Orders`; в DTO
+  `Order.IDD`/`DocumentFoundation`/`IddOriginal` — **string**, а
+  `ReceiptInfoDTO.FiscalDocumentNumber` — **`int?`**, то есть Int32-парсер
+  чека жив до сих пор и не совместим с заявленным потолком UInt32: значения
+  между 2 147 483 648 и 4 294 967 295 по-прежнему уронят экспорт `COMPLETED`
+  обычного eCom. Номера заказа это не касается;
 - Jira `MWHNSK-3152` использовала заказ `3000000001` в тесте 1С7/WMS; дефектом
   было удаление ведущих нулей в штрихкоде, а не переполнение.
 

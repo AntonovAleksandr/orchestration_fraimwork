@@ -102,7 +102,7 @@
 | Метод | Контракт |
 |---|---|
 | `POST /api/v3/supplies` | тело `{name: 1..128}` → 201 `{id: "WB-GI-..."}` |
-| `PATCH /api/marketplace/v3/supplies/{supplyId}/orders` | до 100 заданий за вызов, 204. Задания → `confirm`. **Перемещает между активными поставками** и из закрытой при повторной отгрузке. Ограничения: один `cargoType` и `crossBorderType` на поставку (наследуются от первого задания); все задания с одного склада — `officeId` задания должен совпадать с `destinationOfficeId` поставки (с 01.09.2025, иначе 409). Ошибка 409 `FailedToAddSupplyOrder` |
+| `PATCH /api/marketplace/v3/supplies/{supplyId}/orders` | тело — объект `{"orders": [id…]}` (подтверждено песочницей 2026-07-31: голый массив → 400 `validation failed`, `orderIds` → 400 `IncorrectRequest`); до 100 заданий за вызов, 204. Задания → `confirm`. **Перемещает между активными поставками** и из закрытой при повторной отгрузке. Ограничения: один `cargoType` и `crossBorderType` на поставку (наследуются от первого задания); все задания с одного склада — `officeId` задания должен совпадать с `destinationOfficeId` поставки (с 01.09.2025, иначе 409). Ошибка 409 `FailedToAddSupplyOrder` |
 | `PATCH /api/v3/supplies/{supplyId}/deliver` | 204. Условия: ≥1 задание, вся обязательная маркировка закреплена и прошла проверку. 409 `409SupplyDeliverError`: `SupplyHasZeroOrders`, `MetaValidationFail` с `data.orders[]{id, metaDetails[]}` |
 | `GET /api/v3/supplies/{supplyId}` | `id`, `name`, `done`, `createdAt`, `closedAt`, `scanDt` (поставки **или первого заказа**), `cargoType`, `crossBorderType`, `isB2b`, `destinationOfficeId`, `recommendedWhId` (0 = не определён), `isPickupPointShipmentAllowed` (с ~17.06.2026) |
 | `GET /api/v3/supplies` | `limit` 1..1000, `next` |
