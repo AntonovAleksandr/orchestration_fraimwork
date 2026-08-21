@@ -137,6 +137,18 @@ var timestamp = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(@params.times
 не здесь, а периодической полной сверкой. В рамках этой задачи достаточно знать,
 что инкремента одного недостаточно.
 
+### 4.5. Базовый URL с суффиксом `/v2` молча меняет контракт
+
+Маршрутизация ASP.NET регистронезависима: `POST {base}/Balance` при
+`base = …/v2` попадает на `BalanceV2Controller` (`[Route("v2/balance")]`).
+V2-ответ — **другой контракт**: позиции с `sku_article` (артикул 1С, внутри —
+конвертация баркод→артикул через `GetArticleFromBarcodes`), `timestamp` строкой,
+плюс `eventName: OTSBalanceResultTimestampV2`. Парсер v1 на таком ответе падает
+с `code=200` и телом в сообщении об ошибке — выглядит как «сервер вернул 200,
+но это ошибка». Проверено живьём на стейдже 2026-08-14: коннектору нужен v1
+(`base` без суффикса), в `.env.stage` суффикс убран; при деплое проверить
+`OTS_SERVICE_CLIENT_BASE_URL` в k8s — там может жить тот же `/v2`.
+
 ## 5. Задача 1: чтение остатков в клиенте OTS
 
 Файл: `internal/adapters/ots/balance.go` (новый).
