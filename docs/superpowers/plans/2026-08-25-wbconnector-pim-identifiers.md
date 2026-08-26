@@ -28,7 +28,7 @@
 **`platform-new/wbconnector`**
 - `migrations/20260825120000_product_identifiers.sql` — кеш, реестр конфликтов, вид отклонения.
 - `internal/core/sku.go` — `SkuIdentity`, `SkuConflict`, `DeviationUnknownSKU`.
-- `internal/adapters/pgstore/skus.go` — `UpsertSkus`, `SkuByBarcode`, `SkusByBarcodes`, `UnknownBarcodes`.
+- `internal/adapters/pgstore/skus.go` — `UpsertSkus`, `SkuByBarcode`, `SkusByBarcodes`. Отдельный `UnknownBarcodes` не нужен: `SkusByBarcodes` возвращает карту, и неизвестные баркоды — это отсутствующие ключи.
 - `internal/adapters/pim/client.go` — адаптер над `pimclient`: доменные типы, режимы обхода и батча.
 - `internal/skus/importer.go` — курсорный обход PIM в кеш (по образцу `internal/goods`).
 - `cmd/pimsync/main.go` — бинарь полного прохода.
@@ -142,7 +142,7 @@ Expected: после ретрая job'а Deployment `wbconnector` и `wbconnecto
 расхождение обнаружится только когда заказ упрётся в `unknown_sku`. Поэтому в
 Task 4 продолжение обхода обязано быть покрыто тестом на двух страницах.
 
-### Task 2: Кеш идентификаторов в схеме
+### Task 2: Кеш идентификаторов в схеме  ✅ выполнено 2026-08-26
 
 **Files:**
 - Create: `platform-new/wbconnector/migrations/20260825120000_product_identifiers.sql`
@@ -151,7 +151,7 @@ Task 4 продолжение обхода обязано быть покрыт�
 **Interfaces:**
 - Produces: таблицы `product_identifiers`, `sku_conflicts`; вид отклонения `unknown_sku`; типы `core.SkuIdentity`, `core.SkuConflict`, константа `core.DeviationUnknownSKU`.
 
-- [ ] **Step 1: Написать миграцию**
+- [x] **Step 1: Написать миграцию**
 
 ```sql
 -- +goose Up
@@ -221,7 +221,7 @@ DROP TABLE IF EXISTS product_identifiers;
 -- +goose StatementEnd
 ```
 
-- [ ] **Step 2: Добавить доменные типы**
+- [x] **Step 2: Добавить доменные типы**
 
 `internal/core/sku.go`:
 
@@ -271,7 +271,7 @@ type SkuImportResult struct {
 }
 ```
 
-- [ ] **Step 3: Накатить и откатить миграцию**
+- [x] **Step 3: Накатить и откатить миграцию**
 
 ```bash
 cd $WORKSPACE/platform-new/wbconnector
@@ -283,7 +283,7 @@ WBCONNECTOR_DB_DSN=$DSN go run ./cmd/migrate --cmd=up   --dir=migrations
 
 Expected: три раза `OK 20260825120000_product_identifiers.sql`, без ошибок.
 
-- [ ] **Step 4: Коммит**
+- [x] **Step 4: Коммит**
 
 ```bash
 git add migrations/20260825120000_product_identifiers.sql internal/core/sku.go
@@ -292,7 +292,7 @@ git commit -m "feat: schema for the PIM-mastered SKU identifier cache"
 
 ---
 
-### Task 3: Хранилище кеша
+### Task 3: Хранилище кеша  ✅ выполнено 2026-08-26
 
 **Files:**
 - Create: `platform-new/wbconnector/internal/adapters/pgstore/skus.go`
@@ -305,7 +305,7 @@ git commit -m "feat: schema for the PIM-mastered SKU identifier cache"
   - `(*Store).SkuByBarcode(ctx, barcode string) (*core.SkuIdentity, error)` — `(nil, nil)` если баркод неизвестен
   - `(*Store).SkusByBarcodes(ctx, []string) (map[string]core.SkuIdentity, error)`
 
-- [ ] **Step 1: Написать падающие тесты**
+- [x] **Step 1: Написать падающие тесты**
 
 `skus_test.go`:
 
@@ -401,12 +401,12 @@ func TestSkusByBarcodesReturnsOnlyKnown(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Прогнать — должны упасть**
+- [x] **Step 2: Прогнать — должны упасть**
 
 Run: `WBCONNECTOR_TEST_DSN=$DSN go test ./internal/adapters/pgstore/ -run 'TestUpsertSkus|TestSkusByBarcodes' -v`
 Expected: FAIL — методов ещё нет.
 
-- [ ] **Step 3: Реализовать `skus.go`**
+- [x] **Step 3: Реализовать `skus.go`**
 
 Структуру взять с `internal/adapters/pgstore/goods.go`: `UpsertGoods` — **set-based**, он раскладывает батч в параллельные массивы и делает один запрос через `unnest` внутри транзакции. Повторить ту же форму, читать её перед написанием:
 
@@ -448,12 +448,12 @@ rg -n -A80 "func \(s \*Store\) UpsertGoods" internal/adapters/pgstore/goods.go
 
 и запись конфликтов тем же приёмом, что `goods_conflicts` (`ON CONFLICT DO NOTHING` по уникальной тройке). Если форма `unnest` с `LATERAL` окажется неудобной, допустимо повторить ровно тот вариант, который использует `goods.go` — важно только, чтобы запрос был один на батч, а не по строке.
 
-- [ ] **Step 4: Прогнать — должны пройти**
+- [x] **Step 4: Прогнать — должны пройти**
 
 Run: `WBCONNECTOR_TEST_DSN=$DSN go test -race ./internal/adapters/pgstore/ -count=1`
 Expected: ok.
 
-- [ ] **Step 5: Коммит**
+- [x] **Step 5: Коммит**
 
 ```bash
 git add internal/adapters/pgstore/skus.go internal/adapters/pgstore/skus_test.go
