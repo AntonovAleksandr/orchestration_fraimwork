@@ -483,7 +483,7 @@ git commit -m "feat: store for the PIM SKU identifier cache"
   - `(*pim.Client).ByBarcodes(ctx, []string) ([]core.SkuIdentity, error)`
   - `skus.NewImporter(api PIMAPI, store Store, maxPages int) *Importer` и `(*Importer).Run(ctx) (core.SkuImportResult, error)`
 
-- [ ] **Step 1: Написать падающий тест импортёра на фейках**
+- [x] **Step 1: Написать падающий тест импортёра на фейках**
 
 `internal/skus/importer_test.go`:
 
@@ -549,7 +549,7 @@ func TestImporterWalksEveryPage(t *testing.T) {
 }
 ```
 
-- [ ] **Step 1b: Написать падающий тест адаптера на httptest**
+- [x] **Step 1b: Написать падающий тест адаптера на httptest**
 
 Тест импортёра выше подменяет весь адаптер, поэтому он **не проверяет** ни чтение
 курсора, ни имя ключа фильтра — а это ровно те два места, где догадки уже
@@ -601,12 +601,12 @@ func TestByBarcodesSendsBareFilterKey(t *testing.T) {
 Обе проверки — про контракт, а не про нашу логику, поэтому они обязаны идти по
 HTTP: только так видно фактическое тело запроса и разбор фактического ответа.
 
-- [ ] **Step 2: Прогнать — должен упасть**
+- [x] **Step 2: Прогнать — должен упасть**
 
 Run: `go test ./internal/skus/ ./internal/adapters/pim/ -v`
 Expected: FAIL — пакетов ещё нет.
 
-- [ ] **Step 3: Реализовать адаптер PIM**
+- [x] **Step 3: Реализовать адаптер PIM**
 
 Сначала — зависимость, вместе с импортом (см. Task 1, почему не раньше):
 
@@ -674,7 +674,7 @@ func (c *Client) ByBarcodes(ctx context.Context, barcodes []string) ([]core.SkuI
 }
 ```
 
-- [ ] **Step 4: Реализовать импортёр**
+- [x] **Step 4: Реализовать импортёр**
 
 `internal/skus/importer.go` — цикл по страницам с курсором в `sync_state` под именем `pim_skus`:
 
@@ -717,6 +717,25 @@ func (i *Importer) Run(ctx context.Context) (core.SkuImportResult, error) {
 ```
 
 `startCursor`/`saveCursor` — как в `internal/goods/importer.go`, только имя записи `sync_state` другое; при `--full` стартовый курсор игнорируется.
+
+**Семантика курсора обхода (добавлено по факту реализации 2026-08-26).**
+Импортёр переиспользует существующий механизм `sync_state` из
+`internal/adapters/pgstore/syncstate.go` под именем `skus.SyncName = "pim_skus"`
+и сохраняет курсор после каждой страницы, чтобы падение в середине не начинало
+проход заново. Методы `LoadSyncCursor`/`SaveSyncCursor` подключаются через
+опциональный интерфейс `skus.CursorPersister`, поэтому фейку в тестах их
+реализовывать не обязательно.
+
+Ключевое правило: **дойдя до конца каталога, обход обязан сбросить курсор.**
+Иначе следующий запуск стартует с последней страницы, сразу видит конец и не
+обновляет ничего — и так всегда, без единой ошибки. Прогон отчитается успехом,
+а карта тихо устареет; фильтра по времени у PIM нет, наверстать нечем. Это
+закрыто тестом `TestImporterClearsTheCursorWhenTheWalkCompletes`.
+
+Обрыв по лимиту страниц — наоборот, прерывание, и там курсор сохраняется
+(`TestImporterKeepsTheCursorWhenStoppedEarly`). Отсюда выбор конструктора:
+`NewImporter` продолжает прерванный проход, `NewFullImporter` осознанно
+выбрасывает сохранённый курсор и начинает с начала.
 
 - [ ] **Step 5: Реализовать резолвер (кеш → PIM → кеш)**
 
