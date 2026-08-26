@@ -23,7 +23,7 @@
 
 ## File Map
 
-**Готовый клиент `platform-new/clients/pim`** (module `…/clients/pimclient`, тег `v0.1.3`) — реализован отдельной сессией, живая проверка на stage пройдена. В рамках этого плана **не меняется**, только подключается в `go.mod` (Task 1). Даёт `pim.New`, `SearchSkuProducts`, `pim.PaginationTypeCursor` и типы `SkuProduct` / `CursorPagination`.
+**Готовый клиент `platform-new/clients/pim`** (module `…/clients/pimclient`, тег `v0.1.3`) — реализован отдельной сессией, живая проверка на stage пройдена. В рамках этого плана **не меняется**, только подключается в `go.mod` (Task 1). Даёт `New`, `SearchSkuProducts`, `PaginationTypeCursor` и типы `SkuProduct` / `CursorPagination`; импортируется под алиасом `pimclient`.
 
 **`platform-new/wbconnector`**
 - `migrations/20260825120000_product_identifiers.sql` — кеш, реестр конфликтов, вид отклонения.
@@ -107,10 +107,13 @@ Expected: после ретрая job'а Deployment `wbconnector` и `wbconnecto
 попадает один раз, вместе с кодом, который ею пользуется.
 
 **Interfaces:**
+Пакет внутри модуля называется `pim`, и это совпадает с именем нашего пакета-адаптера `internal/adapters/pim`. Совпадение легально, но читается плохо, поэтому клиент везде импортируется под явным алиасом:
+`pimclient "gitlab.gloria.aaanet.ru/greensight/gj/go/clients/pimclient"`.
+
 - Provides (фактический контракт `v0.1.3`, сверено по коду 2026-08-26):
-  - `pim.New(baseURL string, opts ...httpclient.Option) *Client` — `baseURL` без `/api/v1`, авторизация не нужна
+  - `pimclient.New(baseURL string, opts ...httpclient.Option) *Client` — `baseURL` без `/api/v1`, авторизация не нужна
   - `(*Client).SearchSkuProducts(ctx, SearchSkuProductsRequest) (SearchSkuProductsResponse, error)`
-  - `pim.PaginationTypeCursor` — стабильная константа для `pagination.type`; предпочитать её сгенерированному `Cursor`
+  - `pimclient.PaginationTypeCursor` — стабильная константа для `pagination.type`; предпочитать её сгенерированному `Cursor`
   - `SkuProduct{Id int64, Barcode, VendorCode, ProductVendorCode, ExternalId string, ProductId, MarkType, TypeOfGood *…}`
   - `SearchSkuProductsResponse.Meta.Pagination` — **указатель** на анонимную структуру с полями
     `Cursor`, `Limit`, **`NextCursor`**
@@ -575,7 +578,7 @@ func TestPageFollowsNextCursor(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	rows, next, err := New(pim.New(srv.URL)).Page(context.Background(), "", 100)
+	rows, next, err := New(srv.URL, 5*time.Second).Page(context.Background(), "", 100)
 	if err != nil {
 		t.Fatalf("Page: %v", err)
 	}
@@ -615,7 +618,7 @@ GOPRIVATE=gitlab.gloria.aaanet.ru go get gitlab.gloria.aaanet.ru/greensight/gj/g
 Expected: после написания адаптера строка `…/pimclient v0.1.3` стоит в `go.mod` **без** пометки `// indirect`, и `go mod tidy` её не убирает.
 
 
-`internal/adapters/pim/client.go` переводит `pim.SkuProduct` в `core.SkuIdentity` и задаёт два режима запроса. Модуль называется `pimclient`, а пакет внутри — `pim`, поэтому импорт выглядит как `pim "gitlab.gloria.aaanet.ru/greensight/gj/go/clients/pimclient"`. Почти все поля запроса — указатели, отсюда локальные переменные и хелпер `ptr`:
+`internal/adapters/pim/client.go` переводит `pimclient.SkuProduct` в `core.SkuIdentity` и задаёт два режима запроса. Клиент импортируется под алиасом `pimclient` (см. Task 1: его собственное имя пакета — `pim`, как у этого адаптера). Почти все поля запроса — указатели, отсюда локальные переменные и хелпер `ptr`:
 
 ```go
 func ptr[T any](v T) *T { return &v }
@@ -624,8 +627,8 @@ func ptr[T any](v T) *T { return &v }
 func (c *Client) Page(ctx context.Context, cursor string, limit int) ([]core.SkuIdentity, string, error) {
 	req := pimclient.SearchSkuProductsRequest{
 		Sort: &[]string{"id"},
-		Pagination: &pim.CursorPagination{
-			Type: ptr(pim.PaginationTypeCursor), Limit: &limit, Cursor: &cursor,
+		Pagination: &pimclient.CursorPagination{
+			Type: ptr(pimclient.PaginationTypeCursor), Limit: &limit, Cursor: &cursor,
 		},
 	}
 	resp, err := c.api.SearchSkuProducts(ctx, req)
@@ -656,10 +659,10 @@ func (c *Client) ByBarcodes(ctx context.Context, barcodes []string) ([]core.SkuI
 		end := min(start+batch, len(barcodes))
 		filter := map[string]any{"barcode": barcodes[start:end]}
 		limit := batch
-		resp, err := c.api.SearchSkuProducts(ctx, pim.SearchSkuProductsRequest{
+		resp, err := c.api.SearchSkuProducts(ctx, pimclient.SearchSkuProductsRequest{
 			Filter: &filter,
-			Pagination: &pim.CursorPagination{
-				Type: ptr(pim.PaginationTypeCursor), Limit: &limit,
+			Pagination: &pimclient.CursorPagination{
+				Type: ptr(pimclient.PaginationTypeCursor), Limit: &limit,
 			},
 		})
 		if err != nil {
