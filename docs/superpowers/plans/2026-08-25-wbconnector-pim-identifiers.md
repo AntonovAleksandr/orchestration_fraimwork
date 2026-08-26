@@ -465,7 +465,7 @@ git commit -m "feat: store for the PIM SKU identifier cache"
 
 ---
 
-### Task 4: Адаптер PIM и импортёр
+### Task 4: Адаптер PIM и импортёр  ✅ выполнено 2026-08-26
 
 **Files:**
 - Create: `platform-new/wbconnector/internal/adapters/pim/client.go`
@@ -737,7 +737,28 @@ func (i *Importer) Run(ctx context.Context) (core.SkuImportResult, error) {
 `NewImporter` продолжает прерванный проход, `NewFullImporter` осознанно
 выбрасывает сохранённый курсор и начинает с начала.
 
-- [ ] **Step 5: Реализовать резолвер (кеш → PIM → кеш)**
+**Дубль баркода в PIM (добавлено по факту реализации 2026-08-26).** Замер выше
+показал 5 баркодов, у которых в PIM больше одного SKU, и это меняет два места:
+
+1. `UpsertSkus` сворачивает пачку до одной строки на баркод, оставляя последнюю.
+   Без этого две строки одного баркода на одной странице обхода дают Postgres
+   21000 («ON CONFLICT DO UPDATE command cannot affect row a second time»);
+   импортёр падал на этой странице и, поскольку курсор хранится постранично,
+   падал бы на ней каждый запуск, так и не досинхронизировав каталог.
+   Двусмысленность внутри пачки пишется в `sku_conflicts` тем же реестром;
+   полностью одинаковые повторы расхождением не считаются.
+2. `Resolver.Resolve` при двух и более строках возвращает `(nil, nil)`, то есть
+   приравнивает двусмысленность к неизвестности. Выбор наугад отправил бы в WMS
+   артикул чужого товара, что хуже остановленного заказа, и вдобавок разошёлся
+   бы с картой, где после дедупликации лежит последняя строка. В кеш строки
+   всё равно пишутся, чтобы расхождение попало в реестр.
+
+**Следствие для Task 5:** `Resolve` возвращает `nil` в двух разных случаях —
+баркод не знает никто и баркод двусмыслен. Оба обязаны приводить к
+`unknown_sku` и останавливать выгрузку в OTS; различать их в коде не нужно,
+но при разборе отклонения второй случай виден по строке в `sku_conflicts`.
+
+- [x] **Step 5: Реализовать резолвер (кеш → PIM → кеш)**
 
 `internal/skus/resolver.go` — то, чем пользуется обработчик OTS:
 
@@ -809,11 +830,11 @@ func TestResolverPrefersCacheAndBackfillsOnMiss(t *testing.T) {
 }
 ```
 
-- [ ] **Step 6: Реализовать бинарь**
+- [x] **Step 6: Реализовать бинарь**
 
 `cmd/pimsync/main.go` повторяет `cmd/wbgoods/main.go`: флаги `--max-pages` (0 — до конца) и `--full`, логирование итога одной строкой. В `Makefile` и `Dockerfile` добавить `pimsync` рядом с `wbstatus` и `wbgoods`.
 
-- [ ] **Step 7: Прогнать тесты и сборку**
+- [x] **Step 7: Прогнать тесты и сборку**
 
 ```bash
 go build ./... && go test -race ./internal/skus/ ./internal/adapters/pim/ -count=1
@@ -821,7 +842,7 @@ go build ./... && go test -race ./internal/skus/ ./internal/adapters/pim/ -count
 
 Expected: ok.
 
-- [ ] **Step 8: Коммит**
+- [x] **Step 8: Коммит**
 
 ```bash
 git add internal/adapters/pim internal/skus cmd/pimsync Makefile Dockerfile go.mod go.sum
