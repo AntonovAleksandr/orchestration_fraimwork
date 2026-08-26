@@ -851,7 +851,7 @@ git commit -m "feat: PIM SKU importer, resolver and pimsync binary"
 
 ---
 
-### Task 5: Артикул в контракте OTS
+### Task 5: Артикул в контракте OTS  ✅ выполнено 2026-08-26
 
 Ядро задачи: именно здесь `GAS011429/коричневый` перестаёт уезжать в WMS.
 
@@ -883,7 +883,7 @@ type SkuResolver interface {
 	RecordDeviation(ctx context.Context, d core.Deviation) error
 ```
 
-- [ ] **Step 1: Написать падающие тесты**
+- [x] **Step 1: Написать падающие тесты**
 
 ```go
 func TestOTSOrderCarriesOurSkuVendorCode(t *testing.T) {
@@ -924,12 +924,12 @@ func TestOrderWithUnknownBarcodeIsNotExportedAndIsRecorded(t *testing.T) {
 
 Имена `buildOTSOrder`/`exportOrder`/`fakeSkuResolver` — тестовые хелперы этого пакета; их формы взять с существующих тестов `internal/worker/commands/ots_test.go`, чтобы не заводить второй стиль.
 
-- [ ] **Step 2: Прогнать — должны упасть**
+- [x] **Step 2: Прогнать — должны упасть**
 
 Run: `go test ./internal/worker/commands/ -run 'TestOTSOrderCarries|TestOrderWithUnknownBarcode' -v`
 Expected: FAIL.
 
-- [ ] **Step 3: Реализовать**
+- [x] **Step 3: Реализовать**
 
 В построителе заказа после проверки баркода:
 
@@ -969,16 +969,16 @@ Expected: FAIL.
 
 Ошибка **retryable**, не `permanentf`: адресный дозапрос в PIM внутри резолвера может наполнить кеш к следующей попытке; если PIM его правда не знает, команда паркуется по обычному бюджету, а отклонение уже видно.
 
-- [ ] **Step 4: Прогнать — должны пройти**
+- [x] **Step 4: Прогнать — должны пройти**
 
 Run: `WBCONNECTOR_TEST_DSN=$DSN go test -race ./internal/worker/commands/ -count=1`
 Expected: ok.
 
-- [ ] **Step 5: Мутационная проверка**
+- [x] **Step 5: Мутационная проверка**
 
 Временно вернуть `Article: order.Article` и убедиться, что `TestOTSOrderCarriesOurSkuVendorCode` падает с сообщением про `GAS011429/коричневый`. Вернуть код.
 
-- [ ] **Step 6: Провести зависимость через контейнер**
+- [x] **Step 6: Провести зависимость через контейнер**
 
 В `internal/app/container.go` передать резолвер пятым аргументом `commands.NewOTS`. Пока `PIM_BASE_URL` не настроен, подставляется заглушка, отвечающая «не знаю»:
 
@@ -995,7 +995,7 @@ func (unknownSKUs) Resolve(context.Context, string) (*core.SkuIdentity, error) {
 
 С заглушкой экспорт в OTS встаёт с `unknown_sku` для **всех** заказов, поэтому Task 5 и Task 6 выкатываются на стенд одним релизом, без промежуточного деплоя Task 5.
 
-- [ ] **Step 7: Полная проверка и коммит**
+- [x] **Step 7: Полная проверка и коммит**
 
 ```bash
 go build ./... && WBCONNECTOR_TEST_DSN=$DSN go test -race -p 1 ./... -count=1
@@ -1007,7 +1007,7 @@ Expected: сборка и весь набор зелёные.
 
 ---
 
-### Task 6: Конфигурация, сборка, стенд
+### Task 6: Конфигурация, сборка, стенд  ✅ выполнено 2026-08-26
 
 **Files:**
 - Modify: `platform-new/wbconnector/internal/platform/config/config.go`
@@ -1021,7 +1021,7 @@ Expected: сборка и весь набор зелёные.
 - Consumes: всё из задач 1–5.
 - Produces: `cfg.PIM.BaseURL`, `cfg.PIM.Timeout`; собранный резолвер в контейнере; cron `pimsync` на стенде.
 
-- [ ] **Step 1: Тест на конфиг**
+- [x] **Step 1: Тест на конфиг**
 
 ```go
 func TestLoadReadsPIMSettings(t *testing.T) {
@@ -1038,13 +1038,13 @@ func TestLoadReadsPIMSettings(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Реализовать конфиг и сборку в контейнере**
+- [x] **Step 2: Реализовать конфиг и сборку в контейнере**
 
 `PIMConfig{BaseURL string; Timeout time.Duration}`; по образцу `OTS_BASE_URL`. Резолвер собирается только при непустом `PIM_BASE_URL`; без него сервис поднимается, а экспорт в OTS отказывает с понятным сообщением — так же, как циклы без БД пишут предупреждение и не запускаются.
 
 Заменить `StubVendorCodeResolver` в стенде на резолвер поверх кеша.
 
-- [ ] **Step 3: Values стенда**
+- [x] **Step 3: Values стенда**
 
 ```yaml
     PIM_BASE_URL:
@@ -1067,7 +1067,7 @@ func TestLoadReadsPIMSettings(t *testing.T) {
 
 Адрес PIM на stage сверен 2026-08-25: `stage/common-env.yaml:21` уже задаёт `CATALOG_PIM_SERVICE_HOST = http://pim-master.stage.svc.cluster.local` (service `pim-master`, port 80 → targetPort 8080, `stage/catalog/pim/pim.yaml:166-170`; values PIM лежат в `stage/catalog/pim/`, не в `stage/php/`). Используем то же имя хоста, без `:8080`.
 
-- [ ] **Step 4: Полная проверка**
+- [x] **Step 4: Полная проверка**
 
 ```bash
 cd $WORKSPACE/platform-new/wbconnector
@@ -1077,7 +1077,7 @@ WBCONNECTOR_TEST_DSN=$DSN go test -race -p 1 ./... -count=1
 
 Expected: пусто у `gofmt`, всё `ok`.
 
-- [ ] **Step 5: Коммит**
+- [x] **Step 5: Коммит**
 
 ```bash
 git add internal/platform/config internal/app/container.go internal/testharness .env.example README.md
