@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# Заводит задачу: собирает вводные в один файл и печатает команду запуска сессии.
+#
+# Зачем. По журналам 66 сессий: старт сессии — 62 тыс. токенов контекста,
+# медиана по ходам — 394 тыс., девятый дециль — 816 тыс. Одна сессия тянет
+# в среднем 18,5 ходов на задачу и живёт неделями, накапливая контекст.
+# 62% ходов идут при контексте выше 300 тыс. и дают 84% всего расхода.
+# Поэтому: одна задача — одна сессия, вводные собраны заранее файлом.
+#
+#   task.sh back  <OPSOMN002-123> [заголовок]   — задача на бэк
+#   task.sh front <OPSOMN002-123> [заголовок]   — задача на вёрстку
+#   task.sh review <адрес запроса>              — ревью запроса на слияние
+#
+# Складывает в .tasks/<ключ>/brief.md и печатает готовую команду.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+TASKS=${GJ_TASKS_DIR:-$ROOT/.tasks}
+
+KIND=${1:?back | front | review}
+ARG=${2:?ключ задачи или адрес запроса}
+TITLE=${3:-}
+
+slug() { echo "$1" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-//;s/-$//'; }
+
+case "$KIND" in
+  back|front)
+    KEY=$ARG
+    DIR="$TASKS/$(slug "$KEY")"
+    mkdir -p "$DIR"
+    BRIEF="$DIR/brief.md"
+    {
+      echo "# $KEY${TITLE:+ — $TITLE}"
+      echo
+      echo "- вид: $([ "$KIND" = back ] && echo 'бэк' || echo 'вёрстка')"
+      echo "- заведено: $(date +%F)"
+      echo "- задача: https://jira.gloria-jeans.ru/browse/$KEY"
+      echo
+      echo "## Что сделать"
+      echo
+      echo "_(заполняется в начале сессии: цель одной фразой и критерий готовности)_"
+      echo
+      echo "## Границы"
+      echo
+      echo "- трогаем:"
+      echo "- не трогаем:"
+      echo
+      echo "## Чем проверяем"
+      echo
+      if [ "$KIND" = back ]; then
+        cat <<'EOT'
+- локальный прогон тестов по затронутому пути (скилл `gj-local-test-runs`)
+- после открытия запроса — `scripts/gj/mr-brief.py <адрес> --out review.md`
+  и ревью по выжимке, а не по полному диффу
+EOT
+      else
+        cat <<'EOT'
+- `scripts/gj/shot.sh ios .golden/shots/<экран>.png` — снять экран
+- `scripts/gj/golden.sh check` — сверить с эталонами; расхождение выше допуска
+  вернёт вырезку, полный кадр в сессию не тянуть
+- `yarn test:unit` и `yarn ts` в `packages/gj`
+EOT
+      fi
+      echo
+      echo "## Порядок работы"
+      echo
+      cat <<'EOT'
+1. Прочитать эту вводную и дописать цель с критерием готовности.
+2. Поиск по коду — через подагента (`Explore`), в главную сессию тянуть выводы,
+   а не выдачу поиска.
+3. Правки и прогон проверок.
+4. Запрос на слияние, затем ревью по выжимке.
+EOT
+    } > "$BRIEF"
+    echo "вводная: $BRIEF"
+    echo
+    echo "запускать отдельной сессией, из корня workspace:"
+    echo "  claude \"Задача $KEY. Вводная: $BRIEF. Начни с неё.\""
+    ;;
+
+  review)
+    URL=$ARG
+    KEY=$(echo "$URL" | sed -E 's#.*/([^/]+)/-/merge_requests/([0-9]+).*#\1-\2#')
+    DIR="$TASKS/review-$(slug "$KEY")"
+    mkdir -p "$DIR"
+    echo "собираю выжимку запроса…"
+    "$ROOT/scripts/gj/mr-brief.py" "$URL" --out "$DIR/brief.md"
+    echo
+    echo "запускать отдельной сессией:"
+    echo "  claude \"Ревью запроса. Выжимка: $DIR/brief.md — читай её вместо полного диффа. Скилл gj-gitlab-mr-review.\""
+    ;;
+
+  *) echo "вид должен быть back, front или review" >&2; exit 1 ;;
+esac
