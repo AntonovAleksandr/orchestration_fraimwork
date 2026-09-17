@@ -8,6 +8,17 @@ description: Use when measuring how agent work in this workspace actually costs 
 Инструмент — `scripts/gj/stats.py`, источник — журналы в `~/.claude/projects`.
 Никакой разметки работы не требуется: фазы определяются по составу инструментов в ходе.
 
+## Коротко
+
+Смотреть **расход на задачу**, не общий: общий растёт вместе с объёмом работы.
+Порядок: снять замер → внести **одно** изменение → через неделю сравнить.
+Два изменения сразу не разделить.
+
+```bash
+scripts/gj/stats.py --snapshot docs/metrics/$(date +%F).json
+scripts/gj/stats.py --baseline docs/metrics/baseline-2026-09-15.json
+```
+
 ## Команды
 
 ```bash
