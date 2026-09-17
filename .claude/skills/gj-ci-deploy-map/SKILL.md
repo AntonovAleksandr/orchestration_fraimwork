@@ -88,11 +88,19 @@ push в `release-*` джобу **не запускает**, и деплой па
 
 Окружения (`/environments`) и теги в этом GitLab не заполнены — на них опираться нельзя.
 
-## Номер сборки мобильного
+## Номер сборки мобильного — присылать всегда
 
-`versionCode = CI_PIPELINE_IID + OFFSET_PARAM`, где `OFFSET_PARAM = 85000`. В логе джобы —
-строки `Version name (IMPORTANT!!!)` и `Version code (IMPORTANT!!!)`. По `package.json`
-номер определить нельзя: там лежит маркетинговая версия.
+**После каждой успешной джобы деплоя мобильного** — `android-staging`, `ios-staging`,
+`android-production`, `ios-production`, `android-production-rustore` — вывести в ответ
+**versionName и versionCode**. Это не часть сдачи, а самостоятельное обязательство: без
+номера тестировщику нечего искать в сторе и в Nexus.
+
+Где брать: в логе джобы строки `Version name (IMPORTANT!!!)` и `Version code (IMPORTANT!!!)`.
+Читать через `gitlab_get_job_log` по id успешной джобы.
+
+Как считается: `versionCode = CI_PIPELINE_IID + OFFSET_PARAM`, где `OFFSET_PARAM = 85000`
+(переменная в `.gitlab-ci.yml` мобильного). По `package.json` номер определить нельзя —
+там маркетинговая версия (`3.0.0`), к сборке она отношения не имеет.
 
 ## Смежные скиллы
 
