@@ -127,5 +127,5 @@ cgroups отсутствуют), поэтому оркестратор огра�
 
 - Orca: `orchestration`, `orca-cli`, `orca-emulator`, `orca-emulator-android`,
   `computer-use`, `orca-per-workspace-env` — `orca skills get <имя>`.
-- Проект: `gj-task-orchestration`, `gj-task-execution`, `gj-review-delegation`,
+- Проект: `gj-ci-deploy-map`, `gj-task-orchestration`, `gj-task-execution`, `gj-review-delegation`,
   `gj-session-analytics`, `gj-local-test-runs`, `gj-gitlab-git`.

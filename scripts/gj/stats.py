@@ -12,6 +12,7 @@
     stats.py --skills            использование скиллов и подагентов, цена эпизодов
     stats.py --skill-effect      эффективность: сессии со скиллом против сессий без
     stats.py --workers           сессии-работники orca (их расход виден, в отличие от подагентов)
+    stats.py --memory            оперативная память: сессии, приложение, давление на систему
     stats.py --snapshot ФАЙЛ     записать замер в JSON (для сравнения потом)
     stats.py --baseline ФАЙЛ     сравнить текущее состояние с записанным замером
 
@@ -344,6 +345,70 @@ def report_workers(d):
     print("  делегирование на orca, вы делаете цену делегирования измеримой.")
 
 
+def report_memory():
+    """Оперативная память — замер на сейчас. Истории в журналах нет.
+
+    Важное наблюдение: память сессии почти не зависит от размера контекста —
+    контекст живёт на сервере, локально лежит только клиент."""
+    import subprocess
+    print("=== ОПЕРАТИВНАЯ ПАМЯТЬ (замер на сейчас) ===")
+    try:
+        raw = subprocess.run(["orca", "diagnostics", "memory", "--json"],
+                             capture_output=True, text=True, timeout=60).stdout
+        d = json.loads(raw)["result"]
+    except Exception as e:
+        print(f"  orca недоступна ({str(e)[:60]}) — считаю по ps")
+        r = subprocess.run(["ps", "-Ao", "rss,comm"], capture_output=True, text=True).stdout
+        tot = n = 0
+        for line in r.splitlines()[1:]:
+            parts = line.split(None, 1)
+            if len(parts) == 2 and "claude" in parts[1]:
+                tot += int(parts[0]); n += 1
+        print(f"  сессий {n}, суммарно {tot/1048576:.2f} ГБ, в среднем {tot/1024/max(n,1):.0f} МБ")
+        return
+
+    app = d.get("app", {})
+    rows = [(s_.get("memory", 0), w.get("worktreeName", "?"), s_.get("cpu", 0), s_.get("pid"))
+            for w in d.get("worktrees", []) for s_ in w.get("sessions", [])]
+    tot = sum(r[0] for r in rows)
+    print(f"  приложение Orca      {app.get('memory',0)/1048576:7.0f} МБ   ЦП {app.get('cpu',0):.1f}%")
+    print(f"  сессий {len(rows):<2}            {tot/1048576:7.0f} МБ   "
+          f"в среднем {tot/1048576/max(len(rows),1):.0f} МБ на сессию")
+    print(f"  ИТОГО                {(tot+app.get('memory',0))/1048576:7.0f} МБ")
+    if rows:
+        print(f"\n  {'рабочее дерево':<30} {'память':>8} {'ЦП':>7}")
+        for m, w, c, pid in sorted(rows, reverse=True)[:8]:
+            print(f"  {w[:30]:<30} {m/1048576:7.0f}МБ {c:6.1f}%")
+
+    # давление на систему
+    try:
+        total = int(subprocess.run(["sysctl", "-n", "hw.memsize"],
+                                   capture_output=True, text=True).stdout)
+        vm = subprocess.run(["vm_stat"], capture_output=True, text=True).stdout
+        vals, ps = {}, 16384
+        for line in vm.splitlines():
+            if "page size of" in line:
+                ps = int(line.split()[-2])
+            if ":" in line:
+                k, v = line.split(":", 1)
+                v = v.strip().rstrip(".")
+                if v.isdigit(): vals[k.strip()] = int(v)
+        free = (vals.get("Pages free", 0) + vals.get("Pages inactive", 0)) * ps
+        comp = vals.get("Pages occupied by compressor", 0) * ps
+        swap = subprocess.run(["sysctl", "-n", "vm.swapusage"],
+                              capture_output=True, text=True).stdout.strip()
+        print(f"\n  ОЗУ всего {total/2**30:.0f} ГБ · свободно+неактивно {free/2**30:.1f} ГБ · "
+              f"сжато {comp/2**30:.1f} ГБ")
+        print(f"  подкачка: {swap}")
+        used_sw = [x for x in swap.split() if x.startswith("used")]
+        print("\n  Сессии Claude — не главный потребитель: сопоставимо едят браузер и симуляторы.")
+        print("  Память сессии почти не растёт с контекстом (184-456 МБ при контексте 60-900 тыс.):")
+        print("  контекст живёт на сервере, локально только клиент. Поэтому потолок по числу")
+        print("  сессий важнее потолка по памяти — он ограничивает расход токенов, а не ОЗУ.")
+    except Exception:
+        pass
+
+
 def snapshot(d):
     t = totals(d)
     t["ts"] = datetime.datetime.now().isoformat(timespec="seconds")
@@ -387,6 +452,7 @@ def main():
     ap.add_argument("--skills", action="store_true")
     ap.add_argument("--skill-effect", action="store_true", dest="skill_effect")
     ap.add_argument("--workers", action="store_true")
+    ap.add_argument("--memory", action="store_true")
     ap.add_argument("--snapshot", metavar="ФАЙЛ")
     ap.add_argument("--baseline", metavar="ФАЙЛ")
     a = ap.parse_args()
@@ -407,7 +473,8 @@ def main():
         compare(totals(d), base, "сейчас", base.get("ts", "замер")[:10])
         return 0
 
-    any_report = a.phases or a.sinks or a.waste or a.skills or a.skill_effect or a.workers
+    any_report = (a.phases or a.sinks or a.waste or a.skills or a.skill_effect
+                  or a.workers or a.memory)
     if not any_report:
         report_summary(d, label)
     if a.phases: report_phases(d)
@@ -426,6 +493,9 @@ def main():
     if a.workers:
         if any_report: print()
         report_workers(d)
+    if a.memory:
+        if any_report: print()
+        report_memory()
 
     if a.snapshot:
         json.dump(snapshot(d), open(a.snapshot, "w"), ensure_ascii=False, indent=1)

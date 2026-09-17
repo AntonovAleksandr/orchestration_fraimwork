@@ -178,3 +178,11 @@ PHP_CS_FIXER_IGNORE_ENV=1 /opt/homebrew/opt/php@8.2/bin/php vendor/bin/php-cs-fi
 3. вернуть правку, прогнать группу или полный набор в фоне;
 4. fixer и phpstan на изменённых файлах;
 5. для межсервисных правок — тест на границе систем, см. `.claude/skills/gj-task-execution/SKILL.md`.
+
+## Известный нестабильный тест PIM
+
+`app/Domain/Imports/ExcelReaders/Tests/CatalogAttributesReaderIntegrationTest.php` → тест `Import with directory property value` (набор `(3, 2, 2)`) в PIM падает в CI нестабильно: `Failed asserting that a row in the table [product_property_values] matches ... The table is empty`, при этом предшествующие ассерты проходят — `status = DONE`, `chunks_count = 2`, предупреждений ноль.
+
+Наблюдалось 15.09.2026 на ветке `task-opsomn002-366-crumbs-beauty-groups` (pipeline 101000, job 257763). Тот же коммит: локальный прогон файла — 24/24, перезапуск джобы (257764) — 1076 passed. До этого тест дважды проходил на той же ветке (pipelines 100909, 100998).
+
+Гипотеза, не доказанная: `composer test-ci` = `php artisan test --parallel`, и добавление тестов сдвигает раскладку по процессам, обнажая порядковую 
