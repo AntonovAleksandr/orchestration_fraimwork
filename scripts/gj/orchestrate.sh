@@ -29,7 +29,10 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 TASKS=${GJ_TASKS_DIR:-$ROOT/.tasks}
 ORCA=${GJ_ORCA_BIN:-orca}
 AGENT=${GJ_AGENT:-claude}
-WORKTREE=${GJ_WORKTREE:-current}
+# Дерево задаём ЯВНО по каталогу скрипта. `--worktree current` берёт активное дерево
+# интерфейса Orca, а не место запуска: работник может уйти совсем не туда, где его ждут.
+# Проверено 17.09 — запуск из flyingfish посадил работника в основное дерево.
+WORKTREE=${GJ_WORKTREE:-path:$ROOT}
 GJ_MAX_AGENTS=${GJ_MAX_AGENTS:-4}
 GJ_MIN_FREE_MB=${GJ_MIN_FREE_MB:-2048}
 
@@ -85,6 +88,37 @@ guard() {
     return 1
   fi
   echo "ресурсы: сессий $n из $GJ_MAX_AGENTS на ${used} МБ, свободно ${f} МБ" >&2
+}
+
+# Есть ли в дереве вложенные клоны платформ. Рабочее дерево git содержит только
+# отслеживаемые файлы, а platform/* — отдельные клоны, в worktree они НЕ попадают:
+# там остаются одни README. Работник получает вводную и не находит файлов.
+# Так сорвалась OPSOMN002-422: два работника сидели в дереве без customers-api-web.
+platform_repos() {
+  local root=${1:-$ROOT} n=0
+  for g in "$root"/platform/*/*/.git "$root"/platform/*/*/*/.git; do
+    [ -e "$g" ] && n=$((n+1))
+  done
+  echo "$n"
+}
+
+check_tree() {
+  local n; n=$(platform_repos "$ROOT")
+  [ "$n" -gt 0 ] && { echo "дерево: $ROOT (репозиториев платформ: $n)" >&2; return 0; }
+  echo "СТОП: в дереве $ROOT нет ни одного клона platform/*/ — только README." >&2
+  echo "      Рабочие деревья git не содержат вложенных клонов, и работник не найдёт файлов." >&2
+  echo "      Запускать из основного дерева либо подтянуть клоны:" >&2
+  echo "        scripts/sync-platform-repos.sh" >&2
+  echo "      Обойти (задача не трогает platform/*): GJ_SKIP_TREE_CHECK=1" >&2
+  return 1
+}
+
+# Вводная заполнена или осталась шаблоном. Пустая постановка = работа не начиналась.
+brief_filled() {
+  local b=$1
+  [ -f "$b" ] || return 1
+  grep -q 'заполняется в начале сессии' "$b" && return 1
+  return 0
 }
 
 skills_for() {
@@ -152,6 +186,7 @@ run_bind() {                       # создаёт Run при отсутств�
 start_worker() {                   # start_worker <вид> <ключ> <спецификация>
   local kind=$1 key=$2 spec=$3
   have_orca || { echo "orca не найдена — установите либо запускайте сессию вручную" >&2; return 1; }
+  [ "${GJ_SKIP_TREE_CHECK:-}" = "1" ] || check_tree || return 1
   guard || return 1
   local run; run=$(run_bind "GJ $key")
   [ -n "$run" ] && echo "Run: $run"
@@ -210,6 +245,12 @@ case "$cmd" in
   done)
     KEY=${1:?укажите ключ задачи}
     BRIEF="$TASKS/$(slug "$KEY")/brief.md"
+    if ! brief_filled "$BRIEF"; then
+      echo "СТОП: вводная $BRIEF осталась шаблоном — постановка не заполнена." >&2
+      echo "      Значит работа по задаче не начиналась либо шла мимо вводной." >&2
+      echo "      Сдавать нечего: сначала заполнить цель и критерий готовности." >&2
+      exit 1
+    fi
     SPEC="Загрузи скиллы $(skills_for done) ДО любых других действий.
 
 ЦЕЛЬ: сдача задачи $KEY по разделу «Сдача задачи» скилла gj-task-orchestration.
