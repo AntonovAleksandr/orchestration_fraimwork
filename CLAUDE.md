@@ -307,3 +307,4 @@ elc -w gj stop
 7. **Nx module boundaries в Site** — не суппрессить ESLint error; либо лифтить shared код в `libs/shared/`, либо пересмотреть направление зависимости.
 8. **Camunda topic name** — это контракт между BPMN XML и Java-handler. Case-sensitive. При смене — обновлять обе стороны + думать о running instances.
 9. **Нестандартные default-branches:** Site — `release/production`; OMS — много feature-веток. Перед push проверять, куда идём.
+10. **GitLab MR review:** всегда применять `gj-gitlab-mr-review` один раз, затем ровно один платформенный addendum: `ensi-gitlab-mr-review`, `integration-gitlab-mr-review`, `oms-gitlab-mr-review`, `site-gitlab-mr-review` или `mobile-gitlab-mr-review`. Тематические business-flow skills подключать только по затронутому процессу. По умолчанию review read-only; GitLab writes — только по явному запросу пользователя.

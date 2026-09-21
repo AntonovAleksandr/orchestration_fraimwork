@@ -1,0 +1,199 @@
+diff --git a/www/app/Service/UserApi/Support/ExpressQuote/ExpressQuoteSpec.php b/www/app/Service/UserApi/Support/ExpressQuote/ExpressQuoteSpec.php
+--- a/www/app/Service/UserApi/Support/ExpressQuote/ExpressQuoteSpec.php
++++ b/www/app/Service/UserApi/Support/ExpressQuote/ExpressQuoteSpec.php
+@@ -143,20 +143,13 @@
+     // ---------------------------------------------------------------- контекст
+ 
+     /**
+-     * Канонический контекст расчёта доставки.
+-     *
+-     * Вход намеренно приведён к «корзине, участвующей в расчёте доставки»: это ровно то,
+-     * что каждый из участников и так отправляет в OMS (см. compactCart в OmsClientV2).
+-     *
+-     * @param array{city?: array{fiasId?: string|null, name?: string|null},
+-     *              street?: array{fiasId?: string|null, name?: string|null},
+-     *              building?: array{fiasId?: string|null, name?: string|null}} $address
+-     * @param array<int, array{id?: string|null, quantity?: int|float|string|null}> $items
+-     * @param int|float|string|null $totalPrice рубли
+-     *
++     * Контекст обещанной цены доставки: только адрес назначения.
++     * Слот подписан отдельно; товары и суммы проверяются штатным оформлением заказа.
++     *
++     * @param array<string, array<string, mixed>> $address
+      * @return array{canonical: string, hash: string, city: string, errors: array<int, string>}
+      */
+-    public static function buildContext(array $address, array $items, $totalPrice): array
++    public static function buildContext(array $address): array
+     {
+         $errors = [];
+ 
+@@ -181,51 +174,8 @@
+             $errors[] = 'building';
+         }
+ 
+-        $aggregated = [];
+-        foreach ($items as $item) {
+-            $id = isset($item['id']) && is_string($item['id']) ? trim($item['id']) : '';
+-            if ($id === '') {
+-                continue;
+-            }
+-
+-            $quantity = $item['quantity'] ?? null;
+-            if (!is_int($quantity) && !is_float($quantity) && !(is_string($quantity) && is_numeric($quantity))) {
+-                continue;
+-            }
+-
+-            $quantity = (int) $quantity;
+-            if ($quantity <= 0) {
+-                continue;
+-            }
+-
+-            if (!isset($aggregated[$id])) {
+-                $aggregated[$id] = 0;
+-            }
+-            $aggregated[$id] += $quantity;
+-        }
+-
+-        if ($aggregated === []) {
+-            $errors[] = 'items';
+-        }
+-
+-        // Порядок позиций и порядок ключей JSON на контекст не влияют: сортируем байтово.
+-        ksort($aggregated, SORT_STRING);
+-
+-        $cartParts = [];
+-        foreach ($aggregated as $id => $quantity) {
+-            $cartParts[] = $id . ':' . $quantity;
+-        }
+-
+-        $total = self::toKopecks($totalPrice);
+-        if ($total < 0) {
+-            $errors[] = 'total';
+-            $total = 0;
+-        }
+-
+         $canonical = 'v' . self::VERSION
+-            . '|addr:' . $city . ';' . $street . ';' . $building
+-            . '|cart:' . implode(',', $cartParts)
+-            . '|total:' . $total;
++            . '|addr:' . $city . ';' . $street . ';' . $building;
+ 
+         return [
+             'canonical' => $canonical,
+diff --git a/www/app/Service/UserApi/Support/ExpressQuote/ExpressQuoteContext.php b/www/app/Service/UserApi/Support/ExpressQuote/ExpressQuoteContext.php
+--- a/www/app/Service/UserApi/Support/ExpressQuote/ExpressQuoteContext.php
++++ b/www/app/Service/UserApi/Support/ExpressQuote/ExpressQuoteContext.php
+@@ -5,9 +5,8 @@
+ /**
+  * Переходники от реальных форм запросов ИС к каноническому контексту (OPSOMN002-373).
+  *
+- * Контекст строится из «корзины и адреса, участвующих в расчёте доставки» — ровно из того,
+- * что и так уходит в OMS за интервалами. Координаты, индекс, fullAddress, filterSettings
+- * и AB-параметры в контекст не входят.
++ * Контекст строится из адреса назначения в запросах выдачи и оформления.
++ * Товары, количества и сумма корзины не ограничивают обещанную цену доставки.
+  */
+ class ExpressQuoteContext
+ {
+@@ -35,11 +34,7 @@
+             ],
+         ];
+ 
+-        return ExpressQuoteSpec::buildContext(
+-            $address,
+-            self::items($data, ['products']),
+-            self::value($data, ['totalItemPrice'])
+-        );
++        return ExpressQuoteSpec::buildContext($address);
+     }
+ 
+     /**
+@@ -68,24 +63,17 @@
+             ],
+         ];
+ 
+-        return ExpressQuoteSpec::buildContext(
+-            $address,
+-            self::items($data, ['products', 'items']),
+-            self::value($data, ['products', 'totalItemPrice'])
+-        );
++        return ExpressQuoteSpec::buildContext($address);
+     }
+ 
+     /**
+-     * Создание заказа V4: тело запроса плюс корзина из prepareCartForDelivery().
+-     *
+-     * Сумма — totalCost заказа до прибавления доставки; в корзине лежит она же.
++     * Адрес назначения из запроса создания заказа V4.
+      *
+      * @param array<mixed, mixed> $order тело запроса создания заказа
+-     * @param array<mixed, mixed> $cart  результат prepareCartForDelivery(): items[{id,quantity,price}], totalPrice
+      *
+      * @return array{canonical: string, hash: string, city: string, errors: array<int, string>}
+      */
+-    public static function fromOrderCreate(array $order, array $cart): array
++    public static function fromOrderCreate(array $order): array
+     {
+         $address = [
+             'city' => [
+@@ -103,43 +91,7 @@
+             ],
+         ];
+ 
+-        // Сумма — строго order.totalCost, как в контракте: правило валидации V4 делает её
+-        // обязательной, а запасной ход на cart.totalPrice дал бы другое число и молча
+-        // разошёлся бы с контекстом выдачи.
+-        $total = self::value($order, ['order', 'totalCost']);
+-
+-        return ExpressQuoteSpec::buildContext($address, self::items($cart, ['items']), $total);
+-    }
+-
+-    /**
+-     * Позиции корзины, приведённые к паре «идентификатор + количество».
+-     *
+-     * @param array<mixed, mixed> $data
+-     * @param array<int, string> $path
+-     *
+-     * @return array<int, array{id: string|null, quantity: mixed}>
+-     */
+-    private static function items(array $data, array $path): array
+-    {
+-        $rows = self::value($data, $path);
+-        if (!is_array($rows)) {
+-            return [];
+-        }
+-
+-        $items = [];
+-        foreach ($rows as $row) {
+-            if (!is_array($row)) {
+-                continue;
+-            }
+-
+-            $id = $row['id'] ?? null;
+-            $items[] = [
+-                'id' => is_string($id) ? $id : null,
+-                'quantity' => $row['quantity'] ?? null,
+-            ];
+-        }
+-
+-        return $items;
++        return ExpressQuoteSpec::buildContext($address);
+     }
+ 
+     /**
+diff --git a/www/app/Service/UserApi/Services/V4/Order/OrderService.php b/www/app/Service/UserApi/Services/V4/Order/OrderService.php
+--- a/www/app/Service/UserApi/Services/V4/Order/OrderService.php
++++ b/www/app/Service/UserApi/Services/V4/Order/OrderService.php
+@@ -851,9 +851,9 @@
+             return null;
+         }
+ 
+-        $context = ExpressQuoteContext::fromOrderCreate($order, $cart);
+-
+-        // Неполный контекст (нет города, дома или позиций) совпадением не считается:
++        $context = ExpressQuoteContext::fromOrderCreate($order);
++
++        // Неполный контекст (нет города или дома) совпадением не считается:
+         // обещать по нему показанную цену нечем.
+         if ($context['errors'] !== []) {
+             throw $this->expressQuoteRefusal(

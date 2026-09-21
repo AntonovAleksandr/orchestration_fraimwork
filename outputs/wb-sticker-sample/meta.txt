@@ -1,0 +1,4 @@
+order_id=80005
+barcode=sand-!s0t7NMBR
+partA=88445
+partB=4220

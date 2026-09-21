@@ -16,7 +16,7 @@
 
 Репозиторий трекает только **нашу интеллектуальную собственность**:
 - `.claude/agents/` — 34 сабагента
-- `.claude/skills/` — 32 доменных скилла
+- `.claude/skills/` — 38 доменных скиллов
 - `.claude/rules/` — project rules (Cursor подключает через `.cursor/rules/` → симлинки)
 - `docs/` и корневой `CLAUDE.md`
 

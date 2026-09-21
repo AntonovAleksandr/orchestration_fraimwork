@@ -1,0 +1,2 @@
+timestamp_utc;client_order_id;phase;http_code;yookassa_debit_statuses;result
+2026-08-07T08:55:19Z;2001792307;update;401;;fatal_http_error

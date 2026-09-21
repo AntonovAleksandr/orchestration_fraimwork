@@ -80,7 +80,8 @@ C Post-create    BPMN, pay-service, picking, carrier     → вне ENSI-лог�
 
 ## Дальше (в порядке)
 
-1. **Prod ref** Integration + `customers-api-web` (image tag / pipeline) — без этого кодовые гипотезы не для prod.
+1. **P1 fix (согласован 2026-08-26):** матч выбранной доставки на commit — spec [`../superpowers/specs/2026-08-26-checkout-commit-interval-match-design.md`](../superpowers/specs/2026-08-26-checkout-commit-interval-match-design.md), планы BFF + IS в `docs/superpowers/plans/2026-08-26-checkout-commit-interval-match-*.md`.
+2. **Prod ref** Integration + `customers-api-web` (image tag / pipeline) — без этого кодовые гипотезы не для prod.
 2. **P0:** IS-логи по traceId `82c8a9c2-…` — точный `message` / exception class в body 400.
 3. **P0 fix (BFF):** маппинг IS 400 → HTTP 4xx **или** контракт mob v5 (`success: false`) — product decision.
 4. **P1:** body BFF 400 «дата доставки» vs payload `ResolveCommonDeliveryDataAction`.

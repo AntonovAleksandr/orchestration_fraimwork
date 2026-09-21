@@ -1,0 +1,177 @@
+diff --git a/app/Domain/Orders/Support/ExpressQuote/ExpressQuoteSpec.php b/app/Domain/Orders/Support/ExpressQuote/ExpressQuoteSpec.php
+--- a/app/Domain/Orders/Support/ExpressQuote/ExpressQuoteSpec.php
++++ b/app/Domain/Orders/Support/ExpressQuote/ExpressQuoteSpec.php
+@@ -127,22 +127,13 @@
+     // ---------------------------------------------------------------- контекст
+ 
+     /**
+-     * Канонический контекст расчёта доставки.
++     * Контекст обещанной цены доставки: только адрес назначения.
++     * Слот подписан отдельно; товары и суммы проверяются штатным оформлением заказа.
+      *
+-     * Вход намеренно приведён к «корзине и адресу, участвующим в расчёте доставки»: это ровно то,
+-     * что каждая сторона и так отправляет в ИС за интервалами. Цены позиций в контекст не входят —
+-     * они не сопоставимы между точками.
+-     *
+-     * Типы входа намеренно свободные: данные приходят из разных DTO, проверка их формы —
+-     * часть контракта, а не забота вызывающего кода.
+-     *
+-     * @param array<string, array<string, mixed>> $address уровни city/street/building с ключами fiasId и name
+-     * @param iterable<array<string, mixed>> $items позиции с ключами id и quantity
+-     * @param int|float|string|null $totalPrice рубли
+-     *
++     * @param array<string, array<string, mixed>> $address
+      * @return array{canonical: string, hash: string, city: string, errors: array<int, string>}
+      */
+-    public static function buildContext(array $address, iterable $items, mixed $totalPrice): array
++    public static function buildContext(array $address): array
+     {
+         $errors = [];
+ 
+@@ -167,51 +158,8 @@
+             $errors[] = 'building';
+         }
+ 
+-        $aggregated = [];
+-        foreach ($items as $item) {
+-            $id = isset($item['id']) && is_string($item['id']) ? trim($item['id']) : '';
+-            if ($id === '') {
+-                continue;
+-            }
+-
+-            $quantity = $item['quantity'] ?? null;
+-            if (!is_int($quantity) && !is_float($quantity) && !(is_string($quantity) && is_numeric($quantity))) {
+-                continue;
+-            }
+-
+-            $quantity = (int) $quantity;
+-            if ($quantity <= 0) {
+-                continue;
+-            }
+-
+-            if (!isset($aggregated[$id])) {
+-                $aggregated[$id] = 0;
+-            }
+-            $aggregated[$id] += $quantity;
+-        }
+-
+-        if ($aggregated === []) {
+-            $errors[] = 'items';
+-        }
+-
+-        // Порядок позиций и порядок ключей JSON на контекст не влияют: сортируем байтово.
+-        ksort($aggregated, SORT_STRING);
+-
+-        $cartParts = [];
+-        foreach ($aggregated as $id => $quantity) {
+-            $cartParts[] = $id . ':' . $quantity;
+-        }
+-
+-        $total = self::toKopecks($totalPrice);
+-        if ($total < 0) {
+-            $errors[] = 'total';
+-            $total = 0;
+-        }
+-
+         $canonical = 'v' . self::VERSION
+-            . '|addr:' . $city . ';' . $street . ';' . $building
+-            . '|cart:' . implode(',', $cartParts)
+-            . '|total:' . $total;
++            . '|addr:' . $city . ';' . $street . ';' . $building;
+ 
+         return [
+             'canonical' => $canonical,
+diff --git a/app/Domain/Orders/Support/ExpressQuote/ExpressQuoteContext.php b/app/Domain/Orders/Support/ExpressQuote/ExpressQuoteContext.php
+--- a/app/Domain/Orders/Support/ExpressQuote/ExpressQuoteContext.php
++++ b/app/Domain/Orders/Support/ExpressQuote/ExpressQuoteContext.php
+@@ -37,12 +37,6 @@
+             ],
+         ];
+ 
+-        // Позиции — ровно те, что уходят в запрос интервалов. Цены позиций в контекст не входят.
+-        $items = [];
+-        foreach ($request->products ?? [] as $product) {
+-            $items[] = ['id' => data_get($product, 'id'), 'quantity' => data_get($product, 'quantity')];
+-        }
+-
+-        return ExpressQuoteSpec::buildContext($address, $items, $request->totalItemPrice);
++        return ExpressQuoteSpec::buildContext($address);
+     }
+ }
+diff --git a/app/Domain/Orders/Data/Logistics/Product.php b/app/Domain/Orders/Data/Logistics/Product.php
+--- a/app/Domain/Orders/Data/Logistics/Product.php
++++ b/app/Domain/Orders/Data/Logistics/Product.php
+@@ -24,16 +24,7 @@
+             if (!$currentSku?->message) {
+                 continue;
+             }
+-
+-            // OPSOMN002-373: доставка считается по qty — тому количеству, которое реально уедет
+-            // в заказ. initQty здесь остался от OMNIES-7441, где на «полную комплектацию»
+-            // переводили и количество, и сумму; денежная половина того решения давно вернулась
+-            // к qty (params->price), а количественная осталась, и запрос стал противоречивым.
+-            if ($basketProduct->qty <= 0) {
+-                continue;
+-            }
+-
+-            $product = new Product(['id' => $vendorCodeSKu, 'quantity' => $basketProduct->qty]);
++            $product = new Product(['id' => $vendorCodeSKu, 'quantity' => $basketProduct->initQty]);
+             $products->push($product);
+         }
+ 
+diff --git a/app/Domain/Orders/Data/Logistics/V2/Product.php b/app/Domain/Orders/Data/Logistics/V2/Product.php
+--- a/app/Domain/Orders/Data/Logistics/V2/Product.php
++++ b/app/Domain/Orders/Data/Logistics/V2/Product.php
+@@ -26,18 +26,8 @@
+                 continue;
+             }
+ 
+-            // OPSOMN002-373: количество берём из qty — того, что реально уедет в заказ.
+-            // initQty здесь остался от OMNIES-7441 (2108b5b5), где на «полную комплектацию»
+-            // переводили и количество, и сумму. Денежная половина того решения давно вернулась
+-            // к qty: totalItemPrice этого же запроса берётся из params->price, а params->initPrice
+-            // в боевом коде не используется вовсе. В результате запрос сообщал OMS количество по
+-            // одной мерке, а сумму по другой.
+-            if ($basketProduct->qty <= 0) {
+-                continue;
+-            }
+-
+             if ($withQuantityOne) {
+-                for ($i = 0; $i < $basketProduct->qty; $i++) {
++                for ($i = 0; $i < $basketProduct->initQty; $i++) {
+                     $product = new Product([
+                         'id' => $vendorCodeSKu,
+                         'quantity' => 1,
+@@ -49,7 +39,7 @@
+             } else {
+                 $product = new Product([
+                     'id' => $vendorCodeSKu,
+-                    'quantity' => $basketProduct->qty,
++                    'quantity' => $basketProduct->initQty,
+                     'price' => (float) self::formattingPrice($basketProduct->basketItemPriceTotal),
+                 ]);
+ 
+diff --git a/app/Domain/Orders/Actions/CourierCommonDeliveryDataAction.php b/app/Domain/Orders/Actions/CourierCommonDeliveryDataAction.php
+--- a/app/Domain/Orders/Actions/CourierCommonDeliveryDataAction.php
++++ b/app/Domain/Orders/Actions/CourierCommonDeliveryDataAction.php
+@@ -83,6 +83,11 @@
+             $dispatchWarehouseId,
+         );
+ 
++        // Клиент не подтверждал цену свежего токена: не подменяем им старый обычный ID.
++        if ($selectedInterval !== null && ExpressQuoteToken::looksLikeToken($selectedInterval->id)) {
++            $this->refuseExpressQuote($deliveryCourierId, 'unsigned_selection');
++        }
++
+         return $selectedInterval ? CommonDeliveryData::fromDeliveryInterval($selectedInterval) : null;
+     }
+ 
+@@ -96,7 +101,7 @@
+     {
+         $context = ExpressQuoteContext::fromSearchDeliveryIntervalsRequest($request);
+ 
+-        // Неполный контекст (нет города, дома или позиций) совпадением не считается:
++        // Неполный контекст (нет города или дома) совпадением не считается:
+         // с такими данными токен не выдаётся, сверять нечего.
+         if ($context['errors'] !== []) {
+             $this->refuseExpressQuote($token, 'context_mismatch', $context['errors']);

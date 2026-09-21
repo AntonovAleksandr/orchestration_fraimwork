@@ -71,7 +71,7 @@ GJ-Ecommerce/
 │   └── architecture/     — ADR-документы (создаются `architect`-агентом)
 ├── .claude/              — канон: agents, skills, rules (в git)
 │   ├── agents/           — 34 сабагента (Cursor: Task)
-│   ├── skills/           — 32 скилла GJ
+│   ├── skills/           — 38 скиллов GJ
 │   ├── rules/            — project rules (.mdc)
 │   └── commands/gsd/     — GSD slash-команды (локально, не в git)
 ├── .codex/               — generated Codex agents/hooks, не в git
@@ -150,7 +150,7 @@ OMS logistics keeps its own Go agents in `platform/starfish24/core/go/logistics/
 | `architect` | E-commerce cross-system дизайн между основными платформами, ADR в `docs/architecture/<YYYY-MM-DD>-<topic>.md` |
 | `corporate-architect` | Enterprise-level архитектура: ecom + retail/ARM + 1C + DWH + DevOps + future platforms |
 
-## Скиллы (32) — авто-активируются по описанию
+## Скиллы (38) — авто-активируются по описанию
 
 Source-of-truth — `.claude/skills/*/SKILL.md`. Для Codex локально создаётся зеркало `.agents/skills/*`.
 
@@ -176,6 +176,14 @@ Source-of-truth — `.claude/skills/*/SKILL.md`. Для Codex локально �
 `gj-multirepo-navigation` — поиск по 6+ GB кода
 `gj-buddy-mcp-mastery` — когда какой MCP-инструмент
 `gj-workspace-maintenance` — поддержка карты workspace, агентов/скиллов, игноров и generated Codex adapters
+
+### GitLab code review (6)
+`gj-gitlab-mr-review` — общий MR-гейт: GitLab evidence, повторные проходы, cross-system impact, findings и approval
+`ensi-gitlab-mr-review` — архитектура ENSI, OpenAPI/clients, Kafka/read models, PHP↔Go parity
+`integration-gitlab-mr-review` — Lumen routes/versions, API vs workers, retries/idempotency, ENSI/OMS/OTS contracts
+`oms-gitlab-mr-review` — Java/Go, BPMN/running instances, Cloud Config, exports и downstream-контракты
+`site-gitlab-mr-review` — Angular/Nx/NgRx, SSR/hydration, локали, feature flags и backend-контракты
+`mobile-gitlab-mr-review` — React Native, iOS/Android, app/API versions, persisted state, native SDK и store rollout
 
 ### GJ business flows (3)
 `gj-checkout-order-flow` — checkout / pre-checkout / order create / Integration ↔ OMS
