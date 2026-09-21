@@ -102,12 +102,25 @@ platform_repos() {
   echo "$n"
 }
 
+# Каталог дерева, куда реально сядет работник. Проверять надо ЕГО, а не каталог
+# скрипта: запуск из дерева без клонов с явным GJ_WORKTREE иначе отбивался зря.
+# Путь известен заранее только у формы `path:<путь>`; при другой проверять нечего.
+target_dir() {
+  case "$WORKTREE" in
+    path:*) printf '%s' "${WORKTREE#path:}" ;;
+    *)      printf '' ;;
+  esac
+}
+
 check_tree() {
-  local n; n=$(platform_repos "$ROOT")
-  [ "$n" -gt 0 ] && { echo "дерево: $ROOT (репозиториев платформ: $n)" >&2; return 0; }
-  echo "СТОП: в дереве $ROOT нет ни одного клона platform/*/ — только README." >&2
+  local dir n; dir=$(target_dir)
+  [ -n "$dir" ] || { echo "дерево задано не путём ($WORKTREE) — проверку клонов пропускаю" >&2; return 0; }
+  n=$(platform_repos "$dir")
+  [ "$n" -gt 0 ] && { echo "дерево: $dir (репозиториев платформ: $n)" >&2; return 0; }
+  echo "СТОП: в дереве $dir нет ни одного клона platform/*/ — только README." >&2
   echo "      Рабочие деревья git не содержат вложенных клонов, и работник не найдёт файлов." >&2
-  echo "      Запускать из основного дерева либо подтянуть клоны:" >&2
+  echo "      Запускать из основного дерева, направить туда работника (fleet.sh run КЛЮЧ@main)" >&2
+  echo "      либо подтянуть клоны:" >&2
   echo "        scripts/sync-platform-repos.sh" >&2
   echo "      Обойти (задача не трогает platform/*): GJ_SKIP_TREE_CHECK=1" >&2
   return 1
