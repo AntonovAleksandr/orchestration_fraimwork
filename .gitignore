@@ -77,3 +77,8 @@ logs/*
 docs/research/platform-next-ecom/
 
 .superpowers
+
+# рабочие каталоги скриптов gj
+.golden/
+.tasks/
+__pycache__/

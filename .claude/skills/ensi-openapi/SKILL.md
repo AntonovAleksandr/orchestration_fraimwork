@@ -391,3 +391,21 @@ grep -r "EntityStatusEnum" public/api-docs/v1
 - Структура спецификации влияет на сгенерированный код
 - Всегда проверяйте валидность после изменений
 - Используйте существующие компоненты для consistency
+
+## Ловушка: allOf без `type: object` в multipart-теле
+
+Если в спеке ENSI-сервиса тело `multipart/form-data` описано через `allOf` и рядом **нет** `type: object`, то `league/openapi-psr7-validator` (через `ensi/laravel-openapi-testing`, трейт `ValidatesAgainstOpenApiSpec`) валит **любой** запрос к этой точке ещё до контроллера:
+
+```
+League\OpenAPIValidation\Schema\Exception\TypeMismatch:
+Value expected to be 'object', but 'NULL' given.
+  at MultipartValidator.php:94 → assertOpenApiRequest (валидация ЗАПРОСА, не ответа)
+```
+
+Причина: у `allOf` своего `type` нет, валидатор читает NULL и сравнивает с ожидаемым `object`. Лечится одной строкой — `type: object` рядом с `allOf`. Точка, где схема подключена прямой ссылкой (`schema: $ref: ...#/MultipartFileUploadRequest`), этим не болеет: `type: object` приходит из самой схемы.
+
+**Пустой файл component-тестов у точки загрузки — симптом, а не лень.** В `admin-gui-backend` `Modules/Cms/Tests/TopbarNodeFileComponentTest.php` лежал с одними `uses(...)`: точку физически нельзя было покрыть. Нашёл и починил в OPSOMN002-353 (MR 452 !139, 2026-09-14). Стоит проверить остальные точки с `allOf` в теле — болезнь тиражируемая.
+
+Диагностика, если тест падает непонятно: обернуть вызов в try/catch и напечатать `get_class($e)` + первые кадры трассы. Видно, `assertOpenApiRequest` это или `assertOpenApiResponse`, — иначе Pest показывает только строку с `post(...)` и причина не читается.
+
+Связано: [[ensi-admin-gui-chain]], [[ensi-local-test-runs]], [[ensi-openapi]].
