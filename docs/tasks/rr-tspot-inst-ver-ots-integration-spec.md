@@ -172,6 +172,15 @@ if (!empty($markValidationVersion)) {
 
 Эндпоинт: `POST /integration/v2/orders/status/1c` (`routes/api.php:64`), тело — XML, параметры на уровне `<order>`.
 
+> ⚠️ **Исправлено 2026-09-22 по факту реализации OPSOMN002-395.** Имена входящих элементов
+> ниже (`good_mark_validation_instance` / `good_mark_validation_version`) — **ошибка этого ТЗ**.
+> Контракт [INT 24.132.1 v.2, стр. 130132966](https://confluence.gloria-jeans.ru/pages/viewpage.action?pageId=130132966)
+> (версия 11 от 15.09.2026) объявляет на уровне `<order>` элементы **`<inst>`** и **`<version>`**
+> без префикса — они пришли из задачи 1С `DEVRTL001-8188`, тогда как `good_mark_validation_uuid` /
+> `_timestamp` пришли из `OPSOMN-10909` и префикс имеют. Постановка OPSOMN002-395 называет
+> те же короткие имена. Реализовано и смержено по контракту: читать `order.inst` / `order.version`.
+> Исходящие ключи в OMS (`datamatrixCodeValidation.inst` / `.version`) в §6.2.3 указаны верно.
+
 **6.2.1 Контракт запроса** `UpdateOrderStatusRequest.php`. Сейчас:
 
 ```33:63:platform/integration/integration/www/app/Service/UserApi/Http/Requests/V2/Order/Arm/UpdateOrderStatusRequest.php
