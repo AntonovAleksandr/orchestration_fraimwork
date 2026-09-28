@@ -39,13 +39,22 @@ import json,sys,collections
 try: j=json.load(sys.stdin)
 except Exception: raise SystemExit
 if not isinstance(j,list): raise SystemExit
-seen=collections.OrderedDict()
+ok=collections.OrderedDict()   # последний УСПЕШНЫЙ прогон — он и показывает, с чего собран стенд
+any_=collections.OrderedDict()  # последняя созданная джоба, в т.ч. никогда не запущенная
 for x in j:
     n=x.get("name","")
-    if any(k in n for k in ("deploy","prod","stage")):
-        seen.setdefault(n, x.get("ref",""))
-for n,r in list(seen.items())[:12]:
-    print("    %-32s (последний ref: %s)" % (n,r))' 2>/dev/null
+    if not any(k in n for k in ("deploy","prod","stage")): continue
+    any_.setdefault(n, (x.get("ref",""), x.get("status","")))
+    if x.get("status")=="success":
+        ok.setdefault(n, x.get("ref",""))
+for n,(ref,st) in list(any_.items())[:12]:
+    good=ok.get(n)
+    if good and good!=ref:
+        print("    %-32s успешно с: %s   (свежая джоба %s — %s, не показатель)" % (n,good,ref,st))
+    elif good:
+        print("    %-32s успешно с: %s" % (n,good))
+    else:
+        print("    %-32s успешных прогонов нет (свежая: %s — %s)" % (n,ref,st))' 2>/dev/null
   echo
 }
 
