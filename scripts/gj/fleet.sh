@@ -99,8 +99,7 @@ case "${1:-}" in
   status)
     have || { echo "orca не найдена" >&2; exit 1; }
     [ -f "$STATE" ] && { echo "запуски этой пачки:"; awk -F'\t' '{printf "  %-20s %-7s %-16s %s\n",$1,$2,$3,$4}' "$STATE" | tail -12; echo; }
-    "$ORCA" orchestration worker-list --include-remote 2>/dev/null | head -20 \
-      || echo "работников нет либо Run не привязан"
+    "$ORCH" list
     ;;
 
   watch)

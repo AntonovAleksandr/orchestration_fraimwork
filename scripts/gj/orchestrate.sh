@@ -16,7 +16,7 @@
 #   orchestrate.sh review <адрес запроса>      ревью
 #   orchestrate.sh done   <КЛЮЧ>               сдача: MR в стейдж, деплой, заготовки в прод
 #
-#   orchestrate.sh list                        работники и их состояние
+#   orchestrate.sh list [все]                  живые работники и координаторы (все — с завершёнными)
 #   orchestrate.sh read  <dispatch> [строк]    что делает работник
 #   orchestrate.sh say   <dispatch> <текст>    вмешаться: дослать указание; висит вопрос
 #                                              этого работника — ответ идёт на него (reply)
@@ -438,7 +438,9 @@ try: d=json.load(sys.stdin)
 except Exception: print("terminal create не разобран"); raise SystemExit(1)
 if not d.get("ok"): print("terminal create отказал:", (d.get("error") or {}).get("message","")[:200]); raise SystemExit(1)
 t=(d.get("result") or {}).get("terminal") or d.get("result") or {}
-print("координатор запущен:", t.get("handle") or t.get("id") or "?")'
+h=t.get("handle") or t.get("id") or "?"
+open(sys.argv[1],"w").write(h+"\n")
+print("координатор запущен:", h)' "$DIR/lead.term"
     echo "реплика: $DIR/lead.md · вкладка «$KEY · координатор»"
     ;;
   task|front)
@@ -505,21 +507,63 @@ versionCode = CI_PIPELINE_IID + 85000. Без номера сборки моби
     read -r n u <<<"$(sessions_mb)"
     echo "сессий: $n из $GJ_MAX_AGENTS на ${u} МБ · свободно $(free_mb) МБ · вход от ${GJ_MIN_FREE_MB} МБ"
     heavy; echo
-    "$ORCA" orchestration worker-list --include-remote --json 2>/dev/null | python3 -c '
-import json,sys
-try: d=json.load(sys.stdin)["result"]
-except Exception: print("работников нет либо Run не привязан"); raise SystemExit
-ws=d.get("workers") or d.get("rows") or []
-if not ws: print("работников нет"); raise SystemExit
-print("%-22s %-12s %-10s %s" % ("задача","dispatch","состояние","что дальше"))
+    # Названия задачи в записи работника нет — берём заголовок его вкладки.
+    # Координаторы lead — обычные вкладки, не работники: ищем их lead.term во всех деревьях.
+    W=$(mktemp); T=$(mktemp); R=$(mktemp)
+    "$ORCA" orchestration worker-list --include-remote --json >"$W" 2>/dev/null
+    "$ORCA" terminal list --json >"$T" 2>/dev/null
+    "$ORCA" worktree list --json >"$R" 2>/dev/null
+    python3 - "$W" "$T" "$R" "$TASKS" "${1:-}" <<'PY'
+import json,sys,glob,os,time
+wf,tf,rf,tasks,mode=sys.argv[1:]
+def res(f):
+    try: return json.load(open(f)).get("result") or {}
+    except Exception: return {}
+terms={t["handle"]:t for t in res(tf).get("terminals",[])}
+title=lambda h: (terms.get(h) or {}).get("title") or "?"
+dirs={tasks}|{os.path.join(w.get("path",""),".tasks") for w in res(rf).get("worktrees",[])}
+leads=[]
+for d in sorted(dirs):
+    for f in glob.glob(os.path.join(d,"*","lead.term")):
+        h=open(f).read().strip(); t=terms.get(h)
+        if t: leads.append((os.path.basename(os.path.dirname(f)),t))
+if leads:
+    print("координаторы:")
+    now=time.time()*1000
+    for key,t in leads:
+        ago=int((now-(t.get("lastOutputAt") or now))/1000)
+        print("  %-40s вывод %s с назад" % (t.get("title","?")[:40], ago))
+    print()
+ws=res(wf).get("workers")
+if ws is None: print("работников нет либо Run не привязан"); raise SystemExit
+live,ask,done=[],[],[]
 for w in ws:
-    p=w.get("projection",{}) or {}
-    print("%-22s %-12s %-10s %s" % (
-        str(w.get("taskTitle") or w.get("title") or "?")[:22],
-        str(w.get("dispatchId") or w.get("id") or "?")[:12],
-        str((p.get("liveness") or {}).get("status") if isinstance(p.get("liveness"),dict) else p.get("liveness") or "?")[:10],
-        str(p.get("nextAction") or "")[:40]))' 2>/dev/null \
-    || "$ORCA" orchestration worker-list --include-remote 2>&1 | head -20
+    p=w.get("projection") or {}
+    if (p.get("liveness") or {}).get("verdict")=="live": live.append(w)
+    elif (p.get("attention") or {}).get("requiresAction"): ask.append(w)
+    else: done.append(w)
+if mode=="все": live,ask,done=live+ask+done,[],[]
+def nxt(p):
+    n=p.get("nextAction") or {}
+    return "" if n.get("kind") in (None,"none") else " ".join(n.get("argv") or [n["kind"]])
+if live:
+    print("%-40s %-18s %-12s %s" % ("вкладка","dispatch","состояние","что дальше"))
+    for w in live:
+        p=w.get("projection") or {}
+        state=(p.get("stage") or {}).get("activity") if (p.get("liveness") or {}).get("verdict")=="live" else p.get("outcome")
+        print("%-40s %-18s %-12s %s" % (title(w.get("agentTerminalHandle"))[:40],
+            w.get("dispatchId","?"), str(state or "?")[:12], nxt(p)[:60]))
+else: print("живых работников нет")
+if ask:
+    print("\nзавершены, Orca просит действия (%d):" % len(ask))
+    for w in ask:
+        p=w.get("projection") or {}
+        print("  %-18s %-10s %s" % (w.get("dispatchId","?"), p.get("outcome","?"), nxt(p) or "разобрать: read"))
+if done:
+    fail=sum(1 for w in done if (w.get("projection") or {}).get("outcome")=="failed")
+    print("\nзавершённых без хвостов %d (неудач %d) — все: list все, убрать: sweep" % (len(done),fail))
+PY
+    rm -f "$W" "$T" "$R"
     ;;
 
   read)   D=${1:?укажите dispatch}; N=${2:-60}
