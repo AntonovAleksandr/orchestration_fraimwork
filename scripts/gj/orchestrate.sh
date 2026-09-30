@@ -16,7 +16,10 @@
 #
 #   orchestrate.sh list                        работники и их состояние
 #   orchestrate.sh read  <dispatch> [строк]    что делает работник
-#   orchestrate.sh say   <dispatch> <текст>    вмешаться: дослать указание
+#   orchestrate.sh say   <dispatch> <текст>    вмешаться: дослать указание; висит вопрос
+#                                              этого работника — ответ идёт на него (reply)
+#   orchestrate.sh questions [dispatch]        открытые вопросы работников
+#   orchestrate.sh answer <dispatch|msg_id> <текст>  ответить на вопрос (reply)
 #   orchestrate.sh wait  [мс]                  ждать worker_done / вопроса / эскалации
 #   orchestrate.sh release <dispatch>          отпустить терминал завершённого
 #   orchestrate.sh run                         показать привязанный Run
@@ -177,6 +180,12 @@ spec_for() {                       # spec_for <вид> <ключ> <заголо�
 
 Вопросы задавать командой ask из преамбулы, а не в свой терминал. Человеку выносить
 только то, на что не нашлось ответа ни в ТЗ, ни в коде.
+КАК СПРАШИВАТЬ: ask всегда с --timeout-ms 110000 (Bash рвёт команду на 120 с). Таймаут
+оставляет вопрос открытым — продолжать ТОЛЬКО через ask --resume <message_id>, новый
+вопрос с тем же текстом не задавать. Ответа нет 15 минут — один раз send --type escalation
+с сутью вопроса и делать то, что можно без ответа; к ожиданию возвращаться между шагами.
+Нужно действие человека (кнопка в GitLab, доступ, решение владельца) — сразу escalation,
+а не ask: координатор его сделать не может.
 
 ЗАПРЕТ НА ОТПИСКИ: «не проверено», «в коде не нашёл», «на живом контуре не смотрел»,
 «тесты не гонял» — это незакрытые шаги, а не ответы. Сначала проверить самому: живые
@@ -192,6 +201,64 @@ spec_for() {                       # spec_for <вид> <ключ> <заголо�
 В «что осталось» класть только незакрытые вопросы: порядок выкатки и зависимости между
 запросами идут в раздел «Выкатка».
 EOS
+}
+
+# Открытые вопросы работников. Ответ `reply` ложится в тред вопроса (thread_id = id
+# вопроса), поэтому открытый — это question, в треде которого нет других сообщений.
+# `say`/`send` вопрос НЕ закрывают: ask у работника ждёт ответа именно на своё сообщение.
+# Замер 16–30.09: 0 вызовов reply против 25 say/send, ни один вопрос не получил ответа.
+#   open_questions [dispatch|msg_id]  → строки «id<TAB>dispatch<TAB>run<TAB>минут<TAB>текст»
+open_questions() {
+  # Вопросы завершённых диспетчей не показываем: отвечать там уже некому. Состояние
+  # берём через worker-show по каждому диспетчу — worker-list в терминале, привязанном
+  # к Run, видит только работников этого Run.
+  "$ORCA" orchestration inbox --limit 500 --json 2>/dev/null | FILTER="${1:-}" ORCA_BIN="$ORCA" python3 -c '
+import json,sys,os,subprocess,datetime as dt
+_st={}
+def live(d):
+    if d not in _st:
+        try:
+            r=subprocess.run([os.environ["ORCA_BIN"],"orchestration","worker-show","--dispatch",d,"--json"],capture_output=True,text=True,timeout=20)
+            _st[d]=json.loads(r.stdout)["result"]["dispatch"]["status"] in ("dispatched","created","pending")
+        except Exception: _st[d]=True
+    return _st[d]
+try: m=json.load(sys.stdin)["result"]["messages"]
+except Exception: raise SystemExit
+f=os.environ.get("FILTER","").replace("dispatch:","")
+answered={x.get("thread_id") for x in m if x.get("thread_id") and x.get("thread_id")!=x.get("id")}
+now=dt.datetime.now(dt.timezone.utc)
+for x in sorted(m,key=lambda x:x.get("created_at","")):
+    if x.get("type")!="question" or x["id"] in answered: continue
+    d=str(x.get("from_handle","")).replace("dispatch:","")
+    try: d=json.loads(x.get("payload") or "{}").get("dispatchId") or d
+    except Exception: pass
+    if f and f not in (d,x["id"]): continue
+    if not f and not live(d): continue
+    try: age=int((now-dt.datetime.fromisoformat(x["created_at"].replace("Z","+00:00"))).total_seconds()//60)
+    except Exception: age=-1
+    body=" ".join(str(x.get("body","")).split())
+    print("\t".join([x["id"],d,str(x.get("run_id","")),str(age),body]))'
+}
+
+reply_to() {                       # reply_to <msg_id> <run_id> <текст>
+  "$ORCA" orchestration reply --id "$1" ${2:+--run "$2"} --body "$3" --json 2>&1 | python3 -c '
+import json,sys
+raw=sys.stdin.read()
+try: d=json.loads(raw)
+except Exception: print(raw[:300]); raise SystemExit(1)
+if d.get("ok"): print("ответ доставлен на", sys.argv[1])
+else: print("reply не прошёл:", (d.get("error") or {}).get("message","")[:300]); raise SystemExit(1)' "$1"
+}
+
+print_questions() {                # print_questions [dispatch] — с готовой командой ответа
+  local rows; rows=$(open_questions "${1:-}")
+  [ -z "$rows" ] && { echo "открытых вопросов нет"; return 0; }
+  printf '%s\n' "$rows" | while IFS=$'\t' read -r id d run age body; do
+    local mark=""; [ "$age" -ge "${GJ_ASK_ESCALATE_MIN:-15}" ] 2>/dev/null && mark=" · ВЫНЕСТИ ЧЕЛОВЕКУ"
+    echo "ВОПРОС $d ($id), ${age} мин без ответа${mark}"
+    echo "  «${body:0:400}»"
+    echo "  → scripts/gj/orchestrate.sh answer $d \"…\""
+  done
 }
 
 run_bind() {                       # создаёт Run при отсутствии, печатает его id
@@ -312,11 +379,40 @@ for w in ws:
   read)   D=${1:?укажите dispatch}; N=${2:-60}
           "$ORCA" orchestration worker-read --dispatch "$D" --limit "$N" 2>&1 | tail -"$N" ;;
   say)    D=${1:?укажите dispatch}; shift
-          case "$D" in *:*) TO=$D ;; *) TO="dispatch:$D" ;; esac
-          "$ORCA" orchestration send --to "$TO" --subject "указание координатора" \
-            --body "$*" --json >/dev/null && echo "передано" ;;
+          # Висит вопрос этого работника — отвечаем на него: send его ask не разблокирует.
+          Q=$(open_questions "$D" | head -1)
+          if [ -n "$Q" ]; then
+            IFS=$'\t' read -r QID _ QRUN _ _ <<<"$Q"
+            reply_to "$QID" "$QRUN" "$*"
+          else
+            case "$D" in *:*) TO=$D ;; *) TO="dispatch:$D" ;; esac
+            "$ORCA" orchestration send --to "$TO" --subject "указание координатора" \
+              --body "$*" --json >/dev/null && echo "передано (открытого вопроса нет)"
+          fi ;;
+  questions) print_questions "${1:-}" ;;
+  answer) T=${1:?укажите dispatch или id вопроса}; shift
+          [ -n "$*" ] || { echo "укажите текст ответа" >&2; exit 1; }
+          Q=$(open_questions "$T" | head -1)
+          [ -n "$Q" ] || { echo "открытого вопроса у $T нет — для указания без вопроса есть say" >&2; exit 1; }
+          IFS=$'\t' read -r QID _ QRUN _ _ <<<"$Q"
+          reply_to "$QID" "$QRUN" "$*" ;;
   wait)   MS=${1:-900000}
-          "$ORCA" orchestration check --wait --types "worker_done,escalation,question" --timeout-ms "$MS" --json 2>&1 | head -40 ;;
+          # Сначала то, что уже ждёт ответа: check --wait отдаёт только новое.
+          print_questions
+          OUT=$("$ORCA" orchestration check --wait --types "worker_done,escalation,question" --timeout-ms "$MS" --json 2>/dev/null || true)
+          printf '%s' "$OUT" | python3 -c '
+import json,sys
+try: d=json.load(sys.stdin).get("result") or {}
+except Exception: print("событий нет"); raise SystemExit
+ms=d.get("messages") or (d.get("batch") or {}).get("messages") or []
+if not ms: print("событий нет (таймаут — это точка проверки, а не сбой)")
+for x in ms:
+    t=x.get("type"); frm=str(x.get("from_handle","")).replace("dispatch:","")
+    print("%-11s %s  %s" % (t, frm, " ".join(str(x.get("subject","")).split())[:80]))
+    if t=="escalation": print("  «%s»" % " ".join(str(x.get("body","")).split())[:400])
+dl=d.get("deliveryId") or d.get("delivery_id") or (d.get("batch") or {}).get("id")
+if dl: print("подтвердить пачку: orca orchestration check --ack %s" % dl)'
+          print_questions | grep -v "^открытых вопросов нет$" || true ;;
   release) D=${1:?укажите dispatch}; "$ORCA" orchestration worker-release --dispatch "$D" --json >/dev/null && echo "отпущен $D" ;;
   run)    "$ORCA" orchestration run-current 2>&1 | head -10 ;;
 
