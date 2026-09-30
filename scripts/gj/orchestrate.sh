@@ -27,7 +27,7 @@
 #   orchestrate.sh sweep                       release все — для ежедневного прогона
 #   orchestrate.sh run                         показать привязанный Run
 #
-# Переменные: GJ_MAX_AGENTS (4), GJ_MIN_FREE_MB (2048), GJ_FORCE=1 — обойти заслон,
+# Переменные: GJ_MAX_AGENTS (20), GJ_MIN_FREE_MB (2048), GJ_FORCE=1 — обойти заслон,
 #             GJ_WORKTREE (current) — куда сажать работника, GJ_AGENT (claude).
 #             GJ_RETAIN=1 — wait не закрывает терминал по worker_done.
 set -euo pipefail
@@ -40,7 +40,7 @@ AGENT=${GJ_AGENT:-claude}
 # интерфейса Orca, а не место запуска: работник может уйти совсем не туда, где его ждут.
 # Проверено 17.09 — запуск из flyingfish посадил работника в основное дерево.
 WORKTREE=${GJ_WORKTREE:-path:$ROOT}
-GJ_MAX_AGENTS=${GJ_MAX_AGENTS:-4}
+GJ_MAX_AGENTS=${GJ_MAX_AGENTS:-20}
 GJ_MIN_FREE_MB=${GJ_MIN_FREE_MB:-2048}
 
 have_orca() { command -v "$ORCA" >/dev/null 2>&1; }
@@ -87,7 +87,7 @@ guard() {
   if [ "$n" -ge "$GJ_MAX_AGENTS" ]; then
     echo "СТОП: запущено $n сессий на ${used} МБ, потолок GJ_MAX_AGENTS=$GJ_MAX_AGENTS" >&2
     heavy >&2
-    echo "      закрыть: orca terminal close <id>   ·   обойти: GJ_MAX_AGENTS=8 или GJ_FORCE=1" >&2
+    echo "      закрыть: orca terminal close <id>   ·   обойти: GJ_MAX_AGENTS=30 или GJ_FORCE=1" >&2
     return 1
   fi
   if [ "$f" -lt "$GJ_MIN_FREE_MB" ]; then
