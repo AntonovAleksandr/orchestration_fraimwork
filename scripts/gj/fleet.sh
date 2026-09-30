@@ -99,24 +99,9 @@ case "${1:-}" in
     ;;
 
   watch)
-    have || { echo "orca не найдена" >&2; exit 1; }
-    MS=${2:-900000}
-    echo "жду worker_done, вопросов и эскалаций (до $((MS/1000)) с)…"
-    "$ORCA" orchestration check --wait --types "worker_done,escalation,question" \
-      --timeout-ms "$MS" --json 2>/dev/null | python3 -c "
-import json,sys
-for line in sys.stdin:
-    line=line.strip()
-    if not line: continue
-    try: d=json.loads(line)
-    except Exception: continue
-    if d.get('_keepalive'): continue
-    r=d.get('result',d)
-    for m in (r.get('messages') or [r]):
-        t=m.get('type','?'); b=str(m.get('body') or m.get('summary') or '')[:400]
-        frm=m.get('from') or m.get('dispatchId') or ''
-        print(f\"[{t}] {frm}\"); print(b); print('─'*60)
-" || echo "ничего не пришло за отведённое время — это контрольная точка, а не сбой"
+    # Тот же цикл, что у оркестратора: открытые вопросы, новые события, закрытие
+    # терминалов по worker_done. Своя копия разбора расходилась с ним и не закрывала ничего.
+    exec "$ORCH" wait "${2:-900000}"
     ;;
 
   stop)

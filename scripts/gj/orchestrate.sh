@@ -16,13 +16,20 @@
 #
 #   orchestrate.sh list                        работники и их состояние
 #   orchestrate.sh read  <dispatch> [строк]    что делает работник
-#   orchestrate.sh say   <dispatch> <текст>    вмешаться: дослать указание
+#   orchestrate.sh say   <dispatch> <текст>    вмешаться: дослать указание; висит вопрос
+#                                              этого работника — ответ идёт на него (reply)
+#   orchestrate.sh questions [dispatch]        открытые вопросы работников
+#   orchestrate.sh answer <dispatch|msg_id> <текст>  ответить на вопрос (reply)
 #   orchestrate.sh wait  [мс]                  ждать worker_done / вопроса / эскалации
-#   orchestrate.sh release <dispatch>          отпустить терминал завершённого
+#   orchestrate.sh release <dispatch|все>      отпустить терминал завершённого (все —
+#                                              по всем Run, с отчётом о неотпущенных)
+#   orchestrate.sh retain  <dispatch>          оставить терминал живым: воркеру будет ещё работа
+#   orchestrate.sh sweep                       release все — для ежедневного прогона
 #   orchestrate.sh run                         показать привязанный Run
 #
 # Переменные: GJ_MAX_AGENTS (4), GJ_MIN_FREE_MB (2048), GJ_FORCE=1 — обойти заслон,
 #             GJ_WORKTREE (current) — куда сажать работника, GJ_AGENT (claude).
+#             GJ_RETAIN=1 — wait не закрывает терминал по worker_done.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -136,10 +143,10 @@ brief_filled() {
 
 skills_for() {
   case "$1" in
-    task)   echo "gj-task-orchestration, gj-task-execution" ;;
-    front)  echo "gj-task-orchestration, gj-task-execution, mobile-rn-conventions" ;;
+    task)   echo "gj-task-orchestration, gj-task-execution, gj-subagent-delegation" ;;
+    front)  echo "gj-task-orchestration, gj-task-execution, gj-subagent-delegation, mobile-rn-conventions" ;;
     review) echo "gj-review-delegation" ;;
-    done)   echo "gj-task-orchestration, gj-gitlab-git" ;;
+    done)   echo "gj-task-orchestration, gj-gitlab-git, gj-subagent-delegation" ;;
   esac
 }
 
@@ -153,6 +160,10 @@ spec_for() {                       # spec_for <вид> <ключ> <заголо�
 ЦЕЛЬ: задача $key${title:+ — $title}. Вводная: $brief — начни с неё и дозаполни
 цель одной фразой и критерий готовности.
 
+ПЕРВЫЙ ШАГ: перевести $key в Jira в статус «В работе» — jira_list_transitions, переход
+с целевым статусом «В работе», jira_transition_issue. Уже «В работе» или дальше — не
+трогать. Не вышло — записать причину во вводную и продолжать (раздел 1 скилла).
+
 ИЗМЕНЕНИЕ: довести задачу до готовой правки в ветках задачи. Запросы на слияние
 не открывать — это отдельный шаг сдачи по явной команде.
 
@@ -161,8 +172,14 @@ spec_for() {                       # spec_for <вид> <ключ> <заголо�
 а ходы только с оболочкой дают 74,6% расхода, потому что каждый перечитывает контекст.
 Промежуточные «сейчас проверю» не писать, писать результат.
 Разведку вести подагентами и codegraph, полные кадры экрана в контекст не тянуть.
+Деплой, анализ веток и статуса, исследование, ревью — фоновыми подагентами по скиллу
+gj-subagent-delegation: задание по его шаблону с «уже установлено», agentId записать в
+.tasks/<ключ>/agents.tsv, на ВОПРОС подагента отвечать SendMessage в том же ходе.
 Ветки брать из docs/deploy/branch-registry.md, заново не выяснять.
 В прод-ветки (master ENSI, production ИС, release/production витрины) не трогать ничего.
+
+Комментарии в коде — по .claude/rules/code-comments.md: только «почему так» и реальная
+опасность, одна-три строки; ход работы и замеры — в коммит и docs/tasks, не в код.
 
 ВЛАДЕНИЕ: только репозитории, затронутые этой задачей. Чужие ветки и незнакомые
 изменённые файлы не трогать — рабочие деревья делят соседние сессии.
@@ -173,6 +190,12 @@ spec_for() {                       # spec_for <вид> <ключ> <заголо�
 
 Вопросы задавать командой ask из преамбулы, а не в свой терминал. Человеку выносить
 только то, на что не нашлось ответа ни в ТЗ, ни в коде.
+КАК СПРАШИВАТЬ: ask всегда с --timeout-ms 110000 (Bash рвёт команду на 120 с). Таймаут
+оставляет вопрос открытым — продолжать ТОЛЬКО через ask --resume <message_id>, новый
+вопрос с тем же текстом не задавать. Ответа нет 15 минут — один раз send --type escalation
+с сутью вопроса и делать то, что можно без ответа; к ожиданию возвращаться между шагами.
+Нужно действие человека (кнопка в GitLab, доступ, решение владельца) — сразу escalation,
+а не ask: координатор его сделать не может.
 
 ЗАПРЕТ НА ОТПИСКИ: «не проверено», «в коде не нашёл», «на живом контуре не смотрел»,
 «тесты не гонял» — это незакрытые шаги, а не ответы. Сначала проверить самому: живые
@@ -189,6 +212,124 @@ spec_for() {                       # spec_for <вид> <ключ> <заголо�
 запросами идут в раздел «Выкатка».
 EOS
 }
+
+# Открытые вопросы работников. Ответ `reply` ложится в тред вопроса (thread_id = id
+# вопроса), поэтому открытый — это question, в треде которого нет других сообщений.
+# `say`/`send` вопрос НЕ закрывают: ask у работника ждёт ответа именно на своё сообщение.
+#   open_questions [dispatch|msg_id]  → строки «id<TAB>dispatch<TAB>run<TAB>минут<TAB>текст»
+open_questions() {
+  # Вопросы завершённых диспетчей не показываем: отвечать там уже некому. Состояние
+  # берём через worker-show по каждому диспетчу — worker-list в терминале, привязанном
+  # к Run, видит только работников этого Run.
+  "$ORCA" orchestration inbox --limit 500 --json 2>/dev/null | FILTER="${1:-}" ORCA_BIN="$ORCA" python3 -c '
+import json,sys,os,subprocess,datetime as dt
+_st={}
+def live(d):
+    if d not in _st:
+        try:
+            r=subprocess.run([os.environ["ORCA_BIN"],"orchestration","worker-show","--dispatch",d,"--json"],capture_output=True,text=True,timeout=20)
+            _st[d]=json.loads(r.stdout)["result"]["dispatch"]["status"] in ("dispatched","created","pending")
+        except Exception: _st[d]=True
+    return _st[d]
+try: m=json.load(sys.stdin)["result"]["messages"]
+except Exception: raise SystemExit
+f=os.environ.get("FILTER","").replace("dispatch:","")
+answered={x.get("thread_id") for x in m if x.get("thread_id") and x.get("thread_id")!=x.get("id")}
+now=dt.datetime.now(dt.timezone.utc)
+for x in sorted(m,key=lambda x:x.get("created_at","")):
+    if x.get("type")!="question" or x["id"] in answered: continue
+    d=str(x.get("from_handle","")).replace("dispatch:","")
+    try: d=json.loads(x.get("payload") or "{}").get("dispatchId") or d
+    except Exception: pass
+    if f and f not in (d,x["id"]): continue
+    if not f and not live(d): continue
+    try: age=int((now-dt.datetime.fromisoformat(x["created_at"].replace("Z","+00:00"))).total_seconds()//60)
+    except Exception: age=-1
+    body=" ".join(str(x.get("body","")).split())
+    print("\t".join([x["id"],d,str(x.get("run_id","")),str(age),body]))'
+}
+
+reply_to() {                       # reply_to <msg_id> <run_id> <текст>
+  "$ORCA" orchestration reply --id "$1" ${2:+--run "$2"} --body "$3" --json 2>&1 | python3 -c '
+import json,sys
+raw=sys.stdin.read()
+try: d=json.loads(raw)
+except Exception: print(raw[:300]); raise SystemExit(1)
+if d.get("ok"): print("ответ доставлен на", sys.argv[1])
+else: print("reply не прошёл:", (d.get("error") or {}).get("message","")[:300]); raise SystemExit(1)' "$1"
+}
+
+print_questions() {                # print_questions [dispatch] — с готовой командой ответа
+  local rows; rows=$(open_questions "${1:-}")
+  [ -z "$rows" ] && { echo "открытых вопросов нет"; return 0; }
+  printf '%s\n' "$rows" | while IFS=$'\t' read -r id d run age body; do
+    local mark=""; [ "$age" -ge "${GJ_ASK_ESCALATE_MIN:-15}" ] 2>/dev/null && mark=" · ВЫНЕСТИ ЧЕЛОВЕКУ"
+    echo "ВОПРОС $d ($id), ${age} мин без ответа${mark}"
+    echo "  «${body:0:400}»"
+    echo "  → scripts/gj/orchestrate.sh answer $d \"…\""
+  done
+}
+
+# Закрытие терминала завершённого работника. Orca сама терминал не закрывает: по
+# worker_done решает координатор — отдать под новый диспетч, оставить или отпустить.
+# Успех проверяем по состоянию в ответе, а не по ok: release_unknown приходит с ok=true.
+release_one() {                    # release_one <dispatch> → released|retained|pending|unknown
+  # release_unknown выходит с кодом 1 — под set -e/pipefail это оборвало бы скрипт до разбора.
+  { "$ORCA" orchestration worker-release --dispatch "$1" --json 2>&1 || true; } | python3 -c '
+import json,sys
+d=sys.argv[1]
+try: r=json.load(sys.stdin)
+except Exception: print("unknown\t%s: ответ не разобран" % d); raise SystemExit
+res=r.get("result") or {}; err=r.get("error") or {}
+st=res.get("state") or err.get("code") or "?"
+if st in ("released","already_released"): print("released\t%s отпущен" % d)
+elif st=="retained": print("retained\t%s оставлен: %s" % (d, res.get("retainedReason") or res.get("reason") or "по решению"))
+elif st=="release_pending": print("pending\t%s закрывается" % d)
+elif st=="release_unknown": print("unknown\t%s НЕ отпущен: терминал потерян (перезапуск Orca?) — закрыть вкладку вручную" % d)
+else: print("unknown\t%s НЕ отпущен: %s %s" % (d, st, (err.get("message") or res.get("lastError") or "")[:160]))' "$1"
+}
+
+# Все Run: worker-list без --run в привязанном терминале видит только свой Run.
+all_runs() {
+  "$ORCA" orchestration run-list --json 2>/dev/null | python3 -c '
+import json,sys
+try: [print(x["id"]) for x in json.load(sys.stdin)["result"]["runs"]]
+except Exception: pass'
+}
+
+workers_in() {                     # workers_in <run> <terminal-state> → dispatch<TAB>причина
+  "$ORCA" orchestration worker-list --run "$1" --terminal-state "$2" --limit 100 --json 2>/dev/null | python3 -c '
+import json,sys
+try: w=json.load(sys.stdin)["result"]["workers"]
+except Exception: raise SystemExit
+for x in w:
+    r=x.get("resource") or {}
+    print("%s\t%s" % (x["dispatchId"], r.get("retainedReason") or r.get("releaseError") or ""))'
+}
+
+sweep() {
+  local run d why n=0 bad=0
+  for run in $(all_runs); do
+    while IFS=$'\t' read -r d why; do
+      [ -n "$d" ] || continue
+      line=$(release_one "$d"); echo "  ${line#*$'\t'}"; n=$((n+1))
+      case "$line" in released*|retained*|pending*) ;; *) bad=$((bad+1)) ;; esac
+    done < <(workers_in "$run" reclaimable)
+  done
+  echo "отпущено из reclaimable: $n, не вышло: $bad"
+  local left=""
+  for run in $(all_runs); do
+    for st in release_unknown retained; do
+      while IFS=$'\t' read -r d why; do
+        [ -n "$d" ] && left="$left\n  $st  $d  ${why:0:90}"
+      done < <(workers_in "$run" "$st")
+    done
+  done
+  [ -n "$left" ] && printf "закрыть руками или решить (Orca сама не закроет):%b\n" "$left"
+  return 0
+}
+
+retain_list() { printf '%s\n' "${TASKS}/.retain"; }
 
 run_bind() {                       # создаёт Run при отсутствии, печатает его id
   local obj=$1 cur
@@ -308,12 +449,77 @@ for w in ws:
   read)   D=${1:?укажите dispatch}; N=${2:-60}
           "$ORCA" orchestration worker-read --dispatch "$D" --limit "$N" 2>&1 | tail -"$N" ;;
   say)    D=${1:?укажите dispatch}; shift
-          case "$D" in *:*) TO=$D ;; *) TO="dispatch:$D" ;; esac
-          "$ORCA" orchestration send --to "$TO" --subject "указание координатора" \
-            --body "$*" --json >/dev/null && echo "передано" ;;
+          # Висит вопрос этого работника — отвечаем на него: send его ask не разблокирует.
+          Q=$(open_questions "$D" | head -1)
+          if [ -n "$Q" ]; then
+            IFS=$'\t' read -r QID _ QRUN _ _ <<<"$Q"
+            reply_to "$QID" "$QRUN" "$*"
+          else
+            case "$D" in *:*) TO=$D ;; *) TO="dispatch:$D" ;; esac
+            "$ORCA" orchestration send --to "$TO" --subject "указание координатора" \
+              --body "$*" --json >/dev/null && echo "передано (открытого вопроса нет)"
+          fi ;;
+  questions) print_questions "${1:-}" ;;
+  answer) T=${1:?укажите dispatch или id вопроса}; shift
+          [ -n "$*" ] || { echo "укажите текст ответа" >&2; exit 1; }
+          Q=$(open_questions "$T" | head -1)
+          [ -n "$Q" ] || { echo "открытого вопроса у $T нет — для указания без вопроса есть say" >&2; exit 1; }
+          IFS=$'\t' read -r QID _ QRUN _ _ <<<"$Q"
+          reply_to "$QID" "$QRUN" "$*" ;;
   wait)   MS=${1:-900000}
-          "$ORCA" orchestration check --wait --types "worker_done,escalation,question" --timeout-ms "$MS" --json 2>&1 | head -40 ;;
-  release) D=${1:?укажите dispatch}; "$ORCA" orchestration worker-release --dispatch "$D" --json >/dev/null && echo "отпущен $D" ;;
+          # Сначала то, что уже ждёт ответа: check --wait отдаёт только новое.
+          print_questions
+          # Контур игнорирует --types и будит на heartbeat: такие пачки подтверждаем молча
+          # и ждём дальше, координатору возвращаемся только со смысловым событием.
+          # Пачка переигрывается, пока её не подтвердить: прошлую подтверждаем при
+          # следующем check — к этому моменту её события уже разобраны.
+          mkdir -p "$TASKS"; LAST="$TASKS/.last-delivery"
+          deadline=$(( $(date +%s) + MS/1000 )); DONE=""; HIT=""
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            left=$(( (deadline - $(date +%s)) * 1000 )); [ "$left" -gt 120000 ] && left=120000
+            ACK=(); [ -s "$LAST" ] && ACK=(--ack "$(cat "$LAST")")
+            OUT=$("$ORCA" orchestration check ${ACK[@]+"${ACK[@]}"} --wait --types "worker_done,escalation,question" --timeout-ms "$left" --json 2>/dev/null || true)
+            RES=$(printf '%s' "$OUT" | python3 -c '
+import json,sys
+try: d=json.load(sys.stdin).get("result") or {}
+except Exception: print("ACK"); print("RAW"); raise SystemExit
+print("ACK " + (d.get("deliveryId") or ""))
+ms=[x for x in (d.get("messages") or []) if x.get("type")!="heartbeat"]
+if not ms: print("SKIP"); raise SystemExit
+print("HIT")
+for x in ms:
+    t=x.get("type"); frm=str(x.get("from_handle","")).replace("dispatch:","")
+    try: p=json.loads(x.get("payload") or "{}")
+    except Exception: p={}
+    who=p.get("dispatchId") or frm
+    print("%-11s %s  %s" % (t, who, " ".join(str(x.get("subject","")).split())[:80]), file=sys.stderr)
+    if t in ("escalation","worker_done"): print("  «%s»" % " ".join(str(x.get("body","")).split())[:400], file=sys.stderr)
+    if t=="worker_done" and p.get("dispatchId"): print("DONE " + p["dispatchId"])')
+            A=$(printf '%s\n' "$RES" | sed -n 's/^ACK //p'); printf '%s' "$A" > "$LAST" || true
+            case "$RES" in *RAW*) echo "ответ check не разобран — повторяю"; sleep 2 ;; esac
+            if printf '%s\n' "$RES" | grep -qx HIT; then
+              HIT=1; DONE=$(printf '%s\n' "$RES" | sed -n 's/^DONE //p'); break
+            fi
+          done
+          [ -n "$HIT" ] || echo "за $((MS/1000)) с смыслового события нет (таймаут — точка проверки, а не сбой)"
+          # worker_done — терминал больше не нужен: вывод архивируется, журнал сессии остаётся.
+          for D in $DONE; do
+            if [ "${GJ_RETAIN:-}" = "1" ] || grep -qx "$D" "$(retain_list)" 2>/dev/null; then
+              echo "  $D оставлен (retain) — отпустить: orchestrate.sh release $D"
+            else
+              line=$(release_one "$D"); echo "  ${line#*$'\t'}"
+            fi
+          done
+          print_questions | grep -v "^открытых вопросов нет$" || true ;;
+  release) D=${1:?укажите dispatch либо «все»}
+          if [ "$D" = "все" ]; then sweep; else
+            line=$(release_one "$D"); echo "${line#*$'\t'}"
+            case "$line" in released*|retained*|pending*) ;; *) exit 1 ;; esac
+          fi ;;
+  retain) D=${1:?укажите dispatch}; mkdir -p "$TASKS"; echo "$D" >> "$(retain_list)"
+          "$ORCA" orchestration worker-retain --dispatch "$D" --json >/dev/null 2>&1 \
+            && echo "оставлен $D: wait его не закроет; отпустить — release $D" ;;
+  sweep)  sweep ;;
   run)    "$ORCA" orchestration run-current 2>&1 | head -10 ;;
 
   *) sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
