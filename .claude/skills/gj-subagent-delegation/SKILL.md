@@ -49,7 +49,7 @@ description: Use whenever a deploy, a branch or task-status check, a research qu
 | Деплой, пайплайн, номер сборки | `general-purpose` | `gj-ci-deploy-map`, `gj-gitlab-git` |
 | Анализ веток, статус задачи | `general-purpose` | `gj-gitlab-git`, `gj-task-execution` |
 | Исследование «почему так» | `<платформа>-researcher` (ensi, integration, mobile, oms, site); поперёк систем — `general-purpose` | профильные `*-stack-anatomy`, `gj-buddy-mcp-mastery` |
-| Ревью запроса | `architect`, при OTS/1С/ХД/платежах — `corporate-architect` | по `gj-review-delegation` |
+| Ревью запроса | **не подагент**: работник Orca через `orchestrate.sh review`; `architect` — только если Orca недоступна | по `gj-review-delegation` |
 
 Запуск всегда в фоне: родитель продолжает работу, о завершении придёт уведомление. Номер
 подагента (`agentId` из ответа Agent) сразу записать в `.tasks/<ключ>/agents.tsv` одной
@@ -128,7 +128,9 @@ description: Use whenever a deploy, a branch or task-status check, a research qu
 
 ### Ревью
 
-Порядок и шаблон вводных — `gj-review-delegation`, здесь только добавки:
+По умолчанию ревью идёт **через оркестрацию** — `scripts/gj/orchestrate.sh review <адрес>`,
+работником Orca. Подагент — только когда Orca недоступна. Порядок и шаблон вводных —
+`gj-review-delegation`, здесь только добавки:
 
 - к вводным добавить **вершину** (`SHA`) — повторное ревью без новой вершины не запускать:
   вердикт на одной вершине уже менялся с APPROVE на CHANGES REQUIRED (!2853, !2854);
