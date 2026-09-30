@@ -1,6 +1,6 @@
 ---
 name: gj-review-delegation
-description: Use whenever a GitLab merge request has to be reviewed in this workspace — a pasted MR URL, "сделай ревью", "посмотри запрос", "проверь MR", a re-review after fixes, or a request to approve. This skill is the LAUNCHER, not the review itself: it compacts the diff with scripts/gj/mr-brief.py, fills the input template, and delegates the substantive review to a fresh architect subagent with isolated context, so the parent session never carries the diff. The review procedure itself lives in gj-gitlab-mr-review plus one platform addendum. Triggers on ANY mention of ревью — most often "проведи ревью", "проведи ревью по шаблону", "проведи ещё раз ревью", "сделай ревью", "посмотри MR", "проверь MR", "изучи <ссылка на merge_requests>", "можно ли апрувить", and on a bare GitLab merge_requests URL. The phrase "по шаблону" refers to THIS skill: the input template lives here, it no longer has to be pasted by hand.
+description: Use whenever a GitLab merge request has to be reviewed in this workspace — a pasted MR URL, "сделай ревью", "посмотри запрос", "проверь MR", a re-review after fixes, or a request to approve. This skill is the LAUNCHER, not the review itself: it compacts the diff with scripts/gj/mr-brief.py, fills the input template, and delegates the substantive review through orchestration — a fresh Orca worker started by scripts/gj/orchestrate.sh review (an architect subagent only when Orca is unavailable) — so the parent session never carries the diff. The review procedure itself lives in gj-gitlab-mr-review plus one platform addendum. Triggers on ANY mention of ревью — most often "проведи ревью", "проведи ревью по шаблону", "проведи ещё раз ревью", "сделай ревью", "посмотри MR", "проверь MR", "изучи <ссылка на merge_requests>", "можно ли апрувить", and on a bare GitLab merge_requests URL. The phrase "по шаблону" refers to THIS skill: the input template lives here, it no longer has to be pasted by hand.
 ---
 
 # Запуск ревью запроса на слияние
@@ -28,10 +28,10 @@ scripts/gj/orchestrate.sh review <адрес запроса>   # выжимка 
 
 1. **Выжимка вместо диффа** — `mr-brief.py` схлопывает одинаковые правки. `cms!7`:
    587 файлов → 25 различных правок, 4 тыс. токенов вместо сотен тысяч.
-2. **Разбор в отдельном подагенте** — его контекст умирает вместе с ним, в родительскую
+2. **Разбор в отдельном работнике Orca** — его контекст умирает вместе с ним, в родительскую
    сессию возвращается только отчёт.
 
-## Шаг 1. Собрать выжимку — до запуска подагента
+## Шаг 1. Собрать выжимку — до запуска ревьюера
 
 ```bash
 scripts/gj/mr-brief.py <адрес запроса> --out .tasks/review-<ключ>/brief.md
@@ -41,7 +41,7 @@ scripts/gj/mr-brief.py <адрес запроса> --out .tasks/review-<ключ
 наборе он молча отдаёт пустые диффы — на `cms!7` пустыми пришли 566 файлов из 587, и ревью
 по ним было бы слепым.
 
-Выжимка — вход подагента, а не замена доказательствам: массовые правки он смотрит по
+Выжимка — вход ревьюера, а не замена доказательствам: массовые правки он смотрит по
 образцу, единичные — открывает полностью сам.
 
 ## Шаг 2. Заполнить вводные
@@ -59,23 +59,40 @@ Jira/Confluence: <ссылки или НЕТ>
 Выжимка: <путь к brief.md>
 ```
 
-Незаполненное поле — это «НЕТ», а не «на усмотрение подагента». Право записи по умолчанию
+Незаполненное поле — это «НЕТ», а не «на усмотрение ревьюера». Право записи по умолчанию
 отсутствует: апрув и комментарии только по явной команде пользователя.
 
-## Шаг 3. Делегировать
+## Шаг 3. Делегировать — через оркестрацию
 
-**Разбор в текущей сессии не вести.** Создать **новый** подагент `architect` со свежим
-изолированным контекстом (`fork_turns="none"` либо равнозначная настройка). Не переиспользовать
-существующего подагента и его прежние выводы. Передать ему все вводные целиком.
+**По умолчанию ревью ведёт работник Orca, а не подагент этой сессии:**
 
-Брать `corporate-architect` вместо `architect`, когда правка существенно задевает Gloria OTS,
-1С/ARM, WMS, ХД, DevOps, платёжные и фискальные системы, `platform-new`, `platform-next`,
-владение корпоративными данными или несколько границ ответственности между командами.
+```bash
+scripts/gj/orchestrate.sh review <адрес запроса>   # выжимка + работник со свежим контекстом
+scripts/gj/orchestrate.sh wait                      # вопросы и worker_done; answer <dispatch> "…"
+```
 
-Если свежую сессию подагента создать не удалось — доложить, что **делегирование
+Почему работник: его расход виден в журналах с привязкой к задаче, ревью стоит дешевле
+(в среднем 8,3 млн против 12,7 млн у подагента внутри координатора), и разбор не оседает
+в родителе. Вопросы работника закрывать `orchestrate.sh answer`, итог — из его `worker_done`
+и отчёта в `.tasks/review-<проект>-<iid>/`.
+
+**Подагент `architect` — только запасной путь**, когда Orca недоступна (`orca` не найдена,
+`worker-start` отказал). Тогда — новый подагент со свежим контекстом, ему все вводные
+целиком, и в отчёте отметить, что ревью шло без оркестрации.
+
+Когда правка существенно задевает Gloria OTS, 1С/ARM, WMS, ХД, DevOps, платёжные и
+фискальные системы, `platform-new`, `platform-next`, владение корпоративными данными или
+несколько границ ответственности — вписать в «Особые опасения», что нужен корпоративный
+разбор: работник отдаст кросс-системные трассы подагенту `corporate-architect`.
+
+Если ни работника, ни подагента запустить не удалось — доложить, что **делегирование
 заблокировано**, и не разбирать запрос в родительской сессии.
 
-## Задание подагенту
+**Если ты сам работник ревью** (стартовая реплика «ЦЕЛЬ: ревью запроса …») — ревью ведёшь
+ты, по разделу ниже. `orchestrate.sh review` заново не запускать: это породит работника,
+который запустит следующего.
+
+## Задание ревьюеру (работнику или подагенту)
 
 Это read-only ревью кода и архитектуры, а не проектирование.
 
