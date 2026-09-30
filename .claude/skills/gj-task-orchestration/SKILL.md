@@ -11,11 +11,17 @@ description: Use when starting, planning or running any development task in this
 ## Коротко: порядок работы
 
 ```bash
+scripts/gj/orchestrate.sh lead   <КЛЮЧ> "заголовок"   # отдельный агент-координатор во вкладке
 scripts/gj/orchestrate.sh task   <КЛЮЧ> "заголовок"   # завести и запустить
 scripts/gj/orchestrate.sh list | say | read | wait     # следить и вмешиваться
 scripts/gj/orchestrate.sh review <адрес запроса>       # ревью
 scripts/gj/orchestrate.sh done   <КЛЮЧ>                # сдача, по явной команде
 ```
+
+`lead` — когда задачу ведёт не эта сессия: новая вкладка «<КЛЮЧ> · координатор» сама
+запускает работника, держит `wait`, отвечает на его вопросы, по готовности зовёт ревью и
+докладывает. Сдача — по-прежнему только по явной команде. Реплика — `.tasks/<ключ>/lead.md`;
+для вёрстки третьим аргументом `front`.
 
 Пачкой, когда задач несколько:
 

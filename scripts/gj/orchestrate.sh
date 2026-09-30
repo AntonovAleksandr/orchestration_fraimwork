@@ -9,6 +9,8 @@
 # грузятся в 0,17% ходов, из 54 русских триггерных фраз в 1438 репликах встретились
 # шесть. Подбор по описанию ненадёжен, текст в самой реплике срабатывает всегда.
 #
+#   orchestrate.sh lead   <КЛЮЧ> [заголовок] [front]  отдельный агент-координатор: сам
+#                                              запускает работника, следит и отвечает
 #   orchestrate.sh task   <КЛЮЧ> [заголовок]   задача на бэк/общая
 #   orchestrate.sh front  <КЛЮЧ> [заголовок]   задача на вёрстку
 #   orchestrate.sh review <адрес запроса>      ревью
@@ -374,8 +376,56 @@ print("Task:    ", (d.get("task") or {}).get("id","?"))' 2>/dev/null || echo "$o
   echo "вмешаться: scripts/gj/orchestrate.sh say <dispatch> \"…\""
 }
 
+# Реплика координатора для lead. Пишется в файл: в --command она уходит через $(cat …),
+# иначе кавычки и кириллица в реплике ломают строку запуска.
+lead_spec() {                      # lead_spec <ключ> <заголовок> <вид>
+  local key=$1 title=$2 kind=$3 qt=""
+  [ -n "$title" ] && qt=" '$(printf '%s' "$title" | sed "s/'/'\\\\''/g")'"
+  cat <<EOS
+Загрузи скиллы gj-orca-workflow, gj-task-orchestration, gj-subagent-delegation ДО любых
+других действий.
+
+Ты — координатор задачи $key${title:+ — $title}. Задачу ведёт работник Orca, ты его
+запускаешь, контролируешь и отвечаешь за результат. Код руками не правишь.
+
+1. Запуск: scripts/gj/orchestrate.sh $kind $key$qt
+2. Сразу после запуска — scripts/gj/orchestrate.sh wait в фоне (run_in_background) и так
+   после каждого события. На ВОПРОС работника — scripts/gj/orchestrate.sh answer <dispatch>
+   "…" в том же ходе. Нужно действие человека (кнопка в GitLab, доступ, решение владельца) —
+   сразу вынести человеку одной строкой, работника не держать.
+3. По worker_done: сверить вводную .tasks/<ключ>/brief.md — цель, критерий готовности,
+   что сделано. Есть запрос на слияние — ревью: scripts/gj/orchestrate.sh review <адрес>.
+   Недоделано — дослать работнику указание через say, а не делать самому.
+4. Сдачу (scripts/gj/orchestrate.sh done $key) — только по явной команде человека.
+5. Доклад человеку — коротко: что сделано, что ждёт его, какие запросы открыты.
+6. Контекст за 250 тыс. — записать состояние в .tasks/<ключ>/state.md (Run, диспетчи,
+   решения, что дальше), сказать человеку и остановиться.
+EOS
+}
+
 cmd=${1:-}; shift || true
 case "$cmd" in
+  lead)
+    KEY=${1:?укажите ключ задачи}; TITLE=${2:-}; KIND=task
+    [ "${3:-}" = front ] && KIND=front
+    have_orca || { echo "orca не найдена — lead без неё не запустить" >&2; exit 1; }
+    [ "${GJ_SKIP_TREE_CHECK:-}" = "1" ] || check_tree || exit 1
+    guard || exit 1
+    DIR="$TASKS/$(slug "$KEY")"; mkdir -p "$DIR"
+    lead_spec "$KEY" "$TITLE" "$KIND" > "$DIR/lead.md"
+    TREE=$(target_dir); TREE=${TREE:-$ROOT}
+    LAUNCH="cd '$TREE' && $AGENT \"\$(cat '$DIR/lead.md')\""
+    if [ "${GJ_DRY:-}" = "1" ]; then echo "$LAUNCH"; exit 0; fi
+    "$ORCA" terminal create --worktree "path:$TREE" --title "$KEY · координатор" \
+      --command "$LAUNCH" --json 2>&1 | python3 -c '
+import json,sys
+try: d=json.load(sys.stdin)
+except Exception: print("terminal create не разобран"); raise SystemExit(1)
+if not d.get("ok"): print("terminal create отказал:", (d.get("error") or {}).get("message","")[:200]); raise SystemExit(1)
+t=(d.get("result") or {}).get("terminal") or d.get("result") or {}
+print("координатор запущен:", t.get("handle") or t.get("id") or "?")'
+    echo "реплика: $DIR/lead.md · вкладка «$KEY · координатор»"
+    ;;
   task|front)
     KEY=${1:?укажите ключ задачи}; TITLE=${2:-}
     "$ROOT/scripts/gj/task.sh" "$([ "$cmd" = front ] && echo front || echo back)" "$KEY" "$TITLE" >/dev/null
