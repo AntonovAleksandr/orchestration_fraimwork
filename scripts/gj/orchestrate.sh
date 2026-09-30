@@ -468,22 +468,25 @@ for w in ws:
   wait)   MS=${1:-900000}
           # Сначала то, что уже ждёт ответа: check --wait отдаёт только новое.
           print_questions
-          # Пачка переигрывается, пока её не подтвердить: подтверждаем прошлую при следующем
-          # wait — к этому моменту её события уже разобраны.
+          # Контур игнорирует --types и будит на heartbeat: такие пачки подтверждаем молча
+          # и ждём дальше, координатору возвращаемся только со смысловым событием
+          # (замер 16–30.09: 43 пробуждения координатора ради одного heartbeat, 12 млн).
+          # Пачка переигрывается, пока её не подтвердить: прошлую подтверждаем при
+          # следующем check — к этому моменту её события уже разобраны.
           mkdir -p "$TASKS"; LAST="$TASKS/.last-delivery"
-          ACK=(); [ -s "$LAST" ] && ACK=(--ack "$(cat "$LAST")")
-          OUT=$("$ORCA" orchestration check ${ACK[@]+"${ACK[@]}"} --wait --types "worker_done,escalation,question" --timeout-ms "$MS" --json 2>/dev/null || true)
-          printf '%s' "$OUT" | python3 -c '
+          deadline=$(( $(date +%s) + MS/1000 )); DONE=""; HIT=""
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            left=$(( (deadline - $(date +%s)) * 1000 )); [ "$left" -gt 120000 ] && left=120000
+            ACK=(); [ -s "$LAST" ] && ACK=(--ack "$(cat "$LAST")")
+            OUT=$("$ORCA" orchestration check ${ACK[@]+"${ACK[@]}"} --wait --types "worker_done,escalation,question" --timeout-ms "$left" --json 2>/dev/null || true)
+            RES=$(printf '%s' "$OUT" | python3 -c '
 import json,sys
 try: d=json.load(sys.stdin).get("result") or {}
-except Exception: raise SystemExit
-print(d.get("deliveryId") or "")' > "$LAST.new" 2>/dev/null; mv "$LAST.new" "$LAST"
-          DONE=$(printf '%s' "$OUT" | python3 -c '
-import json,sys
-try: d=json.load(sys.stdin).get("result") or {}
-except Exception: print("события не разобраны", file=sys.stderr); raise SystemExit
-ms=d.get("messages") or []
-if not ms: print("событий нет (таймаут — это точка проверки, а не сбой)", file=sys.stderr)
+except Exception: print("ACK"); print("RAW"); raise SystemExit
+print("ACK " + (d.get("deliveryId") or ""))
+ms=[x for x in (d.get("messages") or []) if x.get("type")!="heartbeat"]
+if not ms: print("SKIP"); raise SystemExit
+print("HIT")
 for x in ms:
     t=x.get("type"); frm=str(x.get("from_handle","")).replace("dispatch:","")
     try: p=json.loads(x.get("payload") or "{}")
@@ -491,7 +494,14 @@ for x in ms:
     who=p.get("dispatchId") or frm
     print("%-11s %s  %s" % (t, who, " ".join(str(x.get("subject","")).split())[:80]), file=sys.stderr)
     if t in ("escalation","worker_done"): print("  «%s»" % " ".join(str(x.get("body","")).split())[:400], file=sys.stderr)
-    if t=="worker_done" and p.get("dispatchId"): print(p["dispatchId"])')
+    if t=="worker_done" and p.get("dispatchId"): print("DONE " + p["dispatchId"])')
+            A=$(printf '%s\n' "$RES" | sed -n 's/^ACK //p'); printf '%s' "$A" > "$LAST" || true
+            case "$RES" in *RAW*) echo "ответ check не разобран — повторяю"; sleep 2 ;; esac
+            if printf '%s\n' "$RES" | grep -qx HIT; then
+              HIT=1; DONE=$(printf '%s\n' "$RES" | sed -n 's/^DONE //p'); break
+            fi
+          done
+          [ -n "$HIT" ] || echo "за $((MS/1000)) с смыслового события нет (таймаут — точка проверки, а не сбой)"
           # worker_done — терминал больше не нужен: вывод архивируется, журнал сессии остаётся.
           for D in $DONE; do
             if [ "${GJ_RETAIN:-}" = "1" ] || grep -qx "$D" "$(retain_list)" 2>/dev/null; then
