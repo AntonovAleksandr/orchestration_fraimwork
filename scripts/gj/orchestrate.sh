@@ -21,11 +21,15 @@
 #   orchestrate.sh questions [dispatch]        открытые вопросы работников
 #   orchestrate.sh answer <dispatch|msg_id> <текст>  ответить на вопрос (reply)
 #   orchestrate.sh wait  [мс]                  ждать worker_done / вопроса / эскалации
-#   orchestrate.sh release <dispatch>          отпустить терминал завершённого
+#   orchestrate.sh release <dispatch|все>      отпустить терминал завершённого (все —
+#                                              по всем Run, с отчётом о неотпущенных)
+#   orchestrate.sh retain  <dispatch>          оставить терминал живым: воркеру будет ещё работа
+#   orchestrate.sh sweep                       release все — для ежедневного прогона
 #   orchestrate.sh run                         показать привязанный Run
 #
 # Переменные: GJ_MAX_AGENTS (4), GJ_MIN_FREE_MB (2048), GJ_FORCE=1 — обойти заслон,
 #             GJ_WORKTREE (current) — куда сажать работника, GJ_AGENT (claude).
+#             GJ_RETAIN=1 — wait не закрывает терминал по worker_done.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -261,6 +265,68 @@ print_questions() {                # print_questions [dispatch] — с гото�
   done
 }
 
+# Закрытие терминала завершённого работника. Orca сама терминал не закрывает: по
+# worker_done решает координатор — отдать под новый диспетч, оставить или отпустить.
+# Успех проверяем по состоянию в ответе, а не по ok: release_unknown приходит с ok=true.
+# Замер 30.09: из 13 «отпущенных» по ok четыре остались release_unknown.
+release_one() {                    # release_one <dispatch> → released|retained|pending|unknown
+  # release_unknown выходит с кодом 1 — под set -e/pipefail это оборвало бы скрипт до разбора.
+  { "$ORCA" orchestration worker-release --dispatch "$1" --json 2>&1 || true; } | python3 -c '
+import json,sys
+d=sys.argv[1]
+try: r=json.load(sys.stdin)
+except Exception: print("unknown\t%s: ответ не разобран" % d); raise SystemExit
+res=r.get("result") or {}; err=r.get("error") or {}
+st=res.get("state") or err.get("code") or "?"
+if st in ("released","already_released"): print("released\t%s отпущен" % d)
+elif st=="retained": print("retained\t%s оставлен: %s" % (d, res.get("retainedReason") or res.get("reason") or "по решению"))
+elif st=="release_pending": print("pending\t%s закрывается" % d)
+elif st=="release_unknown": print("unknown\t%s НЕ отпущен: терминал потерян (перезапуск Orca?) — закрыть вкладку вручную" % d)
+else: print("unknown\t%s НЕ отпущен: %s %s" % (d, st, (err.get("message") or res.get("lastError") or "")[:160]))' "$1"
+}
+
+# Все Run: worker-list без --run в привязанном терминале видит только свой Run.
+all_runs() {
+  "$ORCA" orchestration run-list --json 2>/dev/null | python3 -c '
+import json,sys
+try: [print(x["id"]) for x in json.load(sys.stdin)["result"]["runs"]]
+except Exception: pass'
+}
+
+workers_in() {                     # workers_in <run> <terminal-state> → dispatch<TAB>причина
+  "$ORCA" orchestration worker-list --run "$1" --terminal-state "$2" --limit 100 --json 2>/dev/null | python3 -c '
+import json,sys
+try: w=json.load(sys.stdin)["result"]["workers"]
+except Exception: raise SystemExit
+for x in w:
+    r=x.get("resource") or {}
+    print("%s\t%s" % (x["dispatchId"], r.get("retainedReason") or r.get("releaseError") or ""))'
+}
+
+sweep() {
+  local run d why n=0 bad=0
+  for run in $(all_runs); do
+    while IFS=$'\t' read -r d why; do
+      [ -n "$d" ] || continue
+      line=$(release_one "$d"); echo "  ${line#*$'\t'}"; n=$((n+1))
+      case "$line" in released*|retained*|pending*) ;; *) bad=$((bad+1)) ;; esac
+    done < <(workers_in "$run" reclaimable)
+  done
+  echo "отпущено из reclaimable: $n, не вышло: $bad"
+  local left=""
+  for run in $(all_runs); do
+    for st in release_unknown retained; do
+      while IFS=$'\t' read -r d why; do
+        [ -n "$d" ] && left="$left\n  $st  $d  ${why:0:90}"
+      done < <(workers_in "$run" "$st")
+    done
+  done
+  [ -n "$left" ] && printf "закрыть руками или решить (Orca сама не закроет):%b\n" "$left"
+  return 0
+}
+
+retain_list() { printf '%s\n' "${TASKS}/.retain"; }
+
 run_bind() {                       # создаёт Run при отсутствии, печатает его id
   local obj=$1 cur
   cur=$("$ORCA" orchestration run-current --json 2>/dev/null | jq_ 'd.get("result",{}).get("run",{}).get("id","")') || cur=""
@@ -399,21 +465,48 @@ for w in ws:
   wait)   MS=${1:-900000}
           # Сначала то, что уже ждёт ответа: check --wait отдаёт только новое.
           print_questions
-          OUT=$("$ORCA" orchestration check --wait --types "worker_done,escalation,question" --timeout-ms "$MS" --json 2>/dev/null || true)
+          # Пачка переигрывается, пока её не подтвердить: подтверждаем прошлую при следующем
+          # wait — к этому моменту её события уже разобраны.
+          mkdir -p "$TASKS"; LAST="$TASKS/.last-delivery"
+          ACK=(); [ -s "$LAST" ] && ACK=(--ack "$(cat "$LAST")")
+          OUT=$("$ORCA" orchestration check ${ACK[@]+"${ACK[@]}"} --wait --types "worker_done,escalation,question" --timeout-ms "$MS" --json 2>/dev/null || true)
           printf '%s' "$OUT" | python3 -c '
 import json,sys
 try: d=json.load(sys.stdin).get("result") or {}
-except Exception: print("событий нет"); raise SystemExit
-ms=d.get("messages") or (d.get("batch") or {}).get("messages") or []
-if not ms: print("событий нет (таймаут — это точка проверки, а не сбой)")
+except Exception: raise SystemExit
+print(d.get("deliveryId") or "")' > "$LAST.new" 2>/dev/null; mv "$LAST.new" "$LAST"
+          DONE=$(printf '%s' "$OUT" | python3 -c '
+import json,sys
+try: d=json.load(sys.stdin).get("result") or {}
+except Exception: print("события не разобраны", file=sys.stderr); raise SystemExit
+ms=d.get("messages") or []
+if not ms: print("событий нет (таймаут — это точка проверки, а не сбой)", file=sys.stderr)
 for x in ms:
     t=x.get("type"); frm=str(x.get("from_handle","")).replace("dispatch:","")
-    print("%-11s %s  %s" % (t, frm, " ".join(str(x.get("subject","")).split())[:80]))
-    if t=="escalation": print("  «%s»" % " ".join(str(x.get("body","")).split())[:400])
-dl=d.get("deliveryId") or d.get("delivery_id") or (d.get("batch") or {}).get("id")
-if dl: print("подтвердить пачку: orca orchestration check --ack %s" % dl)'
+    try: p=json.loads(x.get("payload") or "{}")
+    except Exception: p={}
+    who=p.get("dispatchId") or frm
+    print("%-11s %s  %s" % (t, who, " ".join(str(x.get("subject","")).split())[:80]), file=sys.stderr)
+    if t in ("escalation","worker_done"): print("  «%s»" % " ".join(str(x.get("body","")).split())[:400], file=sys.stderr)
+    if t=="worker_done" and p.get("dispatchId"): print(p["dispatchId"])')
+          # worker_done — терминал больше не нужен: вывод архивируется, журнал сессии остаётся.
+          for D in $DONE; do
+            if [ "${GJ_RETAIN:-}" = "1" ] || grep -qx "$D" "$(retain_list)" 2>/dev/null; then
+              echo "  $D оставлен (retain) — отпустить: orchestrate.sh release $D"
+            else
+              line=$(release_one "$D"); echo "  ${line#*$'\t'}"
+            fi
+          done
           print_questions | grep -v "^открытых вопросов нет$" || true ;;
-  release) D=${1:?укажите dispatch}; "$ORCA" orchestration worker-release --dispatch "$D" --json >/dev/null && echo "отпущен $D" ;;
+  release) D=${1:?укажите dispatch либо «все»}
+          if [ "$D" = "все" ]; then sweep; else
+            line=$(release_one "$D"); echo "${line#*$'\t'}"
+            case "$line" in released*|retained*|pending*) ;; *) exit 1 ;; esac
+          fi ;;
+  retain) D=${1:?укажите dispatch}; mkdir -p "$TASKS"; echo "$D" >> "$(retain_list)"
+          "$ORCA" orchestration worker-retain --dispatch "$D" --json >/dev/null 2>&1 \
+            && echo "оставлен $D: wait его не закроет; отпустить — release $D" ;;
+  sweep)  sweep ;;
   run)    "$ORCA" orchestration run-current 2>&1 | head -10 ;;
 
   *) sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
