@@ -30,18 +30,32 @@
 #   orchestrate.sh run                         показать привязанный Run
 #
 # Переменные: GJ_MAX_AGENTS (20), GJ_MIN_FREE_MB (2048), GJ_FORCE=1 — обойти заслон,
-#             GJ_WORKTREE (current) — куда сажать работника, GJ_AGENT (claude).
-#             GJ_RETAIN=1 — wait не закрывает терминал по worker_done.
+#             GJ_WORKTREE (дерево вызвавшего агента) — куда сажать работника,
+#             GJ_AGENT (claude). GJ_RETAIN=1 — wait не закрывает терминал по worker_done.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 TASKS=${GJ_TASKS_DIR:-$ROOT/.tasks}
 ORCA=${GJ_ORCA_BIN:-orca}
 AGENT=${GJ_AGENT:-claude}
-# Дерево задаём ЯВНО по каталогу скрипта. `--worktree current` берёт активное дерево
-# интерфейса Orca, а не место запуска: работник может уйти совсем не туда, где его ждут.
-# Проверено 17.09 — запуск из flyingfish посадил работника в основное дерево.
-WORKTREE=${GJ_WORKTREE:-path:$ROOT}
+# Работник садится в дерево вызвавшего агента, то есть туда, откуда запустили команду.
+# Причина: агент ведёт задачу в своём дереве и там же ждёт результат. Главное дерево
+# по умолчанию уводило работника в чужой каталог, и правки оказывались не там, где их
+# искали (так вышло на OPSOMN002-534). `--worktree current` тоже не годится: он берёт
+# активное дерево интерфейса Orca, а не место запуска.
+# Дерево без клонов platform/* останавливает заслон check_tree: направить в главное —
+# GJ_WORKTREE=path:<путь> или fleet.sh КЛЮЧ@main, либо подтянуть клоны.
+# Явный GJ_WORKTREE (его ставит fleet.sh для формы КЛЮЧ@дерево) имеет приоритет.
+caller_tree() {
+  local p
+  p=$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null) || p=""
+  if [ -n "$p" ] && [ -d "$p" ]; then printf '%s' "$p"; else printf '%s' "$ROOT"; fi
+}
+main_tree() {
+  git -C "$ROOT" worktree list --porcelain 2>/dev/null \
+    | awk 'NR==1 && $1=="worktree"{ $1=""; sub(/^ /,""); print; exit }'
+}
+WORKTREE=${GJ_WORKTREE:-path:$(caller_tree)}
 GJ_MAX_AGENTS=${GJ_MAX_AGENTS:-20}
 GJ_MIN_FREE_MB=${GJ_MIN_FREE_MB:-2048}
 
@@ -128,8 +142,9 @@ check_tree() {
   [ "$n" -gt 0 ] && { echo "дерево: $dir (репозиториев платформ: $n)" >&2; return 0; }
   echo "СТОП: в дереве $dir нет ни одного клона platform/*/ — только README." >&2
   echo "      Рабочие деревья git не содержат вложенных клонов, и работник не найдёт файлов." >&2
-  echo "      Запускать из основного дерева, направить туда работника (fleet.sh run КЛЮЧ@main)" >&2
-  echo "      либо подтянуть клоны:" >&2
+  echo "      Направить работника в главное дерево:" >&2
+  echo "        GJ_WORKTREE=path:$(main_tree) $0 …   (или fleet.sh run КЛЮЧ@main)" >&2
+  echo "      либо подтянуть клоны сюда:" >&2
   echo "        scripts/sync-platform-repos.sh" >&2
   echo "      Обойти (задача не трогает platform/*): GJ_SKIP_TREE_CHECK=1" >&2
   return 1
