@@ -43,7 +43,7 @@ ok=collections.OrderedDict()   # последний УСПЕШНЫЙ прого�
 any_=collections.OrderedDict()  # последняя созданная джоба, в т.ч. никогда не запущенная
 for x in j:
     n=x.get("name","")
-    if not any(k in n for k in ("deploy","prod","stage")): continue
+    if not any(k in n for k in ("deploy","prod","stag")): continue
     any_.setdefault(n, (x.get("ref",""), x.get("status","")))
     if x.get("status")=="success":
         ok.setdefault(n, x.get("ref",""))

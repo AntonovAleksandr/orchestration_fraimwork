@@ -4,16 +4,16 @@
 если запись помечена как непроверенная, проверить и обновить файл.
 
 Обновление: `scripts/gj/branch-registry.sh refresh` (нужен доступ к GitLab).
-Последняя сверка: **28.09.2026** — по последним **успешным** прогонам джоб деплоя
-(`scripts/gj/branch-registry.sh check <проект>`) и по образу, который реально крутится
-в кластере. Две прежние записи оказались неверны, см. «Что исправлено 28.09».
+Последняя сверка: **30.09.2026** — по последним **успешным** прогонам джоб деплоя
+(`scripts/gj/branch-registry.sh check <проект>`). 28.09 сверялось ещё и по образу в кластере;
+тогда две прежние записи оказались неверны, см. «Что исправлено 28.09».
 
 ## Раскладка
 
 | Система | Стейдж-ветка | Джоба стейджа | Прод-ветка | Джоба прода |
 |---|---|---|---|---|
 | ENSI · customers-api-web | `release-26.08.6-release-26.09-release-26.10` (комбинированная) | `stage:deploy-customer-gui-{web,mob,asm}` | `master` | `prod:deploy`, ручная |
-| ENSI · catalog-cache | `release-26.09` — **не комбинированная** | `stage:deploy-{MAIN,INDEXER}-catalog-cache` | `master` | `prod:deploy` |
+| ENSI · catalog-cache | `release-26.09-release-26.10` (комбинированная, с 30.09; до того `release-26.09`) | `stage:deploy-{MAIN,INDEXER}-catalog-cache` | `master` | `prod:deploy` |
 | ENSI · прочие сервисы | **проверять по сервису**, единой ветки нет | `stage:deploy-*` | `master` | `prod:deploy`, ручная |
 | Integration `avg-integration-service/integration` | `stage` | `deploy:is-api-stage`, `deploy:is-cron-stage` | `production` | `deploy:is-api-prod`, `deploy:is-cron-prod` |
 | Витрина `site-front/gj-ng-front` | `deploy/stage` | `deploy:front-stage-ru` | `release/production` | `deploy:front-prod-ru` |
@@ -21,10 +21,11 @@
 | OMS `platform/starfish24/*` | не установлено | Jenkins, не GitLab | не установлено | Jenkins |
 | Gloria OTS `gloriaots/gloriaots` | не установлено | не установлено | не установлено | не установлено |
 
-**Стейдж ENSI задаётся сервисом, а не системой.** У `customers-api-web` стенд собирается
-с комбинированной ветки, куда сливают несколько поездов сразу; у `catalog-cache` — с обычной
-`release-26.09`. Единого правила «в ENSI стейдж — комбинированная» нет, это была ошибка
-прежней записи. Проверять по конкретному репозиторию.
+**Стейдж ENSI задаётся сервисом, а не системой, и меняется между поездами.** Сейчас оба
+сервиса собирают стенд с комбинированных веток, но у каждого своя: `customers-api-web` —
+`release-26.08.6-release-26.09-release-26.10`, `catalog-cache` — `release-26.09-release-26.10`
+(до 30.09 — обычная `release-26.09`). Единого правила нет — проверять по репозиторию
+перед каждой сдачей.
 
 Для `customers-api-web` следствие прежнее: правка, влитая в `release-26.10`, на стенде
 не окажется, пока её не перенесут в комбинированную ветку.
@@ -51,6 +52,14 @@ scripts/gj/branch-registry.sh check <проект>
 
 У витрины стейдж — **отдельная ветка `deploy/stage`**, не релизная. У Integration — ветка
 `stage`. Обе подтверждены успешными прогонами 28.09.2026.
+
+## Что исправлено 30.09.2026
+
+- `catalog-cache` перевёл стенд на `release-26.09-release-26.10`: успешные
+  `stage:deploy-{MAIN,INDEXER}-catalog-cache` 30.09 — с неё.
+- `branch-registry.sh check` не видел мобильные `android-staging` и `ios-staging`: фильтр
+  искал подстроку `stage`, а в `staging` её нет. Теперь ищет `stag`. Обе джобы успешны с
+  `release-3.35.0` (29–30.09).
 
 ## Что исправлено 28.09.2026
 
