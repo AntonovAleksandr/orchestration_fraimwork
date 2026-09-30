@@ -166,6 +166,9 @@ Jira/Confluence: <ссылки или НЕТ>
 
 ## Смежные скиллы
 
+- `gj-subagent-delegation` — общий договор с подагентом: вершина в вводных, «уже
+  установлено», канал вопросов подагент ↔ родитель.
+
 - `gj-gitlab-mr-review` — сам порядок ревью (базовый).
 - `ensi-` / `integration-` / `oms-` / `site-` / `mobile-gitlab-mr-review` — addendum'ы.
 - `gj-task-orchestration` — фаза 5 общего алгоритма задачи, потолки контекста.

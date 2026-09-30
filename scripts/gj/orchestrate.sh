@@ -143,10 +143,10 @@ brief_filled() {
 
 skills_for() {
   case "$1" in
-    task)   echo "gj-task-orchestration, gj-task-execution" ;;
-    front)  echo "gj-task-orchestration, gj-task-execution, mobile-rn-conventions" ;;
+    task)   echo "gj-task-orchestration, gj-task-execution, gj-subagent-delegation" ;;
+    front)  echo "gj-task-orchestration, gj-task-execution, gj-subagent-delegation, mobile-rn-conventions" ;;
     review) echo "gj-review-delegation" ;;
-    done)   echo "gj-task-orchestration, gj-gitlab-git" ;;
+    done)   echo "gj-task-orchestration, gj-gitlab-git, gj-subagent-delegation" ;;
   esac
 }
 
@@ -172,6 +172,9 @@ spec_for() {                       # spec_for <вид> <ключ> <заголо�
 а ходы только с оболочкой дают 74,6% расхода, потому что каждый перечитывает контекст.
 Промежуточные «сейчас проверю» не писать, писать результат.
 Разведку вести подагентами и codegraph, полные кадры экрана в контекст не тянуть.
+Деплой, анализ веток и статуса, исследование, ревью — фоновыми подагентами по скиллу
+gj-subagent-delegation: задание по его шаблону с «уже установлено», agentId записать в
+.tasks/<ключ>/agents.tsv, на ВОПРОС подагента отвечать SendMessage в том же ходе.
 Ветки брать из docs/deploy/branch-registry.md, заново не выяснять.
 В прод-ветки (master ENSI, production ИС, release/production витрины) не трогать ничего.
 
