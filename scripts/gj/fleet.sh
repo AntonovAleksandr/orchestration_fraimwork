@@ -50,15 +50,20 @@ for w in ws:
 }
 
 run_one() {                       # run_one <ключ> <вид> <дерево|"">
-  local key=$1 kind=$2 tree=$3 dir="$ROOT" out
+  local key=$1 kind=$2 tree=$3 dir="" out
   if [ -n "$tree" ]; then
     dir=$(resolve_tree "$tree") || return 1
     # В новом дереве нет клонов platform/* — предупреждаем сразу, а не после часа работы.
     local n=0; for g in "$dir"/platform/*/*/.git; do [ -e "$g" ] && n=$((n+1)); done
-    [ "$n" -eq 0 ] && echo "  ВНИМАНИЕ: в «$tree» нет клонов platform/* — задача по коду платформ там не пойдёт" >&2
+    [ "$n" -eq 0 ] && echo "  ВНИМАНИЕ: в «${tree}» нет клонов platform/* — задача по коду платформ там не пойдёт" >&2
   fi
-  echo "── $key ($kind)${tree:+ → дерево $tree}"
-  out=$(GJ_WORKTREE="path:$dir" "$ORCH" "$kind" "$key" 2>&1) || { printf '%s\n' "$out" | sed 's/^/   /'; return 1; }
+  echo "── $key ($kind)${tree:+ → дерево ${tree}}"
+  if [ -n "$dir" ]; then
+    out=$(GJ_WORKTREE="path:$dir" "$ORCH" "$kind" "$key" 2>&1)
+  else
+    out=$("$ORCH" "$kind" "$key" 2>&1)
+  fi
+  [ $? -eq 0 ] || { printf '%s\n' "$out" | sed 's/^/   /'; return 1; }
   printf '%s\n' "$out" | sed 's/^/   /'
   local disp; disp=$(printf '%s' "$out" | sed -n 's/^Dispatch: *//p' | head -1)
   [ -n "$disp" ] && printf '%s\t%s\t%s\t%s\t%s\n' "$key" "$kind" "${tree:-current}" "$disp" "$(date +%FT%T)" >> "$STATE"
