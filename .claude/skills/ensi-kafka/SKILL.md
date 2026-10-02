@@ -285,6 +285,7 @@ Add processor to `config/kafka-consumer.php`:
 3. **Logging**: Log all processing events for debugging
 4. **Metrics**: Track processing success/failure rates
 5. **Dead Letter Queue**: Configure for failed messages
+6. **Do not write into a parent from a child's event**: topic order between entities is not guaranteed (catalog-cache stage: 27% of products created after their first SKU). `Parent::find(...)` + `return` when missing drops the data for good. Store the value on the child and pull it into the parent when the parent is created. [2026-10-02, catalog-cache !111; `docs/tasks/2026-10-02-opsomn002-268-skills-rules.md` п. 3]
 
 ---
 
@@ -377,6 +378,8 @@ Place tests in:
 2. **Minimal Fields**: Only send what consumers need
 4. **Relationships**: Flatten or nest based on consumer needs
 5. **Data Types**: Use proper JSON types (booleans, integers, strings)
+6. **Message key for replace-all events**: an event that carries the full set of child rows (the consumer deletes what is missing) must be keyed by the entity id, otherwise two events of one entity can be applied out of order across partitions and the older set wins. `HighLevelProducer::sendOne(string $message)` has no key parameter — produce through a producer that sets the key, or make the consumer reject stale versions. [2026-10-02, catalog-cache !111; `docs/tasks/2026-10-02-opsomn002-268-skills-rules.md` п. 4]
+7. **New field = initial load**: a consumer that learns a field only from change events will not have it for existing records. Ship a backfill step (`kafka:push-model-changes` without `--since` when the change does not touch the published model's `updated_at`) and put it into the rollout order. [2026-10-02, catalog-cache !111; `docs/tasks/2026-10-02-opsomn002-268-skills-rules.md` п. 2]
 
 ### Observer Design
 

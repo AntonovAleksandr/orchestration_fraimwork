@@ -353,6 +353,10 @@ When a user asks to create tests:
 - Use descriptive test names that explain what's being tested
 - Test both happy paths and edge cases (400, 404, validation errors)
 
+### Observer Tests
+
+`updateOrCreate` fires `saved` even when nothing changed. A test for a `deleted` observer in which a sibling row goes through `updateOrCreate` and asserts `atLeast()->once()` on the producer passes without any delete. Assert on the delete event itself (the specific id / `deleted` handler), and check the test fails with the delete removed. [2026-10-02, catalog-cache !111; `docs/tasks/2026-10-02-opsomn002-268-skills-rules.md` п. 12]
+
 ## Common Pest Laravel Functions
 
 Import these at the top of test files:

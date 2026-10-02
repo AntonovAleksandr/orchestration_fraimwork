@@ -76,6 +76,27 @@ push в `release-*` джобу **не запускает**, и деплой па
 `php artisan feeds:rocket-data`. Go-сервис `gj-feed-generator-products` умеет писать такой
 же файл, но его cronjob и на stage, и на проде запускается без флагов — только товарные фиды.
 
+## Ловушка 4: расписание задаёт helm, а не Kernel
+
+Команды по расписанию в ENSI запускают CronJob'ы из блока `cronjobs:` в
+`ms-helm-values/<env>/…/<service>.yaml`, с `concurrencyPolicy: Forbid`
+(`ms-helm-chart/templates/cron-cj.yaml`). `app/Console/Kernel.php` в рантайме не исполняется,
+`schedule:run` нет ни в одном values. Значит: новая команда без записи в values в проде молчит,
+`withoutOverlapping()` ничего не даёт, вопросы о времени запуска проверять по values.
+Сверка сред: `diff` блоков `cronjobs:` stage и prod. [02.10.2026, webapi-connector !30; `docs/tasks/2026-10-02-opsomn002-268-skills-rules.md` п. 10]
+
+## Ловушка 5: смена настроек индекса catalog-cache = пустой индекс
+
+Имя индекса товаров — `…_products_<md5(settings)>`, алиаса нет. Любая правка
+`ProductIndex::settings()` даёт новое имя: хук cc-indexer `elastic:migrate` создаёт **пустой**
+индекс и ставит переиндексацию в очередь `default` (в проде ~97 тыс. заданий, оценка 30–80 мин).
+Хук cc-main `elastic:check-index-exists` проверяет наличие индекса, а не наполненность.
+
+Порядок: деплой cc-indexer → очередь пуста и число документов в новом индексе равно старому
+(`elastic:show`) → деплой cc-main, не в одном пайплайне подряд. После отката — полный
+`elastic:reindex`: старый индекс не получал изменений, пока работал новый код.
+[25.09.2026, `docs/research/2026-09-25-opsomn002-268-ops-review.md` §4]
+
 ## Доказать, что фикс в проде
 
 Два условия вместе, по отдельности каждое лжёт:
