@@ -15,7 +15,9 @@ description: Entry point for development work in this workspace when Orca is ava
 | Заведение, рабочее дерево | `orca-cli` | — |
 | Постановка | — (Buddy MCP) | `gj-task-orchestration` |
 | Разведка | `orchestration` для веера | то же, §2 |
-| Правка | `orca-cli` | `gj-task-execution` |
+| Правка | `orca-cli` | `gj-task-execution` + классы дефектов: `gj-retry-safe-writes`, `gj-fail-loud-boundaries`, `gj-value-precision`, `gj-change-hygiene`, `gj-rollout-safety` |
+| Самопроверка | — | разделы «Самопроверка» тех же пяти; `orchestrate.sh done` и хук `mr-gate` без них не пускают |
+| Ответ на ревью | `orchestration` (работник) | `orchestrate.sh respond`, `gj-review-checklists` |
 | Контроль вёрстки | `orca-emulator`, `orca-emulator-android` | `gj-task-orchestration` §4 |
 | Ревью | `orchestration` (работник) | `gj-review-delegation` |
 | Сдача | `orca-cli` | `gj-task-orchestration`, раздел «Сдача» |

@@ -343,7 +343,13 @@ codegraph index  platform/mobile-app/gj-app   # после смены ветки
 ### 4. Контроль — по виду задачи
 
 **Бэк.** Локальный прогон по затронутому пути (`gj-local-test-runs`), затем phpstan и
-cs-fixer — в CI ENSI их нет, зелёный пайплайн статическую чистоту не доказывает.
+cs-fixer по **всем** файлам диффа — в CI ENSI их нет, зелёный пайплайн статическую чистоту
+не доказывает.
+
+**Самопроверка — для любого вида.** Раздел «Самопроверка» вводной заполняется по чек-листам
+`gj-retry-safe-writes`, `gj-fail-loud-boundaries`, `gj-value-precision`, `gj-change-hygiene`,
+`gj-rollout-safety` (для вёрстки — `gj-change-hygiene` и `gj-rollout-safety`; перечень — `scripts/gj/defect-skills.txt`). `orchestrate.sh done` с
+незаполненным разделом останавливается, хук `mr-gate` не даёт открыть запрос на слияние: классы из этих скиллов ревьюер (Олейников) находил после наших зелёных прогонов.
 
 **Вёрстка.** Эталонные экраны:
 
@@ -497,6 +503,9 @@ scripts/gj/stats.py --baseline base.json  # сравнить с ним позж�
 - `gj-buddy-mcp-mastery` — какой инструмент Buddy под какой вопрос.
 - `gj-local-test-runs` — фаза 4.
 - `gj-review-delegation` — фаза 5: запуск ревью через оркестрацию.
+- `gj-retry-safe-writes`, `gj-fail-loud-boundaries`, `gj-value-precision`, `gj-change-hygiene`,
+  `gj-rollout-safety` — классы дефектов и самопроверка фазы 4. Хуки, которые их подсказывают и
+  требуют, — `scripts/gj/install-hooks.sh`.
 
 ## Приёмка по следу — критерий готовности через expect.sh
 

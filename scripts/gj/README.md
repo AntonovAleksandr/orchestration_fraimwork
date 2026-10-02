@@ -14,6 +14,8 @@
 | `stats.py` | аналитика по журналам сессий | измеряет, работают ли остальные |
 | `fleet.sh` | пачка задач одной командой, вкладка на каждую | запуск N задач без N команд |
 | `worktree-vendor.sh` | честный vendor в рабочем дереве | секунды вместо 17 ГБ копии |
+| `orchestrate.sh` | работники Orca: `task`, `front`, `review`, `respond`, `done` | скиллы вписаны в постановку, сдача без «Самопроверки» не идёт |
+| `install-hooks.sh` | подключает `hooks/skill-router.py` и `hooks/mr-gate.py` в `.claude/settings.json` дерева | скилл подсказан в реплике; MR без «Самопроверки» не открывается |
 
 ## Запуск задачи
 
@@ -27,6 +29,28 @@ scripts/gj/task.sh review https://gitlab.gloria.aaanet.ru/.../merge_requests/7
 запуска. Запускать **отдельной сессией**: по журналам сессии живут неделями и
 к концу идут при контексте 700–800 тыс. токенов, где каждый ход стоит вдесятеро
 дороже первого.
+
+## Скиллы классов дефектов и ревью
+
+Перечень — `defect-skills.txt` (единый для скриптов и хуков): `gj-retry-safe-writes`,
+`gj-fail-loud-boundaries`, `gj-value-precision`, `gj-change-hygiene`, `gj-rollout-safety`. Собраны по
+замечаниям ревью ИС !918/!927, PIM !237, webapi-connector !30, catalog-cache !111, customers-api-web !831.
+Чек-листы, каталог дефектов, формат комментариев и ответ на ревью — `gj-review-checklists`.
+
+## Хуки: чтобы скиллы применялись
+
+```bash
+scripts/gj/install-hooks.sh          # один раз в каждом рабочем дереве (.claude/settings.json не в git)
+```
+
+- `skill-router.py` (UserPromptSubmit) — на ссылку на запрос, задачу Jira, слова о ревью, сдаче или
+  выкатке дописывает в контекст одну строку: какие скиллы загрузить и какой командой оркестратора
+  запускать. Причина: скиллы грузились в 0,17% ходов, текст в реплике срабатывает всегда.
+- `mr-gate.py` (PreToolUse, Bash) — отказывает в создании запроса на слияние (`-o merge_request.create`,
+  `glab mr create`, POST `/merge_requests`), если в `.tasks/<ключ>/brief.md` не заполнена «Самопроверка».
+  Обход — `GJ_SKIP_SELFCHECK=1` в самой команде.
+
+Проверить, что скиллы реально грузятся: `scripts/gj/stats.py --skills --days 7`.
 
 ## Контроль бэка — ревью по выжимке
 

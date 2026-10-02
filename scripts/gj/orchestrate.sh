@@ -14,6 +14,7 @@
 #   orchestrate.sh task   <КЛЮЧ> [заголовок] [--expect '…']   задача на бэк/общая
 #   orchestrate.sh front  <КЛЮЧ> [заголовок] [--expect '…']   задача на вёрстку
 #   orchestrate.sh review <адрес запроса> [--expect '…']      ревью
+#   orchestrate.sh respond <адрес запроса>…    ответ на ревью нашего запроса: сверка, доводы, вопросы, доработки
 #   orchestrate.sh research <КЛЮЧ> <вопрос>    только разведка: ответ фактами, решений не принимает;
 #                                              идёт на дешёвой модели (GJ_RESEARCH_MODEL)
 #   orchestrate.sh done   <КЛЮЧ> [--expect '…']               сдача: MR в стейдж, деплой, заготовки в прод
@@ -33,9 +34,11 @@
 #   orchestrate.sh sweep                       release все — для ежедневного прогона
 #   orchestrate.sh run                         показать привязанный Run
 #
-# Переменные: GJ_MAX_AGENTS (30), GJ_MIN_FREE_MB (2048), GJ_FORCE=1 — обойти заслон,
+# Переменные: GJ_MAX_AGENTS (30), GJ_MIN_FREE_MB (2048), GJ_FORCE=1 — обойти заслон ресурсов,
 #             GJ_WORKTREE (дерево вызвавшего агента) — куда сажать работника,
 #             GJ_AGENT (claude). GJ_RETAIN=1 — wait не закрывает терминал по worker_done.
+#             GJ_SKIP_SELFCHECK=1 — сдать без «Самопроверки» (решение человека),
+#             GJ_TASKS_DIR (.tasks), GJ_ORCA_BIN (orca).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -166,13 +169,21 @@ brief_filled() {
   return 0
 }
 
+# Скиллы классов дефектов собраны по замечаниям ревьюера к ИС !918/!927, PIM !237,
+# webapi-connector !30, catalog-cache !111, customers-api-web !831: тесты и phpstan их не ловили.
+# Перечень — в defect-skills.txt, единый для скриптов и хуков.
+DEFECT_SKILLS=$("$ROOT/scripts/gj/selfcheck.py" --skills back)
+FRONT_DEFECT=$("$ROOT/scripts/gj/selfcheck.py" --skills front)
+
 skills_for() {
   case "$1" in
-    task)   echo "gj-task-orchestration, gj-task-execution, gj-subagent-delegation" ;;
-    front)  echo "gj-task-orchestration, gj-task-execution, gj-subagent-delegation, mobile-rn-conventions" ;;
+    task)   echo "gj-task-orchestration, gj-task-execution, gj-subagent-delegation, $DEFECT_SKILLS" ;;
+    front)  echo "gj-task-orchestration, gj-task-execution, gj-subagent-delegation, mobile-rn-conventions, $FRONT_DEFECT" ;;
+    # Ревью делает подагент gj-review-delegation, он и грузит чек-листы — запускающему они не нужны.
     review) echo "gj-review-delegation" ;;
     research) echo "gj-buddy-mcp-mastery" ;;
-    done)   echo "gj-task-orchestration, gj-gitlab-git, gj-subagent-delegation" ;;
+    respond) echo "gj-review-checklists" ;;
+    done)   echo "gj-task-orchestration, gj-gitlab-git, gj-subagent-delegation, gj-change-hygiene, gj-rollout-safety" ;;
   esac
 }
 
@@ -294,8 +305,14 @@ gj-subagent-delegation: задание по его шаблону с «уже у
 изменённые файлы не трогать — рабочие деревья делят соседние сессии.
 
 ПРИЗНАК ГОТОВНОСТИ: правка внесена, форма контроля пройдена (бэк — локальный прогон
-плюс phpstan и cs-fixer; вёрстка — orca emulator ax и scripts/gj/golden.sh check),
-во вводной дописано что сделано и что осталось.
+плюс phpstan и cs-fixer по ВСЕМ файлам диффа; вёрстка — orca emulator ax и
+scripts/gj/golden.sh check), во вводной дописано что сделано и что осталось.
+Перед этим пройти по своему диффу раздел «Самопроверка» каждого загруженного скилла
+класса дефектов и записать во вводную раздел «Самопроверка», по строке на скилл (проверка —
+scripts/gj/selfcheck.py <вводная>): пункт → ответ с доказательством
+(тест, команда, строка кода) либо «не применимо, потому что …». Таблицу шагов и повторов
+из gj-retry-safe-writes §1 строить ДО правки, если сценарий делает больше одной записи.
+Фикстуры тестов снимать с прод-формы данных, а не придумывать.
 
 Вопросы задавать командой ask из преамбулы, а не в свой терминал. Человеку выносить
 только то, на что не нашлось ответа ни в ТЗ, ни в коде.
@@ -517,6 +534,10 @@ start_worker() {                   # start_worker <вид> <ключ> <спец�
   have_orca || { echo "orca не найдена — установите либо запускайте сессию вручную" >&2; return 1; }
   [ "${GJ_SKIP_TREE_CHECK:-}" = "1" ] || check_tree || return 1
   guard || return 1
+  # Хуки живут в .claude/settings.json дерева (не в git): без них работник не получит
+  # подсказку скиллов и сможет открыть MR без «Самопроверки».
+  local tree=$ROOT; case "$WORKTREE" in path:*) tree=${WORKTREE#path:} ;; esac
+  "$ROOT/scripts/gj/install-hooks.sh" "$tree" >/dev/null 2>&1 || echo "хуки не подключились: scripts/gj/install-hooks.sh $tree" >&2
   local run; run=$(run_bind "GJ $key")
   [ -n "$run" ] && echo "Run: $run"
   local out
@@ -591,6 +612,7 @@ case "$cmd" in
     DIR="$TASKS/$(slug "$KEY")"; mkdir -p "$DIR"
     lead_spec "$KEY" "$TITLE" "$KIND" > "$DIR/lead.md"
     TREE=$(target_dir); TREE=${TREE:-$ROOT}
+    "$ROOT/scripts/gj/install-hooks.sh" "$TREE" >/dev/null 2>&1 || echo "хуки не подключились: scripts/gj/install-hooks.sh $TREE" >&2
     LAUNCH="cd '$TREE' && $AGENT \"\$(cat '$DIR/lead.md')\""
     if [ "${GJ_DRY:-}" = "1" ]; then echo "$LAUNCH"; exit 0; fi
     "$ORCA" terminal create --worktree "path:$TREE" --title "$KEY · координатор" \
@@ -661,8 +683,33 @@ orchestrate.sh review заново не запускай.
 как X собирается (install по локу или update), кто реально вызывает (grep по коду
 потребителя), активен ли путь, что говорят прод-данные. Три ложные тревоги подряд
 в этом воркспейсе были именно такими.
-«Не проверял» в отчёте недопустимо: проверить самому либо назвать, какого доступа не хватило."
+«Не проверял» в отчёте недопустимо: проверить самому либо назвать, какого доступа не хватило.
+Чек-листы и каталог дефектов — gj-review-checklists (его грузит подагент ревью),
+формат находок и меток — references/comments.md."
     start_worker review "review-$KEY" "$SPEC"
+    ;;
+
+  respond)
+    [ $# -ge 1 ] || { echo "укажите адреса запросов" >&2; exit 1; }
+    KEY=$(echo "$1" | sed -E 's#.*/([^/]+)/-/merge_requests/([0-9]+).*#\1-\2#')
+    DIR="$TASKS/respond-$(slug "$KEY")"; mkdir -p "$DIR"
+    SPEC="Загрузи скилл $(skills_for respond) ДО любых других действий. Прочитай
+references/comments.md, раздел «Ответ автора на ревью», и references/defect-patterns.md.
+Из скиллов $DEFECT_SKILLS загружай только те, к классам которых относятся треды.
+
+ЦЕЛЬ: подготовить ответы на ревью наших запросов: $*
+ИЗМЕНЕНИЕ: файл $DIR/answers.md — по каждому треду: статус в текущем коде (исправлено / нет /
+частично), вердикт (снимается / смягчается / принято / принято, серьёзнее), готовый текст ответа;
+затем готовые вопросы владельцам по адресатам; затем доработки с номерами тредов и метками
+«сначала / после ответов / следом».
+ОГРАНИЧЕНИЯ: сначала найти, где код живёт сейчас (раздел «Где сейчас код» в gj-review-checklists):
+запрос мог быть влит, откатан и перенесён на другую линию. Довод против замечания — только с
+доказательством: файл:строка, ID и версия документа, замер на данных стенда. Вопрос владельцу —
+только если не закрылся ни кодом, ни данными, ни документом.
+ВЛАДЕНИЕ: только чтение. В GitLab, Jira и Confluence ничего не писать, кода не править.
+ПРИЗНАК ГОТОВНОСТИ: каждый тред ровно в одном списке (с доводом или принятые), у каждого — ссылка
+на обсуждение; сводка счёта по вердиктам в начале файла."
+    start_worker respond "respond-$KEY" "$SPEC"
     ;;
 
   done)
@@ -687,11 +734,22 @@ orchestrate.sh review заново не запускай.
       echo "      Сдавать нечего: сначала заполнить цель и критерий готовности." >&2
       exit 1
     fi
+    if ! why=$("$ROOT/scripts/gj/selfcheck.py" "$BRIEF" 2>&1); then
+      if [ "${GJ_SKIP_SELFCHECK:-}" = "1" ]; then
+        echo "обход заслона GJ_SKIP_SELFCHECK=1: $why" >&2
+      else
+        echo "СТОП: «Самопроверка» во вводной $BRIEF: $why." >&2
+        echo "      Сдавать рано. Обход — решение человека: GJ_SKIP_SELFCHECK=1" >&2
+        exit 1
+      fi
+    fi
     SPEC="Загрузи скиллы $(skills_for done) ДО любых других действий.
 
 ЦЕЛЬ: сдача задачи $KEY по разделу «Сдача задачи» скилла gj-task-orchestration.
 Вводная: $BRIEF. Ветки: $ROOT/docs/deploy/branch-registry.md — брать оттуда, не выяснять.
-ИЗМЕНЕНИЕ: всё влито в ветки задачи → запросы в стейдж → одобрить и влить →
+ИЗМЕНЕНИЕ: сверить раздел «Самопроверка» вводной с диффом по gj-change-hygiene §6 (каждое
+утверждение описания подтверждено, открытых вопросов к аналитику нет) и по gj-rollout-safety
+(порядок выкатки, маппинг, задания k8s, ключи сред) → всё влито в ветки задачи → запросы в стейдж → одобрить и влить →
 запустить деплой стейджа → подготовить запросы в ближайший релиз и ОСТАВИТЬ ОТКРЫТЫМИ.
 ОГРАНИЧЕНИЯ: в прод не вливать ничего. Запросы в master ENSI, production ИС и
 release/production витрины не открывать. Прод-джобы не запускать.
@@ -880,5 +938,5 @@ for x in ms:
   sweep)  sweep ;;
   run)    "$ORCA" orchestration run-current 2>&1 | head -10 ;;
 
-  *) sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+  *) sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; exit 1 ;;
 esac
