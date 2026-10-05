@@ -371,8 +371,38 @@ print_questions() {                # print_questions [dispatch] — с гото�
 # worker_done решает координатор — отдать под новый диспетч, оставить или отпустить.
 # Успех проверяем по состоянию в ответе, а не по ok: release_unknown приходит с ok=true.
 release_one() {                    # release_one <dispatch> → released|retained|pending|unknown
+  local dispatch=$1
+  # Проверка expect.sh перед отпусканием
+  if [ "${GJ_FORCE:-}" != "1" ]; then
+    for dispatch_file in "$TASKS"/*/.dispatch "$TASKS"/review-*/.dispatch; do
+      if [ -f "$dispatch_file" ] && grep -qx "$dispatch" "$dispatch_file"; then
+        dir=$(dirname "$dispatch_file")
+        if [ -f "$dir/expect.sh" ] && [ -f "$dir/verify.log" ]; then
+          last_code=$(tail -1 "$dir/verify.log" | cut -d' ' -f1)
+          if [ "${last_code:-0}" != "0" ]; then
+            echo "unknown\t$dispatch НЕ отпущен: expect.sh не прошла — отпустить с GJ_FORCE=1 для принятия без следа"
+            return
+          fi
+        fi
+        break
+      fi
+    done
+  elif [ "${GJ_FORCE:-}" = "1" ]; then
+    # В режиме GJ_FORCE отдаём пояснение
+    for dispatch_file in "$TASKS"/*/.dispatch "$TASKS"/review-*/.dispatch; do
+      if [ -f "$dispatch_file" ] && grep -qx "$dispatch" "$dispatch_file"; then
+        dir=$(dirname "$dispatch_file")
+        if [ -f "$dir/expect.sh" ]; then
+          echo "released\t$dispatch отпущен (сдача принята без следа по GJ_FORCE=1)"
+          { "$ORCA" orchestration worker-release --dispatch "$dispatch" --json 2>&1 || true; } >/dev/null
+          return
+        fi
+        break
+      fi
+    done
+  fi
   # release_unknown выходит с кодом 1 — под set -e/pipefail это оборвало бы скрипт до разбора.
-  { "$ORCA" orchestration worker-release --dispatch "$1" --json 2>&1 || true; } | python3 -c '
+  { "$ORCA" orchestration worker-release --dispatch "$dispatch" --json 2>&1 || true; } | python3 -c '
 import json,sys
 d=sys.argv[1]
 try: r=json.load(sys.stdin)
@@ -383,7 +413,7 @@ if st in ("released","already_released"): print("released\t%s отпущен" % 
 elif st=="retained": print("retained\t%s оставлен: %s" % (d, res.get("retainedReason") or res.get("reason") or "по решению"))
 elif st=="release_pending": print("pending\t%s закрывается" % d)
 elif st=="release_unknown": print("unknown\t%s НЕ отпущен: терминал потерян (перезапуск Orca?) — закрыть вкладку вручную" % d)
-else: print("unknown\t%s НЕ отпущен: %s %s" % (d, st, (err.get("message") or res.get("lastError") or "")[:160]))' "$1"
+else: print("unknown\t%s НЕ отпущен: %s %s" % (d, st, (err.get("message") or res.get("lastError") or "")[:160]))' "$dispatch"
 }
 
 # Все Run: worker-list без --run в привязанном терминале видит только свой Run.
@@ -783,12 +813,12 @@ for x in ms:
           # worker_done — терминал больше не нужен: вывод архивируется, журнал сессии остаётся.
           for D in $DONE; do
             # Проверка expect.sh, если она задана — ищем .dispatch файл с этим dispatch ID
-            local expect_checked=""
+            expect_checked=""
             for dispatch_file in "$TASKS"/*/.dispatch "$TASKS"/review-*/.dispatch; do
               if [ -f "$dispatch_file" ] && grep -qx "$D" "$dispatch_file"; then
-                local dir=$(dirname "$dispatch_file")
-                local task_key=$(basename "$dir" | sed 's/^review-//')
-                local is_review=$(basename "$dir" | grep -q '^review-' && echo "review" || echo "")
+                dir=$(dirname "$dispatch_file")
+                task_key=$(basename "$dir" | sed 's/^review-//')
+                is_review=$(basename "$dir" | grep -q '^review-' && echo "review" || echo "")
                 if [ -f "$dir/expect.sh" ]; then
                   verify_result=$(verify_expect "$task_key" "$is_review" 2>&1)
                   verify_code=$?
