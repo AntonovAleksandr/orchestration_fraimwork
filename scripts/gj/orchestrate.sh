@@ -14,6 +14,8 @@
 #   orchestrate.sh task   <КЛЮЧ> [заголовок]   задача на бэк/общая
 #   orchestrate.sh front  <КЛЮЧ> [заголовок]   задача на вёрстку
 #   orchestrate.sh review <адрес запроса>      ревью
+#   orchestrate.sh research <КЛЮЧ> <вопрос>    только разведка: ответ фактами, решений не принимает;
+#                                              идёт на дешёвой модели (GJ_RESEARCH_MODEL)
 #   orchestrate.sh done   <КЛЮЧ>               сдача: MR в стейдж, деплой, заготовки в прод
 #
 #   orchestrate.sh list [все]                  живые работники и координаторы (все — с завершёнными)
@@ -38,6 +40,10 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 TASKS=${GJ_TASKS_DIR:-$ROOT/.tasks}
 ORCA=${GJ_ORCA_BIN:-orca}
 AGENT=${GJ_AGENT:-claude}
+# Модель работника. Пусто — модель по умолчанию у агента. Разведка идёт на дешёвой:
+# вопрос без принятия решений не требует сильной модели, а стоит столько же.
+MODEL=${GJ_MODEL:-}
+RESEARCH_MODEL=${GJ_RESEARCH_MODEL:-claude-haiku-4-5-20251001}
 # Работник садится в дерево вызвавшего агента, то есть туда, откуда запустили команду.
 # Причина: агент ведёт задачу в своём дереве и там же ждёт результат. Главное дерево
 # по умолчанию уводило работника в чужой каталог, и правки оказывались не там, где их
@@ -163,6 +169,7 @@ skills_for() {
     task)   echo "gj-task-orchestration, gj-task-execution, gj-subagent-delegation" ;;
     front)  echo "gj-task-orchestration, gj-task-execution, gj-subagent-delegation, mobile-rn-conventions" ;;
     review) echo "gj-review-delegation" ;;
+    research) echo "gj-buddy-mcp-mastery" ;;
     done)   echo "gj-task-orchestration, gj-gitlab-git, gj-subagent-delegation" ;;
   esac
 }
@@ -365,6 +372,29 @@ run_bind() {                       # создаёт Run при отсутств�
   printf '%s' "$cur"
 }
 
+research_spec() {                  # research_spec <ключ> <вопрос>
+  local key=$1 question=$2
+  cat <<EOS
+Загрузи скилл $(skills_for research) ДО любых других действий.
+
+Ты — разведчик по задаче $key. РЕШЕНИЙ НЕ ПРИНИМАЕШЬ и код не правишь: твой итог — факты
+и ссылка на то, чем они доказаны. Выбор между вариантами, правки, ветки, запросы на слияние,
+ответы в GitLab — не твоё. Увидел развилку — опиши её и верни координатору.
+
+ВОПРОС:
+$question
+
+КАК ОТВЕЧАТЬ:
+- каждый вывод — командой или цитатой источника, а не рассуждением;
+- данные прода и стенда — data_pg_query, журналы — data_logs_raw_search, требования — Confluence
+  и Jira через buddy, код — grep и чтение файла по ссылке на ветку;
+- не нашёл или нет доступа — так и скажи, с указанием, чего не хватило; не домысливай;
+- короткие числа и пути важнее пересказа.
+
+ОТВЕТ присылай через worker_done: сам ответ в двух-трёх абзацах, под ним перечень команд и их вывод.
+EOS
+}
+
 start_worker() {                   # start_worker <вид> <ключ> <спецификация>
   local kind=$1 key=$2 spec=$3
   have_orca || { echo "orca не найдена — установите либо запускайте сессию вручную" >&2; return 1; }
@@ -372,9 +402,10 @@ start_worker() {                   # start_worker <вид> <ключ> <спец�
   guard || return 1
   local run; run=$(run_bind "GJ $key")
   [ -n "$run" ] && echo "Run: $run"
-  local out
+  local out model_args=()
+  [ -n "$MODEL" ] && model_args=(--model "$MODEL")
   out=$("$ORCA" orchestration worker-start --spec "$spec" --worktree "$WORKTREE" \
-        --agent "$AGENT" --task-title "$key" --json 2>&1) || {
+        --agent "$AGENT" "${model_args[@]}" --task-title "$key" --json 2>&1) || {
     echo "worker-start не прошёл:" >&2; echo "$out" | head -5 >&2
     echo "не перезапускать вслепую: прочитать failedStage и residualResources в ответе" >&2
     return 1; }
@@ -448,6 +479,13 @@ print("координатор запущен:", h)' "$DIR/lead.term"
     "$ROOT/scripts/gj/task.sh" "$([ "$cmd" = front ] && echo front || echo back)" "$KEY" "$TITLE" >/dev/null
     BRIEF="$TASKS/$(slug "$KEY")/brief.md"
     start_worker "$cmd" "$KEY" "$(spec_for "$cmd" "$KEY" "$TITLE" "$BRIEF")"
+    ;;
+
+  research)
+    KEY=${1:?укажите ключ задачи}; QUESTION=${2:?укажите вопрос одной строкой}
+    MODEL=${GJ_MODEL:-$RESEARCH_MODEL}
+    echo "модель разведки: $MODEL"
+    start_worker research "research-$KEY" "$(research_spec "$KEY" "$QUESTION")"
     ;;
 
   review)
