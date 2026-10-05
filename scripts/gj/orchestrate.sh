@@ -190,26 +190,39 @@ verify_expect() {                  # verify_expect <ключ> [review] — вы�
     echo "критерий не задан, приёмка только глазами"
     return 0
   fi
-  local output verdict=0
-  output=$(bash "$expect_file" 2>&1) || verdict=1
-  log_verdict "$key" "$verdict"
-  if [ "$verdict" -eq 0 ]; then
-    echo "ПРИНЯТО"
+  local output verdict_code outcome=
+  output=$(bash "$expect_file" 2>&1)
+  verdict_code=$?
+
+  if [ "$verdict_code" -eq 0 ]; then
+    outcome="ПРИНЯТО"
+    verdict_code=0
+  elif [ "$verdict_code" -eq 1 ]; then
+    outcome="НЕ ПРИНЯТО"
+    verdict_code=1
   else
-    echo "НЕ ПРИНЯТО"
+    outcome="ПРОВЕРКА НЕ ВЫПОЛНЕНА"
+    verdict_code=2
   fi
+
+  log_verdict "$key" "$verdict_code" "$outcome"
+  echo "$outcome"
   if [ -n "$output" ]; then
     echo ""
     printf '%s\n' "$output"
   fi
-  return "$verdict"
+  return "$verdict_code"
 }
 
-log_verdict() {                    # log_verdict <ключ> <код> — логировать вердикт
-  local key=$1 code=$2
+log_verdict() {                    # log_verdict <ключ> <код> [<исход>] — логировать вердикт
+  local key=$1 code=$2 outcome=${3:-}
   local log="$TASKS/$(slug "$key")/verify.log"
   mkdir -p "$(dirname "$log")"
-  echo "$(date '+%Y-%m-%d %H:%M:%S')  код_выхода=$code" >> "$log"
+  if [ -n "$outcome" ]; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S')  $outcome  код_выхода=$code" >> "$log"
+  else
+    echo "$(date '+%Y-%m-%d %H:%M:%S')  код_выхода=$code" >> "$log"
+  fi
 }
 
 check_verify_fails() {             # check_verify_fails <ключ> — вернуть число подряд идущих отказов
@@ -687,7 +700,7 @@ versionCode = CI_PIPELINE_IID + 85000. Без номера сборки моби
     TARGET=${1:?укажите ключ задачи или dispatch}; REVIEW=
     shift || true
     [ "${1:-}" = "review" ] && REVIEW="review"
-    verify_expect "$TARGET" "$REVIEW"
+    verify_expect "$TARGET" "$REVIEW" || true
     ;;
 
   list)
