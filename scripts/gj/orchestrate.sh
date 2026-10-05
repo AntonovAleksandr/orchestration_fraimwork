@@ -218,19 +218,18 @@ log_verdict() {                    # log_verdict <ключ> <код> [<исхо�
   local key=$1 code=$2 outcome=${3:-}
   local log="$TASKS/$(slug "$key")/verify.log"
   mkdir -p "$(dirname "$log")"
-  if [ -n "$outcome" ]; then
-    echo "$(date '+%Y-%m-%d %H:%M:%S')  $outcome  код_выхода=$code" >> "$log"
-  else
-    echo "$(date '+%Y-%m-%d %H:%M:%S')  код_выхода=$code" >> "$log"
+  if [ -z "$outcome" ]; then
+    outcome="?"
   fi
+  printf '%s\t%s\t%s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$outcome" "$code" >> "$log"
 }
 
 check_verify_fails() {             # check_verify_fails <ключ> — вернуть число подряд идущих отказов
   local key=$1 log="$TASKS/$(slug "$key")/verify.log"
   if [ ! -f "$log" ]; then echo 0; return 0; fi
-  local fails=0 last_code=
+  local fails=0
   tail -5 "$log" | while read -r line; do
-    local code=$(echo "$line" | grep -o 'код_выхода=[0-9]*' | cut -d= -f2)
+    local code=$(echo "$line" | cut -d$'\t' -f3)
     if [ "$code" = "0" ]; then
       fails=0
     else
@@ -391,9 +390,10 @@ release_one() {                    # release_one <dispatch> → released|retaine
       if [ -f "$dispatch_file" ] && grep -qx "$dispatch" "$dispatch_file"; then
         dir=$(dirname "$dispatch_file")
         if [ -f "$dir/expect.sh" ] && [ -f "$dir/verify.log" ]; then
-          last_code=$(tail -1 "$dir/verify.log" | cut -d' ' -f1)
-          if [ "${last_code:-0}" != "0" ]; then
-            echo "unknown\t$dispatch НЕ отпущен: expect.sh не прошла — отпустить с GJ_FORCE=1 для принятия без следа"
+          local last_verdict=$(tail -1 "$dir/verify.log" | cut -d$'\t' -f2)
+          local last_code=$(tail -1 "$dir/verify.log" | cut -d$'\t' -f3)
+          if [ "$last_code" != "0" ]; then
+            printf '%s\t%s %s\n' "unknown" "$dispatch НЕ отпущен:" "expect.sh не прошла — $last_verdict (отпустить с GJ_FORCE=1 для принятия без следа)"
             return
           fi
         fi
@@ -401,13 +401,20 @@ release_one() {                    # release_one <dispatch> → released|retaine
       fi
     done
   elif [ "${GJ_FORCE:-}" = "1" ]; then
-    # В режиме GJ_FORCE отдаём пояснение
+    # В режиме GJ_FORCE отдаём пояснение и проверяем результат
     for dispatch_file in "$TASKS"/*/.dispatch "$TASKS"/review-*/.dispatch; do
       if [ -f "$dispatch_file" ] && grep -qx "$dispatch" "$dispatch_file"; then
         dir=$(dirname "$dispatch_file")
         if [ -f "$dir/expect.sh" ]; then
-          echo "released\t$dispatch отпущен (сдача принята без следа по GJ_FORCE=1)"
-          { "$ORCA" orchestration worker-release --dispatch "$dispatch" --json 2>&1 || true; } >/dev/null
+          { "$ORCA" orchestration worker-release --dispatch "$dispatch" --json 2>&1 || true; } | python3 -c '
+import json,sys
+d=sys.argv[1]
+try: r=json.load(sys.stdin)
+except Exception: print("unknown\t%s: ответ не разобран" % d); raise SystemExit
+res=r.get("result") or {}; err=r.get("error") or {}
+st=res.get("state") or err.get("code") or "?"
+if st in ("released","already_released"): print("released\t%s отпущен (сдача принята без следа по GJ_FORCE=1)" % d)
+else: print("unknown\t%s НЕ отпущен по GJ_FORCE=1: %s" % (d, st))' "$dispatch"
           return
         fi
         break
