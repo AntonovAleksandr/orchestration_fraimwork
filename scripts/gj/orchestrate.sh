@@ -402,10 +402,15 @@ start_worker() {                   # start_worker <вид> <ключ> <спец�
   guard || return 1
   local run; run=$(run_bind "GJ $key")
   [ -n "$run" ] && echo "Run: $run"
-  local out model_args=()
-  [ -n "$MODEL" ] && model_args=(--model "$MODEL")
-  out=$("$ORCA" orchestration worker-start --spec "$spec" --worktree "$WORKTREE" \
-        --agent "$AGENT" "${model_args[@]}" --task-title "$key" --json 2>&1) || {
+  local out
+  if [ -n "$MODEL" ]; then
+    out=$("$ORCA" orchestration worker-start --spec "$spec" --worktree "$WORKTREE" \
+          --agent "$AGENT" --model "$MODEL" --task-title "$key" --json 2>&1)
+  else
+    out=$("$ORCA" orchestration worker-start --spec "$spec" --worktree "$WORKTREE" \
+          --agent "$AGENT" --task-title "$key" --json 2>&1)
+  fi
+  [ $? -eq 0 ] || {
     echo "worker-start не прошёл:" >&2; echo "$out" | head -5 >&2
     echo "не перезапускать вслепую: прочитать failedStage и residualResources в ответе" >&2
     return 1; }
