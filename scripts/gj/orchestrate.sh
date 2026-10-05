@@ -11,27 +11,29 @@
 #
 #   orchestrate.sh lead   <КЛЮЧ> [заголовок] [front]  отдельный агент-координатор: сам
 #                                              запускает работника, следит и отвечает
-#   orchestrate.sh task   <КЛЮЧ> [заголовок]   задача на бэк/общая
-#   orchestrate.sh front  <КЛЮЧ> [заголовок]   задача на вёрстку
-#   orchestrate.sh review <адрес запроса>      ревью
+#   orchestrate.sh task   <КЛЮЧ> [заголовок] [--expect '…']   задача на бэк/общая
+#   orchestrate.sh front  <КЛЮЧ> [заголовок] [--expect '…']   задача на вёрстку
+#   orchestrate.sh review <адрес запроса> [--expect '…']      ревью
 #   orchestrate.sh research <КЛЮЧ> <вопрос>    только разведка: ответ фактами, решений не принимает;
 #                                              идёт на дешёвой модели (GJ_RESEARCH_MODEL)
-#   orchestrate.sh done   <КЛЮЧ>               сдача: MR в стейдж, деплой, заготовки в прод
+#   orchestrate.sh done   <КЛЮЧ> [--expect '…']               сдача: MR в стейдж, деплой, заготовки в прод
 #
+#   orchestrate.sh verify <КЛЮЧ|dispatch> [review]  выполнить expect.sh и показать вердикт
 #   orchestrate.sh list [все]                  живые работники и координаторы (все — с завершёнными)
 #   orchestrate.sh read  <dispatch> [строк]    что делает работник
 #   orchestrate.sh say   <dispatch> <текст>    вмешаться: дослать указание; висит вопрос
 #                                              этого работника — ответ идёт на него (reply)
 #   orchestrate.sh questions [dispatch]        открытые вопросы работников
 #   orchestrate.sh answer <dispatch|msg_id> <текст>  ответить на вопрос (reply)
-#   orchestrate.sh wait  [мс]                  ждать worker_done / вопроса / эскалации
+#   orchestrate.sh wait  [мс]                  ждать worker_done / вопроса / эскалации;
+#                                              при наличии expect.sh выполняет проверку
 #   orchestrate.sh release <dispatch|все>      отпустить терминал завершённого (все —
 #                                              по всем Run, с отчётом о неотпущенных)
 #   orchestrate.sh retain  <dispatch>          оставить терминал живым: воркеру будет ещё работа
 #   orchestrate.sh sweep                       release все — для ежедневного прогона
 #   orchestrate.sh run                         показать привязанный Run
 #
-# Переменные: GJ_MAX_AGENTS (20), GJ_MIN_FREE_MB (2048), GJ_FORCE=1 — обойти заслон,
+# Переменные: GJ_MAX_AGENTS (30), GJ_MIN_FREE_MB (2048), GJ_FORCE=1 — обойти заслон,
 #             GJ_WORKTREE (дерево вызвавшего агента) — куда сажать работника,
 #             GJ_AGENT (claude). GJ_RETAIN=1 — wait не закрывает терминал по worker_done.
 set -euo pipefail
@@ -62,7 +64,7 @@ main_tree() {
     | awk 'NR==1 && $1=="worktree"{ $1=""; sub(/^ /,""); print; exit }'
 }
 WORKTREE=${GJ_WORKTREE:-path:$(caller_tree)}
-GJ_MAX_AGENTS=${GJ_MAX_AGENTS:-20}
+GJ_MAX_AGENTS=${GJ_MAX_AGENTS:-30}
 GJ_MIN_FREE_MB=${GJ_MIN_FREE_MB:-2048}
 
 have_orca() { command -v "$ORCA" >/dev/null 2>&1; }
@@ -176,8 +178,71 @@ skills_for() {
 
 # Спецификация работника. Скилл orchestration требует пять вещей; шестым идёт
 # перечень скиллов явной строкой — иначе работник начнёт без них.
-spec_for() {                       # spec_for <вид> <ключ> <заголовок> <вводная>
-  local kind=$1 key=$2 title=$3 brief=$4
+verify_expect() {                  # verify_expect <ключ> [review] — выполнить expect.sh
+  local key=$1 is_review=${2:-}
+  local expect_file
+  if [ "$is_review" = "review" ]; then
+    expect_file="$TASKS/review-$(slug "$key")/expect.sh"
+  else
+    expect_file="$TASKS/$(slug "$key")/expect.sh"
+  fi
+  if [ ! -f "$expect_file" ]; then
+    echo "критерий не задан, приёмка только глазами"
+    return 0
+  fi
+  local output verdict=0
+  output=$(bash "$expect_file" 2>&1) || verdict=1
+  log_verdict "$key" "$verdict"
+  if [ "$verdict" -eq 0 ]; then
+    echo "ПРИНЯТО"
+  else
+    echo "НЕ ПРИНЯТО"
+  fi
+  if [ -n "$output" ]; then
+    echo ""
+    printf '%s\n' "$output"
+  fi
+  return "$verdict"
+}
+
+log_verdict() {                    # log_verdict <ключ> <код> — логировать вердикт
+  local key=$1 code=$2
+  local log="$TASKS/$(slug "$key")/verify.log"
+  mkdir -p "$(dirname "$log")"
+  echo "$(date '+%Y-%m-%d %H:%M:%S')  код_выхода=$code" >> "$log"
+}
+
+check_verify_fails() {             # check_verify_fails <ключ> — вернуть число подряд идущих отказов
+  local key=$1 log="$TASKS/$(slug "$key")/verify.log"
+  if [ ! -f "$log" ]; then echo 0; return 0; fi
+  local fails=0 last_code=
+  tail -5 "$log" | while read -r line; do
+    local code=$(echo "$line" | grep -o 'код_выхода=[0-9]*' | cut -d= -f2)
+    if [ "$code" = "0" ]; then
+      fails=0
+    else
+      fails=$((fails+1))
+    fi
+  done
+  echo "$fails"
+}
+
+spec_for() {                       # spec_for <вид> <ключ> <заголовок> <вводная> [--expect '<команда>']
+  local kind=$1 key=$2 title=$3 brief=$4 expect_cmd=
+  shift 4
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --expect) expect_cmd=$2; shift 2 ;;
+      *) shift ;;
+    esac
+  done
+  if [ -n "$expect_cmd" ]; then
+    local expect_file="$TASKS/$(slug "$key")/expect.sh"
+    mkdir -p "$(dirname "$expect_file")"
+    echo "#!/bin/bash" > "$expect_file"
+    echo "$expect_cmd" >> "$expect_file"
+    chmod +x "$expect_file"
+  fi
   cat <<EOS
 Загрузи скиллы $(skills_for "$kind") ДО любых других действий. Без них не начинай.
 
@@ -397,6 +462,8 @@ EOS
 
 start_worker() {                   # start_worker <вид> <ключ> <спецификация>
   local kind=$1 key=$2 spec=$3
+  local task_dir="$TASKS/$(slug "$key")"
+  mkdir -p "$task_dir"
   have_orca || { echo "orca не найдена — установите либо запускайте сессию вручную" >&2; return 1; }
   [ "${GJ_SKIP_TREE_CHECK:-}" = "1" ] || check_tree || return 1
   guard || return 1
@@ -414,13 +481,22 @@ start_worker() {                   # start_worker <вид> <ключ> <спец�
     echo "worker-start не прошёл:" >&2; echo "$out" | head -5 >&2
     echo "не перезапускать вслепую: прочитать failedStage и residualResources в ответе" >&2
     return 1; }
-  echo "$out" | python3 -c '
-import json,sys
+  echo "$out" | TASK_DIR="$task_dir" python3 -c '
+import json,sys,os
 try: d=json.load(sys.stdin)["result"]
 except Exception: print(sys.stdin.read()[:400]); raise SystemExit
 w=d.get("dispatch") or d.get("worker") or d
-print("Dispatch:", w.get("id") or w.get("dispatchId","?"))
-print("Task:    ", (d.get("task") or {}).get("id","?"))' 2>/dev/null || echo "$out" | head -3
+dispatch_id=w.get("id") or w.get("dispatchId","?")
+print("Dispatch:", dispatch_id)
+print("Task:    ", (d.get("task") or {}).get("id","?"))
+# Сохраняем dispatch ID в файл для последующего использования при verify
+task_dir=os.environ.get("TASK_DIR","")
+if task_dir and dispatch_id != "?":
+    try:
+        with open(os.path.join(task_dir, ".dispatch"), "w") as f:
+            f.write(dispatch_id)
+    except: pass
+' 2>/dev/null || echo "$out" | head -3
   echo
   echo "следить:   scripts/gj/orchestrate.sh list"
   echo "ждать:     scripts/gj/orchestrate.sh wait"
@@ -480,10 +556,17 @@ print("координатор запущен:", h)' "$DIR/lead.term"
     echo "реплика: $DIR/lead.md · вкладка «$KEY · координатор»"
     ;;
   task|front)
-    KEY=${1:?укажите ключ задачи}; TITLE=${2:-}
+    KEY=${1:?укажите ключ задачи}; TITLE=${2:-}; EXPECT=
+    shift 2 || true
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --expect) EXPECT=$2; shift 2 ;;
+        *) shift ;;
+      esac
+    done
     "$ROOT/scripts/gj/task.sh" "$([ "$cmd" = front ] && echo front || echo back)" "$KEY" "$TITLE" >/dev/null
     BRIEF="$TASKS/$(slug "$KEY")/brief.md"
-    start_worker "$cmd" "$KEY" "$(spec_for "$cmd" "$KEY" "$TITLE" "$BRIEF")"
+    start_worker "$cmd" "$KEY" "$(spec_for "$cmd" "$KEY" "$TITLE" "$BRIEF" ${EXPECT:+--expect "$EXPECT"})"
     ;;
 
   research)
@@ -494,9 +577,21 @@ print("координатор запущен:", h)' "$DIR/lead.term"
     ;;
 
   review)
-    URL=${1:?укажите адрес запроса}
+    URL=${1:?укажите адрес запроса}; EXPECT=
+    shift || true
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --expect) EXPECT=$2; shift 2 ;;
+        *) shift ;;
+      esac
+    done
     KEY=$(echo "$URL" | sed -E 's#.*/([^/]+)/-/merge_requests/([0-9]+).*#\1-\2#')
     DIR="$TASKS/review-$(slug "$KEY")"; mkdir -p "$DIR"
+    if [ -n "$EXPECT" ]; then
+      echo "#!/bin/bash" > "$DIR/expect.sh"
+      echo "$EXPECT" >> "$DIR/expect.sh"
+      chmod +x "$DIR/expect.sh"
+    fi
     "$ROOT/scripts/gj/mr-brief.py" "$URL" --out "$DIR/brief.md" 2>/dev/null \
       || echo "выжимку собрать не удалось — работник соберёт сам" >&2
     SPEC="Загрузи скилл $(skills_for review) ДО любых других действий.
@@ -521,8 +616,21 @@ orchestrate.sh review заново не запускай.
     ;;
 
   done)
-    KEY=${1:?укажите ключ задачи}
+    KEY=${1:?укажите ключ задачи}; EXPECT=
+    shift || true
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --expect) EXPECT=$2; shift 2 ;;
+        *) shift ;;
+      esac
+    done
     BRIEF="$TASKS/$(slug "$KEY")/brief.md"
+    if [ -n "$EXPECT" ]; then
+      DIR="$TASKS/$(slug "$KEY")"; mkdir -p "$DIR"
+      echo "#!/bin/bash" > "$DIR/expect.sh"
+      echo "$EXPECT" >> "$DIR/expect.sh"
+      chmod +x "$DIR/expect.sh"
+    fi
     if ! brief_filled "$BRIEF"; then
       echo "СТОП: вводная $BRIEF осталась шаблоном — постановка не заполнена." >&2
       echo "      Значит работа по задаче не начиналась либо шла мимо вводной." >&2
@@ -543,6 +651,13 @@ release/production витрины не открывать. Прод-джобы �
 versionName и versionCode из лога успешной джобы (строки Version name / Version code),
 versionCode = CI_PIPELINE_IID + 85000. Без номера сборки мобильная сдача не закрыта."
     start_worker done "done-$KEY" "$SPEC"
+    ;;
+
+  verify)
+    TARGET=${1:?укажите ключ задачи или dispatch}; REVIEW=
+    shift || true
+    [ "${1:-}" = "review" ] && REVIEW="review"
+    verify_expect "$TARGET" "$REVIEW"
     ;;
 
   list)
@@ -667,10 +782,40 @@ for x in ms:
           [ -n "$HIT" ] || echo "за $((MS/1000)) с смыслового события нет (таймаут — точка проверки, а не сбой)"
           # worker_done — терминал больше не нужен: вывод архивируется, журнал сессии остаётся.
           for D in $DONE; do
-            if [ "${GJ_RETAIN:-}" = "1" ] || grep -qx "$D" "$(retain_list)" 2>/dev/null; then
-              echo "  $D оставлен (retain) — отпустить: orchestrate.sh release $D"
-            else
-              line=$(release_one "$D"); echo "  ${line#*$'\t'}"
+            # Проверка expect.sh, если она задана — ищем .dispatch файл с этим dispatch ID
+            local expect_checked=""
+            for dispatch_file in "$TASKS"/*/.dispatch "$TASKS"/review-*/.dispatch; do
+              if [ -f "$dispatch_file" ] && grep -qx "$D" "$dispatch_file"; then
+                local dir=$(dirname "$dispatch_file")
+                local task_key=$(basename "$dir" | sed 's/^review-//')
+                local is_review=$(basename "$dir" | grep -q '^review-' && echo "review" || echo "")
+                if [ -f "$dir/expect.sh" ]; then
+                  verify_result=$(verify_expect "$task_key" "$is_review" 2>&1)
+                  verify_code=$?
+                  echo "проверка $D:"
+                  printf '%s\n' "$verify_result"
+                  if [ $verify_code -ne 0 ]; then
+                    echo "  → попробовать: scripts/gj/orchestrate.sh say $D \"…\""
+                    if [ "${GJ_RETAIN:-}" != "1" ] && ! grep -qx "$D" "$(retain_list)" 2>/dev/null; then
+                      echo "$D" >> "$(retain_list)"
+                      "$ORCA" orchestration worker-retain --dispatch "$D" --json >/dev/null 2>&1 || true
+                    fi
+                  else
+                    # Проверка прошла, отпускаем
+                    line=$(release_one "$D"); echo "  ${line#*$'\t'}"
+                  fi
+                  expect_checked=1
+                fi
+                break
+              fi
+            done
+            # Если expect не был проверен, то просто отпускаем
+            if [ -z "$expect_checked" ]; then
+              if [ "${GJ_RETAIN:-}" = "1" ] || grep -qx "$D" "$(retain_list)" 2>/dev/null; then
+                echo "  $D оставлен (retain) — отпустить: orchestrate.sh release $D"
+              else
+                line=$(release_one "$D"); echo "  ${line#*$'\t'}"
+              fi
             fi
           done
           print_questions | grep -v "^открытых вопросов нет$" || true ;;
