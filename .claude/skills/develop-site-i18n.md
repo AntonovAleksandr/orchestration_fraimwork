@@ -307,6 +307,46 @@ platform/site/gj-ng-front/
       "error": "Қате",
       "success": "Сәтті"
     }
+  },
+  "catalog": {
+    "title": "Каталог",
+    "filters": {
+      "title": "Сүзгілер",
+      "price": "Баға",
+      "size": "Өлшем",
+      "color": "Түсі",
+      "brand": "Бренд",
+      "reset": "Сүзгілерді сбросить"
+    },
+    "product": {
+      "addToBasket": "Сөрөге қосу",
+      "inStock": "Қолда бар",
+      "outOfStock": "Қолда жоқ",
+      "itemsLeft": "{{ count }} қалды",
+      "selected": "Таңдалған: {{ value }}",
+      "colors": "Қолда бар түстер",
+      "sizes": "Қолда бар өлшемдер"
+    }
+  },
+  "basket": {
+    "title": "Сөрө",
+    "empty": "Сөрө бос",
+    "itemsCount": "{{ count }} тауар",
+    "subtotal": "Ішінара сумма: {{ total }}",
+    "shipping": "Жеткізу: {{ cost }}",
+    "total": "Барлығы: {{ total }}",
+    "checkout": "Сатыныңызды растау",
+    "continueShopping": "Сатыныңызды құрау"
+  },
+  "checkout": {
+    "title": "Сатыныңызды растау",
+    "personalInfo": "Жеке ақпарат",
+    "deliveryAddress": "Жеткізу мекенжайы",
+    "deliveryMethod": "Жеткізу әдісі",
+    "paymentMethod": "Төлем әдісі",
+    "orderSummary": "Заказ қорытындысы",
+    "completeOrder": "Заказды аяқтау",
+    "thankYou": "Заказ үшін рахмет!"
   }
 }
 ```
@@ -688,15 +728,26 @@ Co-Authored-By: Claude Haiku 4.5 <noreply@anthropic.com>"
 
 ### 7️⃣ Инициализация в приложении
 
+#### Вариант 1: Провайдер при bootstrap
+
 ```typescript
 // main.ts
 
 import { bootstrapApplication } from '@angular/platform-browser';
 import { AppComponent } from './app.component';
+import { provideTransloco } from '@ngnx/transloco';
+import { TranslocoHttpLoader } from '@core/i18n/transloco-loader';
 import { I18nService } from '@core/i18n/i18n.service';
 
 bootstrapApplication(AppComponent, {
   providers: [
+    // Transloco провайдер
+    provideTransloco({
+      defaultLanguage: 'ru',
+      fallbackLanguage: 'ru',
+      availableLanguages: ['ru', 'en', 'kz'],
+      loader: TranslocoHttpLoader, // Загрузчик JSON файлов
+    }),
     // Остальные провайдеры...
   ],
 }).then((componentRef) => {
@@ -707,6 +758,54 @@ bootstrapApplication(AppComponent, {
   });
 });
 ```
+
+#### Вариант 2: Через провайдеры функцию
+
+```typescript
+// main.ts
+
+import { bootstrapApplication } from '@angular/platform-browser';
+import { AppComponent } from './app.component';
+import { provideTranslocoConfig } from '@core/i18n/provide-transloco-config';
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideTranslocoConfig(),
+    // Остальные провайдеры...
+  ],
+}).then((componentRef) => {
+  const i18nService = componentRef.injector.get(I18nService);
+  i18nService.initializeLocale().subscribe();
+});
+```
+
+#### Загрузчик файлов переводов
+
+```typescript
+// libs/core/i18n/transloco-loader.ts
+
+import { Injectable } from '@angular/core';
+import { Translation, TranslocoLoader } from '@ngnx/transloco';
+import { Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+
+@Injectable({ providedIn: 'root' })
+export class TranslocoHttpLoader implements TranslocoLoader {
+  constructor(private http: HttpClient) {}
+
+  getTranslation(lang: string): Observable<Translation> {
+    // Загружать из libs/core/i18n/locales/{lang}.json
+    return this.http.get<Translation>(`/assets/i18n/${lang}.json`);
+  }
+}
+```
+
+**Правила:**
+- ✅ Регистрировать Transloco при bootstrap
+- ✅ Задать defaultLanguage = 'ru'
+- ✅ Передать availableLanguages ['ru', 'en', 'kz']
+- ✅ Использовать TranslocoHttpLoader для загрузки JSON
+- ✅ Инициализировать I18nService в .then() после bootstrap
 
 ---
 
