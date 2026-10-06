@@ -21,6 +21,13 @@
 - Проверять тесты и покрытие
 - Подтверждать выполнение pattern-development-flow
 
+## 🔗 Используй паттерн
+
+**ВСЕГДА следовать:** [pattern-review-standard.md](../orchestration/pattern-review-standard.md)
+
+Reviewer-1: AC → Архит → Контракты → Расширяемость → Полнота
+Reviewer-2: Security → Performance → Design → Readability → Tests
+
 ---
 
 ## 🎯 Чеклист ревью Site MR

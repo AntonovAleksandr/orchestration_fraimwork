@@ -21,6 +21,12 @@
 - Оптимизируешь selectors
 - Работаешь с entity adapters
 
+## 🔗 Используй паттерн
+
+**ВСЕГДА следовать:** [pattern-development-flow.md](../orchestration/pattern-development-flow.md)
+
+7 обязательных шагов: ПОНИМАНИЕ → ПЛАН → КОД → SECURITY → ТЕСТЫ → КОММИТ → MR
+
 ---
 
 ## 🎯 Архитектура NgRx в Site

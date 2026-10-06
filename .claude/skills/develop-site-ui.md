@@ -21,6 +21,12 @@
 - Документируешь в Storybook
 - Работаешь с Material Design CDK
 
+## 🔗 Используй паттерн
+
+**ВСЕГДА следовать:** [pattern-development-flow.md](../orchestration/pattern-development-flow.md)
+
+7 обязательных шагов: ПОНИМАНИЕ → ПЛАН → КОД → SECURITY → ТЕСТЫ → КОММИТ → MR
+
 ---
 
 ## 🎯 Структура Site UI
