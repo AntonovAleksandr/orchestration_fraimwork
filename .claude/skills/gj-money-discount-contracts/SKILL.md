@@ -19,7 +19,7 @@ Read before changing contracts or money-handling code:
 - `docs/research/2026-06-03-app20-cancel-restore-OPSOMN001-617.md` for promo/coupon rollback risk
 - relevant `docs/superpowers/plans/*discount*` or `*money*` plans for Go client history
 
-Load platform-specific skills after that: ENSI, Integration, OMS Java/Camunda, Go, or frontend/mobile.
+Load platform-specific skills after that: ENSI, Integration, OMS Java/Camunda, Go, or frontend/mobile. For Integration Service implementation, follow **`pattern-development-integration.md`** to ensure proper development discipline.
 
 ## Canonical Rules
 

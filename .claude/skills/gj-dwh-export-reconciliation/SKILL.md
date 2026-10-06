@@ -17,7 +17,7 @@ Read the relevant docs before changing export logic or explaining an analytics d
 - `docs/research/r20-order-splits/README.md` when shipment-level analytics are involved
 - `docs/research/r20-order-splits/EVIDENCE-LEDGER.md` for known DWH gaps
 
-Then load `integration-stack-anatomy`, `integration-deployment`, `integration-php-conventions`, `data-analytics-architect`, and `gj-buddy-mcp-mastery` as needed.
+Then load `integration-stack-anatomy`, `integration-deployment`, `integration-php-conventions`, `data-analytics-architect`, and `gj-buddy-mcp-mastery` as needed. For Integration Service implementation, follow **`pattern-development-integration.md`** to ensure proper development discipline.
 
 ## Core Questions
 

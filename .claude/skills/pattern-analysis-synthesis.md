@@ -275,6 +275,24 @@ Code-researcher: "API версия V2"
 
 ---
 
+## 🔧 Platform-specific synthesis patterns
+
+When analyzing requirements that touch multiple platforms, reference the development pattern for each:
+
+| Platform | Development pattern | Purpose in synthesis |
+|----------|---|---|
+| ENSI | pattern-development-ensi.md | Understand PHP/Laravel implementation strategies |
+| OMS | pattern-development-oms.md | Understand Java/Camunda patterns and BPMN |
+| Integration | pattern-development-integration.md | Understand Lumen routing and cron task flow |
+| Site | pattern-development-site.md | Understand Angular state and component hierarchy |
+| Mobile | pattern-development-mobile.md | Understand React Native build flavors |
+| Go (platform-new) | pattern-development-go.md | Understand Go service patterns, goroutines, context |
+| Gloria OTS | pattern-development-gloriaots.md | Understand .NET/C# domain driven design |
+
+Use these to ensure synthesis respects platform constraints and patterns.
+
+---
+
 **Версия:** 1.0  
 **Дата:** 2026-10-06  
 **Статус:** Production-ready  

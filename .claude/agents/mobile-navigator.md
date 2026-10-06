@@ -100,3 +100,7 @@ grep -rn "NativeModules\." platform/mobile-app/gj-app/packages/gj/src/
 - Need to implement / modify → `mobile-engineer`
 - API-contract question → check `mobapp-api-types/` first, then `gitlab-investigator` (since backend types might come from ENSI OpenAPI)
 - Cross-system (mobile ↔ ENSI/Integration) → `architect`
+
+## See also
+
+**[`pattern-development-mobile.md`](../skills/pattern-development-mobile.md)** — the structured 7-step development pattern. Navigator typically runs in step 1 (Understanding) to find where code should go.

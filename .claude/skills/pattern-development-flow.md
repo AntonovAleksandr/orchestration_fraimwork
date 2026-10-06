@@ -308,6 +308,24 @@ Closes OPSOMN002-XXX"
 
 ---
 
+## 🔧 Platform-specific patterns
+
+These 7 steps are the foundation. Each platform has **platform-specific pattern** with additional language/framework rules:
+
+| Platform | Pattern file | Language | When to use |
+|----------|--------------|----------|------------|
+| ENSI | pattern-development-ensi.md | PHP + Laravel | Checkout, Offers, PIM, catalog-cache, Integration connectors |
+| OMS | pattern-development-oms.md | Java + Camunda | Order, Delivery, Stock, BPM processes, workers |
+| Integration | pattern-development-integration.md | PHP + Lumen | Checkout routes, order-create, cron tasks, Kafka |
+| Site | pattern-development-site.md | Angular + NgRx | Frontend, SSR, state management |
+| Mobile | pattern-development-mobile.md | React Native + Redux | Mobile app, iOS/Android, builds |
+| Go (platform-new) | pattern-development-go.md | Go + chi/Fiber | Checkout, intgateway, policyengine, recommendationengine |
+| Gloria OTS | pattern-development-gloriaots.md | .NET + C# | Order transport system, logistics, RabbitMQ |
+
+**Usage:** After understanding the base 7 steps, load the platform-specific pattern and follow its additional checks.
+
+---
+
 **Версия:** 1.0  
 **Дата:** 2026-10-06  
 **Статус:** Production-ready  

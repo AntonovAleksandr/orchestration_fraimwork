@@ -332,6 +332,22 @@
 
 ---
 
+## 🔧 Platform-specific review skills
+
+For deeper review aligned with language/framework, use these skills alongside this standard:
+
+| Platform | Reviewer skill | When |
+|----------|---|---|
+| ENSI | ensi-gitlab-mr-review | PHP/Laravel code in ENSI services |
+| OMS | oms-gitlab-mr-review | Java/Go code in OMS services, BPMN processes |
+| Integration | integration-gitlab-mr-review | PHP/Lumen code, checkout APIs |
+| Site | site-gitlab-mr-review | Angular/NgRx/NestJS code |
+| Mobile | mobile-gitlab-mr-review | React Native/TypeScript code |
+| Go (platform-new) | go-code-reviewer | Go code in checkout, intgateway, policyengine, recommendationengine |
+| Gloria OTS | gloriaots-gitlab-mr-review | .NET/C# code |
+
+---
+
 **Версия:** 1.0  
 **Дата:** 2026-10-06  
 **Статус:** Production-ready  

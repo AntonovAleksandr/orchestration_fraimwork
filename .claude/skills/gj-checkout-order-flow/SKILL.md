@@ -18,7 +18,7 @@ Read the relevant map before changing code or making design claims:
 - `docs/research/2026-05-29-order-create-contract.md`
 - `docs/research/2026-05-20-checkout-order-creation.md` for prod incident context
 
-For implementation, also load the platform skill for the file you touch: `integration-*`, `ensi-*`, `oms-*`, `site-*`, `mobile-*`, or Go skills.
+For implementation, also load the platform skill for the file you touch: `integration-*`, `ensi-*`, `oms-*`, `site-*`, `mobile-*`, or Go skills. For Integration Service implementation, follow **`pattern-development-integration.md`** to ensure the checkout flow change follows proper development discipline.
 
 ## Core Model
 

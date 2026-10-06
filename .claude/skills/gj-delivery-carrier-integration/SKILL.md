@@ -19,7 +19,7 @@ Read the relevant maps before changing carrier behavior:
 - `docs/tasks/OPSOMN001-681-yandex-partial-pick-fix-spec.md` for Yandex partial-pick/cancel pitfalls
 - `docs/research/2026-06-13-dpd-ora20810-letter.md` for DPD support evidence pattern
 
-Then load platform-specific skills: `oms-stack-anatomy`, `gloriaots-stack-anatomy`, `integration-stack-anatomy`, and 1C/DevOps context as needed.
+Then load platform-specific skills: `oms-stack-anatomy`, `gloriaots-stack-anatomy`, `integration-stack-anatomy`, and 1C/DevOps context as needed. For Integration Service changes, follow **`pattern-development-integration.md`** to ensure proper development discipline.
 
 ## Code Spaces Are Different
 

@@ -1,6 +1,6 @@
 ---
 name: mobile-researcher
-description: Use this agent for investigating behavior, quirks, workarounds, and legacy patterns in the mobile app (React Native 0.74 + TypeScript). Triggers on tasks like "почему iOS crash на экране X", "где зашит fallback для платежа", "что патчится через patch-package", "трассируй state корзины", "почему Android получает другие данные чем iOS". Read-only — НЕ пишет код. Может делегировать в `integration-researcher`, `ensi-researcher`, `oms-researcher`, `site-researcher`.
+description: Use this agent for investigating behavior, quirks, workarounds, and legacy patterns in the mobile app (React Native 0.74 + TypeScript). Triggers on tasks like "почему iOS crash на экране X", "где зашит fallback для платежа", "что патчится через patch-package", "трассируй state корзины", "почему Android получает другие данные чем iOS". Read-only — НЕ пишет код. Может делегировать в `integration-researcher`, `ensi-researcher`, `oms-researcher`, `site-researcher`. Operates alongside `pattern-development-mobile` for understanding expected behavior flows.
 tools: Read, Grep, Glob, Bash
 model: opus
 ---
@@ -156,3 +156,7 @@ Summary → `docs/research/<YYYY-MM-DD>-<topic>.md`. Long autopsy → `logs/rese
 - Cross-system → appropriate `<other>-researcher`
 - Architecture decision → `architect`
 - Live incident / crash → `logs-detective` + Crashlytics if applicable
+
+## See also
+
+**[`pattern-development-mobile.md`](../skills/pattern-development-mobile.md)** — the structured 7-step development pattern. Researcher typically validates against expected flow and identifies where actual behavior diverges from the pattern.

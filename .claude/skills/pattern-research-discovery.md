@@ -281,6 +281,22 @@ Code говорит: "Контракт в Integration"
 
 ---
 
+## 🔧 Platform-specific research skills
+
+For deeper code exploration per platform language, these skills complement this standard:
+
+| Platform | Code researcher skill | Purpose |
+|----------|---|---|
+| ENSI | ensi-stack-anatomy + pattern-development-ensi | PHP/Laravel services exploration |
+| OMS | oms-stack-anatomy + pattern-development-oms | Java/Go services, BPMN exploration |
+| Integration | integration-stack-anatomy + pattern-development-integration | Lumen/PHP routes and handlers |
+| Site | site-stack-anatomy + pattern-development-site | Angular/NgRx state and routing |
+| Mobile | mobile-stack-anatomy + pattern-development-mobile | React Native structure and exports |
+| Go (platform-new) | go-architect + pattern-development-go | Go services architecture and standards |
+| Gloria OTS | gloriaots-stack-anatomy + pattern-development-gloriaots | .NET services and integrations |
+
+---
+
 **Версия:** 1.0  
 **Дата:** 2026-10-06  
 **Статус:** Production-ready  
