@@ -1,9 +1,11 @@
 ---
 name: mobile-ios-simulator
-description: Use when running, building, installing, debugging, or testing the Gloria Jeans mobile app (React Native) on an iOS Simulator — booting simulators via simctl, xcodebuild/run-ios, install/launch/logs/screenshot, Metro connection, pods, detox e2e. Triggers on "запусти на симуляторе", "simctl", "iOS билд не собирается", "сделай скриншот симулятора", "почему белый экран на iOS", "прогони detox".
+description: Use when running, building, installing, debugging, or testing the Gloria Jeans mobile app (React Native) on an iOS Simulator — booting simulators via simctl, xcodebuild/run-ios, install/launch/logs/screenshot, Metro connection, pods, detox e2e. Triggers on "запусти на симуляторе", "simctl", "iOS билд не собирается", "сделай скриншот симулятора", "почему белый экран на iOS", "прогони detox". Supports verification step of `pattern-development-mobile`.
 ---
 
 # Mobile iOS Simulator (simctl / xcodebuild)
+
+**See also:** [`pattern-development-mobile.md`](../pattern-development-mobile.md) — use this skill in step 6 (Verification) to test changes on iOS Simulator.
 
 Всё про запуск/отладку **gj-app** на iOS Simulator. Android-аналог — `mobile-emulator-adb`. Yarn-скрипты и флейворы — `mobile-build-commands`. Раскладка репо — `mobile-stack-anatomy`.
 

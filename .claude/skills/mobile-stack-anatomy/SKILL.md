@@ -1,9 +1,11 @@
 ---
 name: mobile-stack-anatomy
-description: Use when working with the Gloria Jeans mobile app (React Native). Explains the monorepo layout (gj-app yarn workspaces + mobapp-api-types), key directories, native integration points (iOS Pods, Android gradle), env flavors, and the role of ui-kit / rn-yookassa-sdk packages. Trigger on anything related to platform/mobile-app/.
+description: Use when working with the Gloria Jeans mobile app (React Native). Explains the monorepo layout (gj-app yarn workspaces + mobapp-api-types), key directories, native integration points (iOS Pods, Android gradle), env flavors, and the role of ui-kit / rn-yookassa-sdk packages. Trigger on anything related to platform/mobile-app/. Pairs with `pattern-development-mobile` for structured feature development.
 ---
 
 # Mobile App Anatomy
+
+**See also:** [`pattern-development-mobile.md`](../pattern-development-mobile.md) — the structured 7-step development pattern that uses this anatomy for feature implementation.
 
 The mobile codebase lives in `platform/mobile-app/` — two cloned repos:
 

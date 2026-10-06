@@ -7,6 +7,8 @@ description: Создание и модификация meta эндпоинто�
 
 Meta эндпоинты возвращают структурированную информацию о полях сущности для фронтенда: типы полей, доступные фильтры, сортировку, отображение в списках.
 
+> **Part of ENSI Development Pattern:** This skill covers step 3️⃣ (Code Writing) of the [8-step ENSI development pattern](../pattern-development-ensi.md). Use this when implementing meta endpoints for form/list metadata as part of the OpenAPI-first API design.
+
 ## Расположение файлов
 
 ```

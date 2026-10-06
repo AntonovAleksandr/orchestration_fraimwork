@@ -1,9 +1,11 @@
 ---
 name: mobile-emulator-adb
-description: Use when running, installing, debugging, or testing the Gloria Jeans mobile app (React Native) on an Android emulator via adb — booting AVDs, adb install/launch/logcat/reverse/screenshot/input, the build→run→verify loop, unit/detox tests on a device. Triggers on "запусти на эмуляторе", "adb", "logcat", "поставь apk", "почему не коннектится к metro", "сделай скриншот экрана", "прогони тесты на девайсе".
+description: Use when running, installing, debugging, or testing the Gloria Jeans mobile app (React Native) on an Android emulator via adb — booting AVDs, adb install/launch/logcat/reverse/screenshot/input, the build→run→verify loop, unit/detox tests on a device. Triggers on "запусти на эмуляторе", "adb", "logcat", "поставь apk", "почему не коннектится к metro", "сделай скриншот экрана", "прогони тесты на девайсе". Supports verification step of `pattern-development-mobile`.
 ---
 
 # Mobile Emulator + adb (Android)
+
+**See also:** [`pattern-development-mobile.md`](../pattern-development-mobile.md) — use this skill in step 6 (Verification) to test changes on a device.
 
 Всё про запуск/отладку **gj-app** на Android-эмуляторе. Для чистых yarn-скриптов и iOS — см. `mobile-build-commands`. Стек и раскладка репо — `mobile-stack-anatomy`.
 

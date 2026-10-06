@@ -7,6 +7,8 @@ description: Work with Eloquent models in Ensi projects following project standa
 
 This skill helps you work with Eloquent models in Ensi projects following the project's established patterns and conventions.
 
+> **Part of ENSI Development Pattern:** This skill covers step 2️⃣ (Planning - schema/models) and step 3️⃣ (Code Writing) of the [8-step ENSI development pattern](../pattern-development-ensi.md). Use this when designing domain models and database structures before implementation.
+
 ## Project Structure Understanding
 
 Ensi uses Domain-Driven Design (DDD) with the following structure:

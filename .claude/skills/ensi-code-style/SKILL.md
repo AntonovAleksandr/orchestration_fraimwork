@@ -7,6 +7,8 @@ description: Enforce PHP and Laravel code style according to Ensi guidelines. Us
 
 This skill ensures that PHP and Laravel code follows the official Ensi code style guidelines. Apply these rules consistently when writing, reviewing, or refactoring code in Ensi projects.
 
+> **Part of ENSI Development Pattern:** This skill covers step 3️⃣ (Code Writing) of the [8-step ENSI development pattern](../pattern-development-ensi.md). See the pattern for the complete workflow including understanding requirements, planning, testing, security checks, integration considerations, and MR process.
+
 ## Core Principles
 
 **Always follow these priorities:**

@@ -7,6 +7,8 @@ description: Work with Pest PHP tests in Ensi services. Use this skill whenever 
 
 This skill helps you create and work with Pest PHP tests in Ensi Laravel services. Ensi uses Pest v2.0 with Laravel plugin and follows specific testing patterns.
 
+> **Part of ENSI Development Pattern:** This skill covers step 5️⃣ (Testing) of the [8-step ENSI development pattern](../pattern-development-ensi.md). All code must maintain >80% coverage — tests are part of the definition of done.
+
 ## Understanding Ensi Testing Structure
 
 ### Test Types

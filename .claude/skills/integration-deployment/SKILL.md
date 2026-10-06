@@ -101,6 +101,10 @@ Real production deploy → helm chart in `avg-integration-service/devops/helm-ch
 - Hardcoding prod URLs/secrets in Dockerfile (use helm-values via env)
 - Bypassing supervisor by adding processes directly in Dockerfile CMD
 
+## Development workflow
+
+For application code changes (vs deploy config), follow **`pattern-development-integration.md`** for the structured 7-step development cycle. This skill covers deployment infrastructure; the pattern guides development discipline and integration with the deployment model.
+
 ## When to escalate
 
 - CI pipeline questions → `gitlab-investigator` (look at `.gitlab-ci.yml`, recent jobs)

@@ -5,6 +5,10 @@ description: Use when writing or reviewing Java code for OMS services in platfor
 
 # OMS Java Conventions
 
+## Development pattern reference
+
+For OMS developers, follow `.claude/skills/pattern-development-oms.md` — 8-step structured development lifecycle (Understanding → Planning → Code → Database → Security → Testing → Camunda BPMN validation → Commit/PR).
+
 All Java OMS services live in `platform/starfish24/core/<Service>/`. They share a common stack and patterns.
 
 ## Before you write code — verify the service's specifics

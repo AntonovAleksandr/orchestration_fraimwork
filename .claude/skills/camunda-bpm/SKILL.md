@@ -5,6 +5,10 @@ description: Use when working with Camunda BPM in the OMS — designing or modif
 
 # Camunda BPM in OMS
 
+## Development pattern reference
+
+For Camunda/BPMN development in OMS, follow `.claude/skills/pattern-development-oms.md` step 7 (Camunda BPMN Process Validation) — topic matching, compensating transactions, running instance safety, and process variables documentation.
+
 The OMS orchestrates business processes via Camunda BPM. Three pieces are involved:
 
 | Piece | Path |

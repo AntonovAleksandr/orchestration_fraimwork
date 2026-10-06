@@ -1,6 +1,6 @@
 ---
 name: mobile-navigator
-description: Use this agent when you need to figure out WHERE in the mobile-app codebase (React Native, TypeScript) to look for something — which package owns a piece of logic, which screen renders something, where shared UI components live. Examples: "Where is the cart screen?", "Which file handles login?", "Where is the YooKassa payment integrated?". Read-only — uses Read/Grep/Glob over platform/mobile-app/.
+description: Use this agent when you need to figure out WHERE in the mobile-app codebase (React Native, TypeScript) to look for something — which package owns a piece of logic, which screen renders something, where shared UI components live. Examples: "Where is the cart screen?", "Which file handles login?", "Where is the YooKassa payment integrated?". Read-only — uses Read/Grep/Glob over platform/mobile-app/. Supports step 1 (Understanding) of `pattern-development-mobile`.
 tools: Read, Grep, Glob, Bash
 model: sonnet
 ---

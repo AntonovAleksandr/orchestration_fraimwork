@@ -117,3 +117,12 @@ Exposes health/readiness endpoints — used by k8s probes.
 - **Talks to OMS** (`starfish-oms/cloud/awg/integration-gj` — separate repo in OMS group, not cloned)
 - **Talks to message broker** (RabbitMQ/Kafka?) via `msq-client`
 - **Logs flow:** app → `storage/logs/` → filebeat → ELK
+
+## Development workflow
+
+For writing or changing Integration code, load **`pattern-development-integration.md`** alongside this skill. It covers the 7-step development cycle: understanding, planning, implementation, security checks, testing, commit, and merge request.
+
+Related skills:
+- `integration-php-conventions` — Lumen coding patterns, internal libs, structure
+- `integration-deployment` — Docker, runtime config, two-deploy model
+- `integration-gitlab-mr-review` — MR review checklist, architecture passes

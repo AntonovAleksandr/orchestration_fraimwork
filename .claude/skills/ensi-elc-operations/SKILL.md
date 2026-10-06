@@ -7,6 +7,8 @@ description: Use when running ENSI services locally — starting/stopping contai
 
 `elc` (ENSI Local Containers) is the CLI tool that orchestrates Docker containers for local development. The workspace is registered as `gj` → `<workspace>/platform/ensi/workspace`.
 
+> **Part of ENSI Development Pattern:** This skill supports step 1️⃣ (Understanding - setup) and step 2️⃣ (Planning) of the [8-step ENSI development pattern](../pattern-development-ensi.md). Use this for local environment setup before beginning the development workflow.
+
 ## Workspace registration (one-time / verification)
 
 ```bash

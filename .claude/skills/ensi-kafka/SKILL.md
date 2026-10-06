@@ -7,6 +7,8 @@ description: Work with Kafka in Ensi Laravel services following project standard
 
 This skill helps you work with Kafka in Ensi Laravel services. It provides guidance on creating producers, understanding architecture, setting up consumers, and testing Kafka integration.
 
+> **Part of ENSI Development Pattern:** This skill covers aspects of step 1️⃣ (Understanding - Kafka topics) and step 7️⃣ (Integration - cross-service contracts) of the [8-step ENSI development pattern](../pattern-development-ensi.md). Use this when designing pub/sub architectures and ensuring backward-compatible event schemas.
+
 ## Architecture Overview
 
 ### Directory Structure

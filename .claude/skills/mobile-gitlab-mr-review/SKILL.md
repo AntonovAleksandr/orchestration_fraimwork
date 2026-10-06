@@ -1,13 +1,13 @@
 ---
 name: mobile-gitlab-mr-review
-description: "Use when reviewing a GitLab Merge Request in mobapp/gj-app or mobapp/mobapp-api-types, including React Native/TypeScript, Redux/Saga, UI packages, iOS/Android bridges, YooKassa, analytics, API contracts, build flavors, or mobile release compatibility."
+description: "Use when reviewing a GitLab Merge Request in mobapp/gj-app or mobapp/mobapp-api-types, including React Native/TypeScript, Redux/Saga, UI packages, iOS/Android bridges, YooKassa, analytics, API contracts, build flavors, or mobile release compatibility. Validates alignment with `pattern-development-mobile` where applicable."
 ---
 
 # Mobile GitLab MR Review
 
 **BASELINE:** Apply `gj-gitlab-mr-review` once if it is not already active; never reload it recursively.
 
-Load `mobile-stack-anatomy` and `mobile-rn-conventions`; add `mobile-build-commands` for CI, build, dependency, or release evidence. Consult `mobile-navigator` read-only when ownership is unclear, `mobile-researcher` for legacy/native quirks, and `architect` when a public or cross-system contract changes. Derive versions and layout from the reviewed package, lock, and native files; report stale README/workspace documentation.
+Load `mobile-stack-anatomy` and `mobile-rn-conventions`; add `mobile-build-commands` for CI, build, dependency, or release evidence. Refer to [`pattern-development-mobile`](../pattern-development-mobile.md) when reviewing feature implementation for structured compliance. Consult `mobile-navigator` read-only when ownership is unclear, `mobile-researcher` for legacy/native quirks, and `architect` when a public or cross-system contract changes. Derive versions and layout from the reviewed package, lock, and native files; report stale README/workspace documentation.
 
 ## Mobile Architecture Pass
 

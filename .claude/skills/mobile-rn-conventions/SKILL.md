@@ -1,9 +1,11 @@
 ---
 name: mobile-rn-conventions
-description: Use when writing or reviewing TypeScript/TSX code for the Gloria Jeans mobile app. Covers code style, styled-components patterns, when to put code in ui-kit vs packages/gj, env-flavor handling, API type sourcing from mobapp-api-types, native bridge etiquette, common React Native pitfalls.
+description: Use when writing or reviewing TypeScript/TSX code for the Gloria Jeans mobile app. Covers code style, styled-components patterns, when to put code in ui-kit vs packages/gj, env-flavor handling, API type sourcing from mobapp-api-types, native bridge etiquette, common React Native pitfalls. Pairs with `pattern-development-mobile` for structured development.
 ---
 
 # Mobile RN Conventions
+
+**See also:** [`pattern-development-mobile.md`](../pattern-development-mobile.md) — the mandatory 7-step pattern for writing React Native features with platform awareness.
 
 Guidelines for writing code in `platform/mobile-app/gj-app/`.
 

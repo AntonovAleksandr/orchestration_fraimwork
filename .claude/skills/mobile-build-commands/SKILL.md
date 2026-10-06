@@ -1,9 +1,11 @@
 ---
 name: mobile-build-commands
-description: Use when running, building, installing, or scripting commands for the Gloria Jeans mobile app — yarn scripts (gj:start, gj:ios:*, gj:android:*, gj:pod-install, yookassa:prepare), lint/ts checks, env flavors. Triggers on "how do I run the app", "build for staging", "install pods", "metro reset", etc.
+description: Use when running, building, installing, or scripting commands for the Gloria Jeans mobile app — yarn scripts (gj:start, gj:ios:*, gj:android:*, gj:pod-install, yookassa:prepare), lint/ts checks, env flavors. Triggers on "how do I run the app", "build for staging", "install pods", "metro reset", etc. Pairs with `pattern-development-mobile` for structured development flow.
 ---
 
 # Mobile Build Commands
+
+**See also:** [`pattern-development-mobile.md`](../pattern-development-mobile.md) — the structured 7-step development pattern for React Native features.
 
 All commands run from `platform/mobile-app/gj-app/` (yarn workspaces root).
 

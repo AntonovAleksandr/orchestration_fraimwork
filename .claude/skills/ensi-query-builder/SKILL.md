@@ -7,6 +7,8 @@ description: Создание и модификация Query классов д�
 
 Query классы обеспечивают фильтрацию, сортировку и include связей для API endpoints в Ensi сервисах.
 
+> **Part of ENSI Development Pattern:** This skill covers step 3️⃣ (Code Writing) and step 4️⃣ (OpenAPI & Clients) of the [8-step ENSI development pattern](../pattern-development-ensi.md). Use this when implementing search/filter endpoints defined in OpenAPI specs.
+
 ## Расположение
 
 ```

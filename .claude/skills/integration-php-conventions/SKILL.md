@@ -128,6 +128,10 @@ Before declaring a PHP change done:
 3. `vendor/bin/phpunit --filter <relevant>` passes
 4. Manually verify the endpoint or command runs (curl / artisan invoke) if you can
 
+## Development workflow
+
+Follow **`pattern-development-integration.md`** for the 7-step structured development cycle: understanding, planning, implementation, security checks, testing, commit, and merge request. This skill provides the coding conventions; the pattern guides the overall workflow.
+
 ## When to escalate
 
 - Where to find / structure decisions → `integration-navigator`

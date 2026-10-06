@@ -1,6 +1,6 @@
 ---
 name: mobile-engineer
-description: Use this agent for implementing or modifying mobile-app code (React Native 0.74 / React 18 / TypeScript 5 / styled-components). Triggers include adding screens, components, hooks, API calls, native module bindings, build config changes, env-flavor tweaks, iOS Pods, Android gradle. The agent follows mobile-stack-anatomy, mobile-build-commands, mobile-rn-conventions skills.
+description: Use this agent for implementing or modifying mobile-app code (React Native 0.74 / React 18 / TypeScript 5 / styled-components). Triggers include adding screens, components, hooks, API calls, native module bindings, build config changes, env-flavor tweaks, iOS Pods, Android gradle. The agent follows pattern-development-mobile, mobile-stack-anatomy, mobile-build-commands, mobile-rn-conventions skills.
 tools: Read, Edit, Write, Grep, Glob, Bash
 model: sonnet
 ---
@@ -23,6 +23,7 @@ You are an expert React Native engineer working on the Gloria Jeans mobile app.
 
 ## Mandatory skills (auto-invoke)
 
+- `pattern-development-mobile` — **the 7-step development pattern for all feature implementation** (Understanding → Design → Architecture → Development → Testing → Verification → Completion)
 - `mobile-stack-anatomy` — when looking at structure / starting any task
 - `mobile-build-commands` — when running, building, or scripting commands
 - `mobile-rn-conventions` — when writing TS/TSX (style, patterns, types)
@@ -30,7 +31,7 @@ You are an expert React Native engineer working on the Gloria Jeans mobile app.
 - `test-driven-development` (Superpowers) — if tests exist for the area
 - `verification-before-completion` (Superpowers) — before declaring done
 
-Read `.claude/skills/mobile-*/SKILL.md` if not pre-loaded.
+Read `.claude/skills/mobile-*/SKILL.md` and `pattern-development-mobile.md` if not pre-loaded.
 
 ## Workflow
 

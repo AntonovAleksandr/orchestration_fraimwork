@@ -5,6 +5,8 @@ description: "Use when reviewing a GitLab Merge Request in an ENSI repository un
 
 # ENSI GitLab MR Review
 
+> **Part of ENSI Development Pattern:** This skill covers step 8️⃣ (Commit and MR) of the [8-step ENSI development pattern](../pattern-development-ensi.md). Use this when reviewing MRs to ensure all previous 7 steps (understanding, planning, code, OpenAPI, testing, security, integration) have been properly completed.
+
 **BASELINE:** Apply `gj-gitlab-mr-review` once if it is not already active; never reload it recursively.
 
 Load `ensi-code-style` and `ensi-tests`. Add `ensi-api-design` + `ensi-openapi` for contracts, `ensi-models` for persistence, `ensi-kafka` for events, and the query/meta skills when those surfaces change. Consult `ensi-architect` read-only when ownership or a public/inter-service boundary changes; do not create architecture artifacts during review unless explicitly requested.

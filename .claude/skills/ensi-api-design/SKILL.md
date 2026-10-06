@@ -7,6 +7,8 @@ description: Apply Ensi API Design Guide principles when designing, implementing
 
 This skill ensures that all API endpoints in Ensi projects follow the official API Design Guide. Apply these standards when designing, implementing, or reviewing REST APIs.
 
+> **Part of ENSI Development Pattern:** This skill covers step 4️⃣ (OpenAPI & Clients) of the [8-step ENSI development pattern](../pattern-development-ensi.md). See the pattern for the complete workflow: understanding, planning, coding, OpenAPI/clients, testing, security, integration, and MR process.
+
 ## Core Principles
 
 **Always follow these priorities:**

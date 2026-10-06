@@ -101,6 +101,10 @@ dotnet run --project src/Workers/GloriaOTS.OrderTracking
 - Prod splits: `web`+`order-tracking` on RND; `wms-sync` per region
 - Config override: env vars `SECTION__KEY` (standard ASP.NET Core)
 
+## Development patterns
+
+See **pattern-development-gloriaots.md** for 7-step development workflow: Understanding → Planning → Implementation → Security → Testing → Commit → MR.
+
 ## When repo is not cloned
 
 Use Buddy MCP `gitlab_get_repository_file`, `gitlab_list_repository_tree` on project `gloriaots/gloriaots`.

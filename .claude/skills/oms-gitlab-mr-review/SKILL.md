@@ -5,6 +5,8 @@ description: "Use when reviewing a GitLab Merge Request in Starfish/OMS, includi
 
 # OMS GitLab MR Review
 
+**PATTERN REFERENCE:** Reviewers and developers should reference `.claude/skills/pattern-development-oms.md` for OMS development lifecycle validation, especially Camunda BPMN safety, Spring Cloud Config, database migrations, and backward compatibility checks.
+
 **BASELINE:** Apply `gj-gitlab-mr-review` once if it is not already active; never reload it recursively.
 
 Load `oms-stack-anatomy`. Add `oms-java-conventions` for Java and `camunda-bpm` whenever BPMN, workers, topics, timers, variables, status, payment, cancellation, or export behavior changes. For `core/go/logistics`, read its own `CLAUDE.md` and use its repo-local `.claude/agents/` as specialist guidance rather than root `platform-new` assumptions.

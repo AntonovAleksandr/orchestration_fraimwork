@@ -32,3 +32,7 @@ Map the exact contract on both sides:
 - legacy Integration vs `platform-new/checkout` or `intgateway` ownership.
 
 Do not accept one successful HTTP response as proof that the complete async business process finished.
+
+## Development workflow
+
+For MRs that introduce new features or significant changes, verify the author followed **`pattern-development-integration.md`** — the 7-step structured development cycle covering understanding, planning, implementation, security, testing, commit, and merge request discipline. This skill focuses on review criteria; the pattern guides development discipline.

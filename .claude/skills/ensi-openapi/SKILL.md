@@ -8,6 +8,8 @@ compatibility: "Requires access to PHP Laravel project with Ensi OpenAPI structu
 
 Этот скилл помогает работать с OpenAPI спецификациями в сервисах на базе Ensi Laravel OpenAPI Server Generator. Скилл обеспечивает понимание структуры спецификаций, создание новых endpoints, схем и перечислений, а также обновление конфигурации генерации.
 
+> **Part of ENSI Development Pattern:** This skill covers step 4️⃣ (OpenAPI & Clients) of the [8-step ENSI development pattern](../pattern-development-ensi.md). OpenAPI-first means you design the spec BEFORE writing code — see the pattern for the complete workflow.
+
 ## Структура OpenAPI спецификаций в Ensi
 
 ### Основная структура директорий

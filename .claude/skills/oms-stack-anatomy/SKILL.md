@@ -5,6 +5,10 @@ description: Use when working with the Gloria Jeans OMS (starfish24). Explains t
 
 # OMS Stack Anatomy
 
+## Development pattern reference
+
+For OMS developers, follow `.claude/skills/pattern-development-oms.md` — 8-step structured development lifecycle with Java/Spring/Camunda-specific rules.
+
 `platform/starfish24/` mirrors `starfish-oms/cloud/` in GitLab — two top-level groups:
 
 ```
