@@ -15,6 +15,7 @@
 | `fleet.sh` | пачка задач одной командой, вкладка на каждую | запуск N задач без N команд |
 | `worktree-vendor.sh` | честный vendor в рабочем дереве | секунды вместо 17 ГБ копии |
 | `orchestrate.sh` | работники Orca: `task`, `front`, `review`, `respond`, `done` | скиллы вписаны в постановку, сдача без «Самопроверки» не идёт |
+| `cleanup-merged-branches.sh` | удаляет локальные и удалённые ветки задачи, которые уже слиты | освобождает слоты worktree (max 30), новые задачи могут запускаться |
 | `git-health-check.sh` | проверяет .git, origin, shallow clone, синхронизирует refs | агенты начинаются с правды о git, merge-base работает корректно |
 | `install-hooks.sh` | подключает `hooks/skill-router.py` и `hooks/mr-gate.py` в `.claude/settings.json` дерева | скилл подсказан в реплике; MR без «Самопроверки» не открывается |
 
@@ -130,3 +131,87 @@ scripts/gj/git-health-check.sh [--unshallow] [путь]
 ```
 
 Подробно — `docs/agent-git-health-check.md`.
+
+## Автоматическая очистка веток после merge
+
+Проблема: ветки занимают слоты worktree'я (max 30, обычно 24/30). Когда слоты кончаются,
+новые задачи не могут запускаться. Решение: автоматически удалять локальные и удалённые ветки
+задачи, которые уже слиты в целевые ветки.
+
+### Использование
+
+#### Автоматическая очистка (при завершении done)
+
+```bash
+scripts/gj/orchestrate.sh done OPSOMN002-123
+```
+
+После успешного завершения worker'а done (все запросы слиты в стейдж) система автоматически:
+1. Ищет все ветки задачи (по паттерну имени)
+2. Проверяет, слиты ли они в main/master
+3. Удаляет локальные и удалённые ветки, которые уже слиты
+
+Лог: `.tasks/<ключ>/branches.log`. Пропустить очистку: `GJ_SKIP_CLEANUP=1`.
+
+#### Ручная очистка
+
+```bash
+scripts/gj/orchestrate.sh cleanup OPSOMN002-123       # запустить очистку
+scripts/gj/orchestrate.sh cleanup OPSOMN002-123 --dry # показать, что будет удалено
+scripts/gj/orchestrate.sh cleanup-log OPSOMN002-123   # показать лог очистки
+```
+
+#### Через скрипт напрямую
+
+```bash
+scripts/gj/cleanup-merged-branches.sh <КЛЮЧ>          # очистить
+scripts/gj/cleanup-merged-branches.sh --dry-run <КЛЮЧ>  # сухой прогон
+scripts/gj/cleanup-merged-branches.sh --log <КЛЮЧ>      # показать лог
+```
+
+### Как это работает
+
+1. **Поиск репозиториев**: сканирует `platform/*/*`, `platform-new/*`, `platform-next/*`
+2. **Поиск веток**: ищет локальные и удалённые ветки по паттерну задачи
+   - Pattern: `slug(OPSOMN002-123)` = `opsomn002-123` (lowercase, dashes)
+   - Ищет в `refs/heads/*` и `refs/remotes/*`
+3. **Проверка merged**: для каждой ветки проверяет, слита ли она в main/master/origin/main/origin/master
+4. **Удаление**: удаляет только слитые ветки
+   - Локально: `git branch -D <branch>`
+   - Удалённо: `git push <remote> --delete <branch>`
+5. **Логирование**: пишет результаты в `.tasks/<ключ>/branches.log` и `.tasks/<ключ>/cleanup.state`
+
+### Когда очистка не удаляет ветку
+
+- Ветка не слита в main/master (заблокирована на ревью или конфликт)
+- Ветка не найдена в репозитории
+- Нет доступа к удалённому хранилищу для удаления
+
+В этих случаях ветка остаётся, логируется ошибка. Можно удалить ручно:
+```bash
+git branch -D <branch>
+git push origin --delete <branch>
+```
+
+### Переменные среды
+
+- `GJ_SKIP_CLEANUP=1` — пропустить очистку (не удалять ветки)
+- `GJ_DRY_RUN=1` — сухой прогон (показать, но не удалять)
+- `GJ_TASKS_DIR` — переопределить каталог задач (по умолчанию `.tasks`)
+
+### Примеры логов
+
+Успешная очистка в `.tasks/opsomn002-123/branches.log`:
+```
+[2026-10-08 15:23:45] success: удалена локально: feat/opsomn002-123 из /Users/user/orca/…/platform/ensi
+[2026-10-08 15:23:46] success: удалена удалённо: feat/opsomn002-123 из origin
+[2026-10-08 15:23:47] success: удалена локально: fix/opsomn002-123-typo
+[2026-10-08 15:23:48] success: удалена удалённо: fix/opsomn002-123-typo
+```
+
+Состояние в `.tasks/opsomn002-123/cleanup.state`:
+```
+last_run=1728404625
+last_status=success
+last_message_timestamp=2026-10-08 15:23:48
+```

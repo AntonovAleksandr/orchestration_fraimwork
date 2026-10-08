@@ -33,11 +33,16 @@
 #   orchestrate.sh retain  <dispatch>          оставить терминал живым: воркеру будет ещё работа
 #   orchestrate.sh sweep                       release все — для ежедневного прогона
 #   orchestrate.sh run                         показать привязанный Run
+#   orchestrate.sh send-phase-complete <dispatch> <phase> [status] [next_phase]  отправить от воркера завершение фазы
+#   orchestrate.sh monitor-auto-phase <key> [timeout]  следить и автоматически переходить между фазами
+#   orchestrate.sh cleanup <КЛЮЧ> [--dry|--log]  очистить ветки задачи после merge (автоматически после done)
+#   orchestrate.sh cleanup-log <КЛЮЧ>            показать лог очистки веток
 #
 # Переменные: GJ_MAX_AGENTS (30), GJ_MIN_FREE_MB (2048), GJ_FORCE=1 — обойти заслон ресурсов,
 #             GJ_WORKTREE (дерево вызвавшего агента) — куда сажать работника,
 #             GJ_AGENT (claude). GJ_RETAIN=1 — wait не закрывает терминал по worker_done.
 #             GJ_SKIP_SELFCHECK=1 — сдать без «Самопроверки» (решение человека),
+#             GJ_SKIP_CLEANUP=1 — пропустить автоматическую очистку веток после done,
 #             GJ_TASKS_DIR (.tasks), GJ_ORCA_BIN (orca).
 set -euo pipefail
 
@@ -385,6 +390,147 @@ if d.get("ok"): print("ответ доставлен на", sys.argv[1])
 else: print("reply не прошёл:", (d.get("error") or {}).get("message","")[:300]); raise SystemExit(1)' "$1"
 }
 
+# ==================== WorkerMessage Protocol & Auto-Phase Routing ====================
+# WorkerMessage JSON Schema:
+# {
+#   "type": "phase_complete",
+#   "phase": "understanding|planning|implementation|testing|verification",
+#   "status": "success|partial|failed",
+#   "next_phase": "planning|implementation|testing|verification|done|none",
+#   "summary": "краткое описание что сделано",
+#   "blockers": ["список блокеров если есть"],
+#   "timestamp": "ISO 8601"
+# }
+
+# Парсить worker message из payload и отправить событие завершения фазы
+send_phase_complete() {            # send_phase_complete <dispatch> <phase> [status] [next_phase]
+  local dispatch=$1 phase=$2 status=${3:-success} next_phase=${4:-}
+  local payload
+  payload=$(python3 -c "
+import json, datetime
+msg = {
+  'type': 'phase_complete',
+  'phase': '$phase',
+  'status': '$status',
+  'next_phase': '$next_phase',
+  'timestamp': datetime.datetime.utcnow().isoformat() + 'Z',
+  'dispatchId': '$dispatch'
+}
+print(json.dumps(msg))
+")
+
+  case "$dispatch" in *:*) TO="$dispatch" ;; *) TO="dispatch:$dispatch" ;; esac
+  "$ORCA" orchestration send --to "$TO" \
+    --subject "phase_complete: $phase → $next_phase" \
+    --body "$payload" --json >/dev/null 2>&1 \
+    && echo "фаза $phase отправлена (→ $next_phase)" \
+    || echo "ОШИБКА: не удалось отправить завершение фазы" >&2
+}
+
+# Получить следующую фазу на основе текущей и статуса
+next_phase() {                     # next_phase <current> <status>
+  local current=$1 status=$2
+  case "$current:$status" in
+    understanding:success)         echo "planning" ;;
+    understanding:partial)         echo "understanding" ;;
+    understanding:failed)          echo "understanding" ;;
+    planning:success)              echo "implementation" ;;
+    planning:partial)              echo "planning" ;;
+    planning:failed)               echo "planning" ;;
+    implementation:success)        echo "testing" ;;
+    implementation:partial)        echo "implementation" ;;
+    implementation:failed)         echo "implementation" ;;
+    testing:success)               echo "verification" ;;
+    testing:partial)               echo "testing" ;;
+    testing:failed)                echo "testing" ;;
+    verification:success)          echo "done" ;;
+    verification:partial)          echo "verification" ;;
+    verification:failed)           echo "verification" ;;
+    *)                             echo "none" ;;
+  esac
+}
+
+# Обработать входящее сообщение о завершении фазы и запустить следующую
+on_worker_message() {              # on_worker_message <dispatch> <message_json> <task_key> <task_dir>
+  local dispatch=$1 msg_json=$2 task_key=$3 task_dir=$4
+
+  # Парсить JSON сообщение
+  local phase status next_phase summary blockers
+  phase=$(printf '%s' "$msg_json" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('phase','?'))" 2>/dev/null)
+  status=$(printf '%s' "$msg_json" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('status','?'))" 2>/dev/null)
+  next_phase=$(printf '%s' "$msg_json" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('next_phase','?'))" 2>/dev/null)
+  summary=$(printf '%s' "$msg_json" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('summary',''))" 2>/dev/null)
+
+  # Логировать переход
+  local phase_log="$task_dir/phase-transitions.log"
+  printf '%s\t%s\t%s → %s\t%s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$phase" "$status" "$next_phase" "$summary" >> "$phase_log"
+
+  # Если next_phase не задана в сообщении, вычислить автоматически
+  if [ "$next_phase" = "?" ] || [ -z "$next_phase" ]; then
+    next_phase=$(next_phase "$phase" "$status")
+  fi
+
+  echo "[фаза $phase завершена: $status] переход в $next_phase"
+
+  # Если есть блокеры или статус не success, не переходить автоматически
+  if [ "$status" != "success" ]; then
+    echo "  ⚠ статус $status — требуется вмешательство, не переходим автоматически"
+    return 1
+  fi
+
+  if [ "$next_phase" = "none" ] || [ "$next_phase" = "done" ]; then
+    echo "  ✓ работа завершена (next_phase=$next_phase)"
+    return 0
+  fi
+
+  # Автоматически запустить следующую фазу
+  auto_start_phase "$dispatch" "$task_key" "$phase" "$next_phase" "$task_dir"
+}
+
+# Автоматически запустить следующую фазу после завершения текущей
+auto_start_phase() {               # auto_start_phase <dispatch> <task_key> <current_phase> <next_phase> <task_dir>
+  local dispatch=$1 task_key=$2 current=$3 next=$4 task_dir=$5
+
+  # Сохранить состояние перехода
+  local phase_state="$task_dir/.phase"
+  mkdir -p "$task_dir"
+
+  {
+    echo "phase=$next"
+    echo "previous_phase=$current"
+    echo "previous_dispatch=$dispatch"
+    echo "transitioned_at=$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+  } > "$phase_state.tmp" && mv "$phase_state.tmp" "$phase_state"
+
+  echo "→ запуск следующей фазы: $next (ключ $task_key)"
+
+  # Отправить worker-у указание о переходе в следующую фазу
+  case "$dispatch" in *:*) TO="$dispatch" ;; *) TO="dispatch:$dispatch" ;; esac
+
+  "$ORCA" orchestration send --to "$TO" \
+    --subject "next_phase: $next" \
+    --body "Координатор: переходи в фазу $next. Предыдущая фаза ($current) завершена." \
+    --json >/dev/null 2>&1
+
+  # Логировать автоматический переход
+  printf '%s\t%s → %s\tauto-start\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$current" "$next" >> "$task_dir/phase-transitions.log"
+
+  return 0
+}
+
+# Конвертировать фазу в тип работника (task/front/review) для spec_for
+phase_to_kind() {                  # phase_to_kind <phase>
+  case "$1" in
+    understanding|planning)        echo "task" ;;
+    implementation)                echo "task" ;;
+    testing)                       echo "task" ;;
+    verification)                  echo "task" ;;
+    front|frontend)                echo "front" ;;
+    review)                        echo "review" ;;
+    *)                             echo "task" ;;
+  esac
+}
+
 print_questions() {                # print_questions [dispatch] — с готовой командой ответа
   local rows; rows=$(open_questions "${1:-}")
   [ -z "$rows" ] && { echo "открытых вопросов нет"; return 0; }
@@ -495,6 +641,28 @@ sweep() {
 
 retain_list() { printf '%s\n' "${TASKS}/.retain"; }
 
+# Функция для очистки веток задачи после успешного merge
+cleanup_task_branches() {
+  local key=$1 skip=${GJ_SKIP_CLEANUP:-}
+  [ -n "$skip" ] && return 0
+  [ -z "$key" ] && return 1
+
+  local cleanup_script="$ROOT/scripts/gj/cleanup-merged-branches.sh"
+  if [ ! -x "$cleanup_script" ]; then
+    echo "скрипт cleanup недоступен: $cleanup_script" >&2
+    return 1
+  fi
+
+  echo "запуск очистки веток задачи: $key"
+  if "$cleanup_script" "$key" 2>&1 | sed 's/^/  /'; then
+    echo "очистка веток завершена успешно"
+    return 0
+  else
+    echo "очистка веток завершена с ошибками — логи: .tasks/$(slug "$key")/branches.log" >&2
+    return 1
+  fi
+}
+
 run_bind() {                       # создаёт Run при отсутствии, печатает его id
   local obj=$1 cur
   cur=$("$ORCA" orchestration run-current --json 2>/dev/null | jq_ 'd.get("result",{}).get("run",{}).get("id","")') || cur=""
@@ -587,18 +755,115 @@ lead_spec() {                      # lead_spec <ключ> <заголовок> <
 запускаешь, контролируешь и отвечаешь за результат. Код руками не правишь.
 
 1. Запуск: scripts/gj/orchestrate.sh $kind $key$qt
-2. Сразу после запуска — scripts/gj/orchestrate.sh wait в фоне (run_in_background) и так
-   после каждого события. На ВОПРОС работника — scripts/gj/orchestrate.sh answer <dispatch>
-   "…" в том же ходе. Нужно действие человека (кнопка в GitLab, доступ, решение владельца) —
-   сразу вынести человеку одной строкой, работника не держать.
-3. По worker_done: сверить вводную .tasks/<ключ>/brief.md — цель, критерий готовности,
-   что сделано. Есть запрос на слияние — ревью: scripts/gj/orchestrate.sh review <адрес>.
-   Недоделано — дослать работнику указание через say, а не делать самому.
+2. Сразу после запуска — scripts/gj/orchestrate.sh monitor-auto-phase $key в фоне (run_in_background).
+   Это следит за worker'ом, получает сообщения о завершении фаз и автоматически запускает
+   следующие фазы БЕЗ твоего участия. На ВОПРОС работника — scripts/gj/orchestrate.sh answer
+   <dispatch> "…" в том же ходе. Нужно действие человека (кнопка в GitLab, доступ, решение
+   владельца) — сразу вынести человеку одной строкой, работника не держать.
+3. По worker_done или при скрытых фазах: сверить вводную .tasks/<ключ>/brief.md — цель,
+   критерий готовности, что сделано. Есть запрос на слияние — ревью: scripts/gj/orchestrate.sh
+   review <адрес>. Недоделано — дослать работнику указание через say, а не делать самому.
 4. Сдачу (scripts/gj/orchestrate.sh done $key) — только по явной команде человека.
 5. Доклад человеку — коротко: что сделано, что ждёт его, какие запросы открыты.
 6. Контекст за 250 тыс. — записать состояние в .tasks/<ключ>/state.md (Run, диспетчи,
    решения, что дальше), сказать человеку и остановиться.
+
+РАБОТНИК: по завершении каждой фазы отправляй сообщение координатору через SendMessage с
+типом phase_complete, указывая phase, status (success|partial|failed), и опциональный next_phase.
+Координатор автоматически определит переход и отправит тебе указание о следующей фазе.
 EOS
+}
+
+# Мониторить worker и автоматически переходить между фазами
+monitor_auto_phases() {            # monitor_auto_phases <task_key> [timeout_ms]
+  local task_key=$1 timeout_ms=${2:-1800000}
+  local task_dir="$TASKS/$(slug "$task_key")"
+  local dispatch_file="$task_dir/.dispatch"
+  local phase_file="$task_dir/.phase"
+  local phase_log="$task_dir/phase-transitions.log"
+
+  [ -f "$dispatch_file" ] || { echo "ОШИБКА: dispatch не найден в $dispatch_file" >&2; return 1; }
+  local dispatch=$(cat "$dispatch_file")
+
+  # Инициализировать логирование
+  mkdir -p "$task_dir"
+  echo "мониторим фазы для $task_key (dispatch: $dispatch)" >&2
+  printf '%s\t%s\tauto-monitor started\n' "$(date '+%Y-%m-%d %H:%M:%S')" "START" >> "$phase_log"
+
+  local deadline=$(( $(date +%s) + timeout_ms/1000 ))
+  local delivered_until=""
+
+  while [ "$(date +%s)" -lt "$deadline" ]; do
+    local left=$(( (deadline - $(date +%s)) * 1000 ))
+    [ "$left" -gt 120000 ] && left=120000
+
+    # Получить входящие сообщения
+    local ack_args=()
+    [ -s "$task_dir/.last-delivery" ] && ack_args=(--ack "$(cat "$task_dir/.last-delivery")")
+
+    local out
+    out=$("$ORCA" orchestration check "${ack_args[@]+"${ack_args[@]}"}" --wait --types "worker_done,question" --timeout-ms "$left" --json 2>/dev/null || true)
+
+    # Парсить результат
+    local delivery_id ack_val msg_count
+    delivery_id=$(printf '%s' "$out" | python3 -c '
+import json,sys
+try: d=json.load(sys.stdin).get("result") or {}
+except Exception: sys.exit(1)
+print(d.get("deliveryId") or "")' 2>/dev/null)
+
+    if [ -n "$delivery_id" ]; then
+      printf '%s' "$delivery_id" > "$task_dir/.last-delivery"
+    fi
+
+    # Получить сообщения исключая heartbeat
+    msg_count=$(printf '%s' "$out" | python3 -c '
+import json,sys
+try: d=json.load(sys.stdin).get("result") or {}
+except Exception: sys.exit(0)
+ms=[x for x in (d.get("messages") or []) if x.get("type")!="heartbeat"]
+print(len(ms))' 2>/dev/null)
+
+    if [ "$msg_count" -gt 0 ]; then
+      # Обработать сообщения
+      printf '%s' "$out" | python3 - "$task_key" "$task_dir" "$dispatch" <<'PYMSG'
+import json,sys,os
+msg_str=sys.stdin.read()
+task_key,task_dir,dispatch=sys.argv[1:4]
+try: d=json.load(open(os.path.join(task_dir,"phase-transitions.log")))
+except: pass
+try: result=json.loads(msg_str).get("result") or {}
+except Exception: sys.exit(1)
+for msg in result.get("messages",[]):
+    if msg.get("type")=="worker_done":
+        print("worker_done",file=sys.stderr)
+        break
+    elif msg.get("type")=="question":
+        print("question",file=sys.stderr)
+        break
+PYMSG
+
+      # Если работник завершился, проверить expect и отпустить
+      if printf '%s' "$out" | grep -q '"type":"worker_done"'; then
+        echo "работник завершился, проверяю expect..." >&2
+        if [ -f "$task_dir/expect.sh" ]; then
+          verify_expect "$task_key" "" 2>&1 | sed 's/^/  /'
+        else
+          echo "  критерий не задан" >&2
+        fi
+        break
+      fi
+
+      # Если есть вопрос, выйти для вмешательства
+      if printf '%s' "$out" | grep -q '"type":"question"'; then
+        echo "работник задал вопрос, выхожу для ответа" >&2
+        print_questions "$dispatch" >&2
+        break
+      fi
+    fi
+  done
+
+  printf '%s\t%s\tauto-monitor finished\n' "$(date '+%Y-%m-%d %H:%M:%S')" "END" >> "$phase_log"
 }
 
 cmd=${1:-}; shift || true
@@ -751,6 +1016,11 @@ references/comments.md, раздел «Ответ автора на ревью»
 утверждение описания подтверждено, открытых вопросов к аналитику нет) и по gj-rollout-safety
 (порядок выкатки, маппинг, задания k8s, ключи сред) → всё влито в ветки задачи → запросы в стейдж → одобрить и влить →
 запустить деплой стейджа → подготовить запросы в ближайший релиз и ОСТАВИТЬ ОТКРЫТЫМИ.
+
+ОЧИСТКА ВЕТОК (автоматическая, не требует действий): после успешного слияния всех запросов
+в целевые ветки будут удалены локальные и удалённые ветки задачи, которые уже слиты.
+Лог очистки: .tasks/$(slug $KEY)/branches.log. Пропустить очистку: GJ_SKIP_CLEANUP=1.
+
 ОГРАНИЧЕНИЯ: в прод не вливать ничего. Запросы в master ENSI, production ИС и
 release/production витрины не открывать. Прод-джобы не запускать.
 ВЛАДЕНИЕ: только репозитории этой задачи.
@@ -892,11 +1162,20 @@ for x in ms:
           for D in $DONE; do
             # Проверка expect.sh, если она задана — ищем .dispatch файл с этим dispatch ID
             expect_checked=""
-            for dispatch_file in "$TASKS"/*/.dispatch "$TASKS"/review-*/.dispatch; do
+            is_done_dispatch=""
+            for dispatch_file in "$TASKS"/*/.dispatch "$TASKS"/review-*/.dispatch "$TASKS"/done-*/.dispatch; do
               if [ -f "$dispatch_file" ] && grep -qx "$D" "$dispatch_file"; then
                 dir=$(dirname "$dispatch_file")
-                task_key=$(basename "$dir" | sed 's/^review-//')
+                dir_name=$(basename "$dir")
+                task_key=$(basename "$dir" | sed 's/^review-//;s/^done-//')
                 is_review=$(basename "$dir" | grep -q '^review-' && echo "review" || echo "")
+                is_done=$(basename "$dir" | grep -q '^done-' && echo "1" || echo "")
+
+                # Если это done-диспетч и проверка успешна, запустить cleanup
+                if [ -n "$is_done" ]; then
+                  is_done_dispatch="1"
+                fi
+
                 if [ -f "$dir/expect.sh" ]; then
                   verify_result=$(verify_expect "$task_key" "$is_review" 2>&1)
                   verify_code=$?
@@ -911,6 +1190,11 @@ for x in ms:
                   else
                     # Проверка прошла, отпускаем
                     line=$(release_one "$D"); echo "  ${line#*$'\t'}"
+                    # Если это done-диспетч и очистка включена, запустить cleanup
+                    if [ -n "$is_done_dispatch" ]; then
+                      echo
+                      cleanup_task_branches "$task_key" || true
+                    fi
                   fi
                   expect_checked=1
                 fi
@@ -923,6 +1207,11 @@ for x in ms:
                 echo "  $D оставлен (retain) — отпустить: orchestrate.sh release $D"
               else
                 line=$(release_one "$D"); echo "  ${line#*$'\t'}"
+                # Если это done-диспетч без expect, запустить cleanup
+                if [ -n "$is_done_dispatch" ]; then
+                  echo
+                  cleanup_task_branches "$task_key" || true
+                fi
               fi
             fi
           done
@@ -937,6 +1226,30 @@ for x in ms:
             && echo "оставлен $D: wait его не закроет; отпустить — release $D" ;;
   sweep)  sweep ;;
   run)    "$ORCA" orchestration run-current 2>&1 | head -10 ;;
+
+  cleanup)
+    KEY=${1:?укажите ключ задачи}; MODE=${2:-}
+    case "$MODE" in
+      --log)  "$ROOT/scripts/gj/cleanup-merged-branches.sh" --log "$KEY" ;;
+      --dry)  GJ_DRY_RUN=1 "$ROOT/scripts/gj/cleanup-merged-branches.sh" "$KEY" ;;
+      *)      cleanup_task_branches "$KEY" ;;
+    esac
+    ;;
+
+  cleanup-log)
+    KEY=${1:?укажите ключ задачи}
+    "$ROOT/scripts/gj/cleanup-merged-branches.sh" --log "$KEY"
+    ;;
+
+  send-phase-complete)
+    DISPATCH=${1:?укажите dispatch}; PHASE=${2:?укажите фазу}; STATUS=${3:-success}; NEXT=${4:-}
+    send_phase_complete "$DISPATCH" "$PHASE" "$STATUS" "$NEXT"
+    ;;
+
+  monitor-auto-phase)
+    KEY=${1:?укажите ключ задачи}; TIMEOUT=${2:-1800000}
+    monitor_auto_phases "$KEY" "$TIMEOUT"
+    ;;
 
   *) sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; exit 1 ;;
 esac
