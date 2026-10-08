@@ -15,6 +15,7 @@
 | `fleet.sh` | пачка задач одной командой, вкладка на каждую | запуск N задач без N команд |
 | `worktree-vendor.sh` | честный vendor в рабочем дереве | секунды вместо 17 ГБ копии |
 | `orchestrate.sh` | работники Orca: `task`, `front`, `review`, `respond`, `done` | скиллы вписаны в постановку, сдача без «Самопроверки» не идёт |
+| `git-health-check.sh` | проверяет .git, origin, shallow clone, синхронизирует refs | агенты начинаются с правды о git, merge-base работает корректно |
 | `install-hooks.sh` | подключает `hooks/skill-router.py` и `hooks/mr-gate.py` в `.claude/settings.json` дерева | скилл подсказан в реплике; MR без «Самопроверки» не открывается |
 
 ## Запуск задачи
@@ -108,3 +109,24 @@ scripts/gj/stats.py --baseline base.json  # сравнить с ним позж�
 один ответ модели пишется несколькими записями с общим usage (сырой подсчёт завышает
 вдвое, склейка идёт по `requestId`), а ходы подагентов не логируются вовсе — все числа
 относятся только к родительским сессиям. Подробности — `.claude/skills/gj-session-analytics`.
+
+## Git health в начале агентов
+
+```bash
+scripts/gj/git-health-check.sh [--unshallow] [путь]
+```
+
+Проверяет (и исправляет) состояние git-репозитория:
+- `.git` существует
+- `origin` remote настроен
+- shallow clone (типично для `platform/*/` с depth 1)
+- refs синхронизированы
+
+Используй в начале каждого агента, особенно если работаешь с `merge-base`, `cherry-pick`, `ahead-behind`:
+
+```bash
+# В скрипте агента
+"$CLAUDE_PROJECT_DIR/scripts/gj/git-health-check.sh" --unshallow --verbose || exit 1
+```
+
+Подробно — `docs/agent-git-health-check.md`.
