@@ -244,11 +244,20 @@ show_cleanup_log() {
   fi
 }
 
+# Показать справку
+show_help() {
+  sed -n '2,/^#$/p' "$0" | sed 's/^# \{0,1\}//;/^$/d'
+}
+
 # Основная ветка скрипта
 main() {
   local cmd="" key=""
 
   case "${1:-}" in
+    --help|-h|"")
+      show_help
+      exit 0
+      ;;
     --dry-run)
       GJ_DRY_RUN=1
       cmd="cleanup"
