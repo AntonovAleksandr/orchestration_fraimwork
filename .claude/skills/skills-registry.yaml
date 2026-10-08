@@ -1,0 +1,333 @@
+# Skills Registry
+# Версия: 1.0
+# Описание: Реестр всех скилов с классификацией (project/stack/generic)
+# Использование: claude-skills load --project gj-opsomn002
+
+# ============================================================================
+# LAYER 1: PROJECT-SPECIFIC SKILLS (меняются при смене проекта)
+# ============================================================================
+
+projects:
+  gj-opsomn002:
+    name: "OPSOMN002: Orchestration & Hybrid System"
+    description: "Main orchestration project (Phase 1-3)"
+    skills:
+      - gj-task-docs
+      - opsomn002-checkout-flow              # (когда будет реализован)
+      - opsomn002-architecture               # (когда будет реализован)
+    depends_on_stacks:
+      - php-swoole
+      - angular-20
+      - java-spring-boot
+      - dotnet-10
+    depends_on_generic:
+      - gj-reviewer
+      - test-driven-development
+      - data-driven-validation
+      - performance-optimization
+      - security-best-practices
+    status: active
+
+  gj-beauty:
+    name: "BEAUTY: Product Beauty System"
+    description: "Beauty product catalog (assortment, marking, PDP)"
+    skills:
+      - beauty-pdp-flow                      # (future)
+      - beauty-assortment                    # (future)
+      - beauty-marking                       # (future)
+    depends_on_stacks:
+      - php-swoole
+      - angular-20
+    depends_on_generic:
+      - gj-reviewer
+      - data-driven-validation
+    status: future
+
+  # Новые проекты → новые project-specific skills!
+  # gj-new-project:
+  #   name: "NEW PROJECT"
+  #   skills: [...]
+
+# ============================================================================
+# LAYER 2: STACK-SPECIFIC SKILLS (меняются при смене технологии)
+# ============================================================================
+
+stacks:
+  # Backend Stack: PHP 8.1 + Swoole
+  php-swoole:
+    name: "PHP 8.1 + Swoole"
+    applies_to_projects:
+      - gj-opsomn002
+      - gj-beauty
+      - all_future_php_projects
+    skills:
+      - ensi-php-conventions                 # (exists: .claude/skills/ensi-php-conventions)
+      - integration-php-testing              # (future)
+      - ensi-performance-optimization        # (future)
+    version: "8.1"
+    status: active
+
+  # Backend Stack: Java + Spring Boot
+  java-spring-boot:
+    name: "Java + Spring Boot"
+    applies_to_projects:
+      - gj-opsomn002
+    applies_to_systems:
+      - starfish24-oms
+    skills:
+      - oms-spring-boot-conventions          # (exists in docs)
+      - oms-jpa-patterns                     # (future)
+      - oms-testing-with-mockito             # (future)
+      - oms-performance-tuning               # (future)
+    version: "Spring Boot 3.x"
+    status: active
+
+  # Backend Stack: Go
+  go-services:
+    name: "Go + Chi/Gin"
+    applies_to_projects:
+      - gj-opsomn002
+      - platform-new
+    skills:
+      - go-service-patterns                  # (future)
+      - go-testing-table-driven              # (future)
+      - go-error-handling                    # (future)
+    version: "1.21+"
+    status: active
+
+  # Backend Stack: .NET 10
+  dotnet-10:
+    name: ".NET 10 + ASP.NET Core"
+    applies_to_projects:
+      - gj-opsomn002
+    applies_to_systems:
+      - gloria-ots
+    skills:
+      - gloriaots-csharp-conventions         # (exists: .claude/skills/gloriaots-engineer)
+      - gloriaots-ef-core-patterns           # (future)
+      - gloriaots-async-patterns             # (future)
+    version: ".NET 10"
+    status: active
+
+  # Frontend Stack: Angular 20 + Nx
+  angular-20:
+    name: "Angular 20 + Nx + NestJS SSR"
+    applies_to_projects:
+      - gj-opsomn002
+      - gj-beauty
+    applies_to_systems:
+      - gj-ng-front
+    skills:
+      - site-angular-testing                 # (exists: .claude/skills/develop-site-testing)
+      - site-ngrx-patterns                   # (future)
+      - site-ssr-debugging                   # (future)
+      - site-nx-workspace-organization       # (future)
+    version: "Angular 20, Nx 21.6"
+    status: active
+
+  # Frontend Stack: React (future)
+  react-18:
+    name: "React 18 + Next.js"
+    applies_to_projects:
+      - future_react_project
+    skills:
+      - react-testing-library                # (future)
+      - next-ssr-patterns                    # (future)
+    version: "React 18"
+    status: planned
+
+  # Mobile Stack: React Native
+  react-native-074:
+    name: "React Native 0.74 + TypeScript"
+    applies_to_projects:
+      - gj-opsomn002
+    applies_to_systems:
+      - gj-app
+    skills:
+      - mobile-rn-patterns                   # (exists: .claude/skills/mobile-rn-conventions)
+      - mobile-navigation-stack              # (future)
+      - mobile-native-modules                # (future)
+    version: "0.74.1"
+    status: active
+
+# ============================================================================
+# LAYER 3: GENERIC ENGINEERING SKILLS (никогда не меняются)
+# ============================================================================
+
+generic:
+  description: "Universal skills applicable to ALL projects and ALL stacks"
+
+  skills:
+    # Code Review & Quality
+    gj-reviewer:
+      description: "Independent code review with 8-point checklist"
+      applies_to_all: true
+      location: generic/gj-reviewer
+      status: active
+
+    # Development Methodology
+    test-driven-development:
+      description: "TDD: Red → Green → Refactor"
+      applies_to_all: true
+      location: generic/test-driven-development
+      status: active
+
+    data-driven-validation:
+      description: "Test code on real data before merge (Phase 3.5)"
+      applies_to_all: true
+      location: generic/data-driven-validation
+      status: active
+
+    # Problem Solving
+    systematic-debugging:
+      description: "Debugging workflow: hypothesis → test → validate"
+      applies_to_all: true
+      location: generic/systematic-debugging
+      status: active
+
+    # Performance & Scalability
+    performance-optimization:
+      description: "Identify and fix performance issues (N+1, caching, etc)"
+      applies_to_all: true
+      location: generic/performance-optimization
+      status: active
+
+    # Security
+    security-best-practices:
+      description: "Security checklist: XSS, SQL injection, CSRF, etc"
+      applies_to_all: true
+      location: generic/security-best-practices
+      status: active
+
+    # Documentation
+    documentation-standards:
+      description: "Code docs, API docs, README structure"
+      applies_to_all: true
+      location: generic/documentation-standards
+      status: active
+
+# ============================================================================
+# LOAD PROFILES (готовые комбинации для разных ролей)
+# ============================================================================
+
+profiles:
+  # Backend Engineer на OPSOMN002
+  backend-opsomn002:
+    description: "Backend engineer working on OPSOMN002 project"
+    project: gj-opsomn002
+    stacks:
+      - php-swoole
+      - java-spring-boot
+    generic: all
+    agents:
+      - ensi-backend-engineer
+      - oms-java-engineer
+
+  # Frontend Engineer на OPSOMN002
+  frontend-opsomn002:
+    description: "Frontend engineer working on OPSOMN002 project"
+    project: gj-opsomn002
+    stacks:
+      - angular-20
+    generic: all
+    agents:
+      - site-engineer
+
+  # Mobile Engineer на OPSOMN002
+  mobile-opsomn002:
+    description: "Mobile engineer working on OPSOMN002 project"
+    project: gj-opsomn002
+    stacks:
+      - react-native-074
+    generic: all
+    agents:
+      - mobile-engineer
+
+  # Architect (все стеки + все проекты)
+  architect-all:
+    description: "Architect: needs all stacks and all projects"
+    projects:
+      - gj-opsomn002
+      - gj-beauty
+    stacks:
+      - php-swoole
+      - java-spring-boot
+      - go-services
+      - dotnet-10
+      - angular-20
+      - react-native-074
+    generic: all
+    agents:
+      - architect
+      - corporate-architect
+
+  # Reviewer (только generic + проектные)
+  reviewer-all:
+    description: "Code reviewer: project knowledge + generic skills"
+    projects:
+      - gj-opsomn002
+    generic:
+      - gj-reviewer
+      - security-best-practices
+    agents:
+      - gj-reviewer
+
+# ============================================================================
+# USAGE EXAMPLES
+# ============================================================================
+
+# CLI Usage:
+#
+# Load все скилы для проекта:
+#   $ claude-skills load --project gj-opsomn002
+#   → Загружает:
+#     - project/gj-opsomn002/*
+#     - stack/php-swoole/*
+#     - stack/angular-20/*
+#     - stack/java-spring-boot/*
+#     - stack/dotnet-10/*
+#     - generic/*
+#
+# Load скилы для стека:
+#   $ claude-skills load --stack angular-20
+#   → Загружает:
+#     - stack/angular-20/*
+#     - generic/*
+#
+# Load профиль:
+#   $ claude-skills load --profile backend-opsomn002
+#   → Загружает все скилы для backend engineer на OPSOMN002
+#
+# Load конкретные скилы:
+#   $ claude-skills load gj-task-docs gj-reviewer site-angular-testing
+#
+# List все скилы:
+#   $ claude-skills list
+#
+# List скилы для проекта:
+#   $ claude-skills list --project gj-opsomn002
+#
+# List скилы по слоям:
+#   $ claude-skills list --layer project
+#   $ claude-skills list --layer stack
+#   $ claude-skills list --layer generic
+
+# ============================================================================
+# NOTES FOR IMPLEMENTATION
+# ============================================================================
+
+# TODO (Phase 1):
+# - [ ] Implement claude-skills CLI tool
+# - [ ] Create ProfileLoader in agents
+# - [ ] Update .claude/agents/ to use profiles
+# - [ ] Test load profiles for all agent types
+#
+# TODO (Phase 2):
+# - [ ] Migrate all existing skills to new structure
+# - [ ] Update skill dependencies
+# - [ ] Add version management for stacks
+#
+# TODO (Phase 3):
+# - [ ] Auto-suggest skills based on codebase changes
+# - [ ] Load-balance based on agent capabilities
+# - [ ] Performance optimization for loading
