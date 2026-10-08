@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Claude Skills CLI - Discover and manage orchestration skills (no external deps)"""
+"""Claude Skills CLI - Discover and manage orchestration skills (3-layer structure)"""
 
 import os
 import sys
 import argparse
-import json
 from pathlib import Path
 from typing import List, Dict, Optional
 
@@ -12,48 +11,39 @@ class SkillsCLI:
     def __init__(self):
         self.root = Path.cwd()
         self.skills_dir = self.root / ".claude" / "skills"
+        self.layers = {
+            "project": self.skills_dir / "project",
+            "stack": self.skills_dir / "stack", 
+            "generic": self.skills_dir / "generic",
+        }
         self.skills_index = self._build_index()
     
     def _build_index(self) -> Dict:
-        """Build index of all available skills"""
+        """Build index from 3-layer structure"""
         index = {}
         
-        if not self.skills_dir.exists():
-            return index
-        
-        # Scan all .md files
-        for skill_file in sorted(self.skills_dir.glob("*.md")):
-            skill_name = skill_file.stem
-            
-            # Skip special files
-            if skill_name in ["SKILLS-TAXONOMY", "skills-registry", "README"]:
+        for layer_name, layer_path in self.layers.items():
+            if not layer_path.exists():
                 continue
             
-            layer = self._determine_layer(skill_name)
-            platform = self._determine_platform(skill_name)
-            
-            index[skill_name] = {
-                "name": skill_name,
-                "file": str(skill_file),
-                "layer": layer,
-                "platform": platform,
-                "description": self._extract_description(skill_file),
-            }
+            for skill_file in sorted(layer_path.glob("*.md")):
+                skill_name = skill_file.stem
+                platform = self._determine_platform(skill_name)
+                
+                index[skill_name] = {
+                    "name": skill_name,
+                    "file": str(skill_file),
+                    "layer": layer_name,
+                    "platform": platform,
+                    "description": self._extract_description(skill_file),
+                }
         
         return index
-    
-    def _determine_layer(self, skill_name: str) -> str:
-        if skill_name.startswith("develop-"):
-            return "stack"
-        elif skill_name.startswith("pattern-"):
-            return "generic"
-        else:
-            return "project"
     
     def _determine_platform(self, skill_name: str) -> str:
         platforms = {
             "ensi": "ENSI",
-            "oms": "OMS", 
+            "oms": "OMS",
             "site": "Site",
             "mobile": "Mobile",
             "integration": "Integration",
@@ -64,7 +54,6 @@ class SkillsCLI:
         for key, platform in platforms.items():
             if key in skill_name:
                 return platform
-        
         return "Generic"
     
     def _extract_description(self, skill_file: Path) -> str:
@@ -79,56 +68,47 @@ class SkillsCLI:
         return ""
     
     def cmd_load(self, project: str, verbose: bool = False):
+        """Load skills for a project"""
         print(f"📦 Loading skills for project: {project}")
         print()
         
-        project_skills = self._get_layer_skills("project", project)
-        stack_skills = self._get_layer_skills("stack")
-        generic_skills = self._get_layer_skills("generic")
-        
         all_skills = []
         
+        # Load project-specific
+        project_skills = [s for n, s in self.skills_index.items() 
+                         if s["layer"] == "project" and project.lower() in n.lower()]
         if project_skills:
             print("🔹 PROJECT SKILLS")
             for skill in project_skills:
-                print(f"  ✓ {skill}")
+                print(f"  ✓ {skill['name']}")
                 all_skills.append(skill)
             print()
         
+        # Load stack
+        stack_skills = [s for n, s in self.skills_index.items() if s["layer"] == "stack"]
         if stack_skills:
             print("🔹 STACK SKILLS")
             for skill in stack_skills[:5]:
-                print(f"  ✓ {skill}")
+                print(f"  ✓ {skill['name']}")
                 all_skills.append(skill)
             if len(stack_skills) > 5:
                 print(f"  ... and {len(stack_skills) - 5} more")
             print()
         
+        # Load generic
+        generic_skills = [s for n, s in self.skills_index.items() if s["layer"] == "generic"]
         if generic_skills:
             print("🔹 GENERIC SKILLS")
             for skill in generic_skills:
-                print(f"  ✓ {skill}")
+                print(f"  ✓ {skill['name']}")
                 all_skills.append(skill)
             print()
         
         print(f"✅ Loaded {len(all_skills)} skills for {project}")
         return True
     
-    def _get_layer_skills(self, layer: str, project: str = None) -> List[str]:
-        skills = []
-        
-        if layer == "project" and project:
-            for name, info in self.skills_index.items():
-                if info["layer"] == "project" and project.lower() in name.lower():
-                    skills.append(name)
-        else:
-            for name, info in self.skills_index.items():
-                if info["layer"] == layer:
-                    skills.append(name)
-        
-        return sorted(skills)
-    
     def cmd_list(self, layer: Optional[str] = None, platform: Optional[str] = None):
+        """List available skills"""
         skills = self.skills_index
         
         if layer:
@@ -163,6 +143,7 @@ class SkillsCLI:
             print()
     
     def cmd_show(self, skill_name: str):
+        """Show skill details"""
         if skill_name not in self.skills_index:
             print(f"❌ Skill not found: {skill_name}")
             return False
@@ -183,6 +164,7 @@ class SkillsCLI:
         return True
     
     def cmd_search(self, keyword: str):
+        """Search for skills"""
         results = []
         keyword_lower = keyword.lower()
         
@@ -202,23 +184,30 @@ class SkillsCLI:
             print(f"    Layer: {info['layer']} | Platform: {info['platform']}")
     
     def cmd_validate(self):
-        print("✓ Validating skills...")
+        """Validate skills registry"""
+        print("✓ Validating 3-layer structure...")
         print()
-        print(f"✅ {len(self.skills_index)} skills found")
         
         by_layer = {}
         for info in self.skills_index.values():
             l = info["layer"]
             by_layer[l] = by_layer.get(l, 0) + 1
         
+        print(f"✅ {len(self.skills_index)} skills found")
         for layer in ["project", "stack", "generic"]:
             if layer in by_layer:
                 print(f"   {layer.upper()}: {by_layer[layer]}")
         
+        # Check directories exist
+        for layer, path in self.layers.items():
+            if path.exists():
+                count = len(list(path.glob("*.md")))
+                print(f"   📁 {layer}/: {count} files")
+        
         return True
 
 def main():
-    parser = argparse.ArgumentParser(description="Claude Skills CLI")
+    parser = argparse.ArgumentParser(description="Claude Skills CLI (3-layer)")
     subparsers = parser.add_subparsers(dest="command")
     
     load_p = subparsers.add_parser("load")
