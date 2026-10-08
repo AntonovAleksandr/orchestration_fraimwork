@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skills Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #1e40af;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-700: #374151;
+            --gray-900: #111827;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--gray-900);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        input, select {
+            padding: 10px 15px;
+            border: 2px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 1em;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: var(--gray-50);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: var(--gray-700);
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 3fr;
+            gap: 20px;
+        }
+
+        .sidebar {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 15px;
+            color: var(--primary);
+            font-size: 1.1em;
+        }
+
+        .filter-group {
+            margin-bottom: 20px;
+        }
+
+        .filter-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+            color: var(--gray-900);
+        }
+
+        .filter-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .filter-option:hover {
+            background: var(--gray-100);
+        }
+
+        .filter-option input[type="checkbox"] {
+            cursor: pointer;
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .skill-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+            border-left: 4px solid var(--gray-200);
+        }
+
+        .skill-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .skill-card.layer-project {
+            border-left-color: #f59e0b;
+        }
+
+        .skill-card.layer-stack {
+            border-left-color: #8b5cf6;
+        }
+
+        .skill-card.layer-generic {
+            border-left-color: #10b981;
+        }
+
+        .skill-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+
+        .skill-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--gray-900);
+            word-break: break-word;
+        }
+
+        .skill-badges {
+            display: flex;
+            gap: 8px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge.layer {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .badge.platform {
+            background: #dbeafe;
+            color: #0c4a6e;
+        }
+
+        .skill-description {
+            color: var(--gray-700);
+            line-height: 1.5;
+            margin-bottom: 12px;
+            font-size: 0.95em;
+        }
+
+        .skill-footer {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--gray-200);
+            font-size: 0.85em;
+            color: var(--gray-600);
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray-700);
+            grid-column: 1 / -1;
+        }
+
+        .no-results p {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 1024px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .controls {
+                flex-direction: column;
+            }
+
+            input, select {
+                min-width: 100%;
+            }
+
+            .skills-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .skill-card.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .skill-card.active .skill-name,
+        .skill-card.active .skill-description,
+        .skill-card.active .skill-footer {
+            color: white;
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            padding: 30px 20px;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Skills Dashboard</h1>
+            <p>Discover and manage orchestration framework skills (3-layer architecture)</p>
+
+            <div class="controls">
+                <input type="text" id="search" placeholder="Search skills...">
+                <select id="layerFilter">
+                    <option value="">All Layers</option>
+                    <option value="project">Project Skills</option>
+                    <option value="stack">Stack Skills</option>
+                    <option value="generic">Generic Skills</option>
+                </select>
+                <select id="platformFilter">
+                    <option value="">All Platforms</option>
+                    <option value="ENSI">ENSI</option>
+                    <option value="OMS">OMS</option>
+                    <option value="Site">Site</option>
+                    <option value="Mobile">Mobile</option>
+                    <option value="Integration">Integration</option>
+                    <option value="Gloria OTS">Gloria OTS</option>
+                    <option value="Go">Go</option>
+                    <option value="Generic">Generic</option>
+                </select>
+            </div>
+
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-label">Total Skills</div>
+                    <div class="stat-value" id="totalCount">26</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Project</div>
+                    <div class="stat-value" id="projectCount">5</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Stack</div>
+                    <div class="stat-value" id="stackCount">11</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Generic</div>
+                    <div class="stat-value" id="genericCount">10</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="sidebar">
+                <h3>Quick Filters</h3>
+
+                <div class="filter-group">
+                    <div class="filter-label">Layers</div>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <input type="checkbox" class="layer-check" value="project" checked>
+                            <span>Project (5)</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="layer-check" value="stack" checked>
+                            <span>Stack (11)</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="layer-check" value="generic" checked>
+                            <span>Generic (10)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <div class="filter-label">Platforms</div>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <input type="checkbox" class="platform-check" value="ENSI" checked>
+                            <span>ENSI</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="platform-check" value="Site" checked>
+                            <span>Site</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="platform-check" value="Mobile" checked>
+                            <span>Mobile</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="platform-check" value="OMS" checked>
+                            <span>OMS</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="platform-check" value="Generic" checked>
+                            <span>Generic</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="skills-grid" id="skillsGrid">
+                    <!-- Skills will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            🎯 Orchestration Framework v1.0 | Phase 2 Production-Ready
+        </footer>
+    </div>
+
+    <script>
+        // Sample skills data (will be dynamically loaded in real implementation)
+        const skillsData = [
+            {
+                name: "pattern-development-ensi",
+                layer: "generic",
+                platform: "ENSI",
+                description: "ENSI-specific development patterns and best practices"
+            },
+            {
+                name: "pattern-development-flow",
+                layer: "generic",
+                platform: "Generic",
+                description: "Standard development workflow patterns"
+            },
+            {
+                name: "pattern-review-standard",
+                layer: "generic",
+                platform: "Generic",
+                description: "8-point code review checklist and standards"
+            },
+            {
+                name: "develop-site-ui",
+                layer: "stack",
+                platform: "Site",
+                description: "Angular component development patterns"
+            },
+            {
+                name: "develop-site-state",
+                layer: "stack",
+                platform: "Site",
+                description: "NgRx state management patterns"
+            },
+            {
+                name: "develop-site-routing",
+                layer: "stack",
+                platform: "Site",
+                description: "Angular routing patterns and conventions"
+            },
+            {
+                name: "develop-site-ssr",
+                layer: "stack",
+                platform: "Site",
+                description: "NestJS SSR server-side rendering patterns"
+            },
+            {
+                name: "develop-site-i18n",
+                layer: "stack",
+                platform: "Site",
+                description: "Transloco i18n internationalization"
+            },
+            {
+                name: "develop-site-testing",
+                layer: "stack",
+                platform: "Site",
+                description: "Jest and Cypress testing patterns"
+            },
+            {
+                name: "develop-gloriaots-applications",
+                layer: "stack",
+                platform: "Gloria OTS",
+                description: "Application layer patterns for Gloria OTS"
+            },
+            {
+                name: "develop-gloriaots-database",
+                layer: "stack",
+                platform: "Gloria OTS",
+                description: "Entity Framework and database patterns"
+            },
+            {
+                name: "develop-gloriaots-infrastructure",
+                layer: "stack",
+                platform: "Gloria OTS",
+                description: "Infrastructure and dependency injection"
+            },
+            {
+                name: "develop-gloriaots-testing",
+                layer: "stack",
+                platform: "Gloria OTS",
+                description: "Unit and integration testing patterns"
+            },
+            {
+                name: "develop-gloriaots-workers",
+                layer: "stack",
+                platform: "Gloria OTS",
+                description: "Background worker and async job patterns"
+            },
+            {
+                name: "pattern-development-mobile",
+                layer: "generic",
+                platform: "Mobile",
+                description: "React Native development patterns"
+            },
+            {
+                name: "pattern-development-oms",
+                layer: "generic",
+                platform: "OMS",
+                description: "OMS Java Spring Boot patterns"
+            },
+            {
+                name: "pattern-development-integration",
+                layer: "generic",
+                platform: "Integration",
+                description: "Integration Service patterns"
+            },
+            {
+                name: "pattern-development-go",
+                layer: "generic",
+                platform: "Go",
+                description: "Go service development patterns"
+            },
+            {
+                name: "pattern-research-discovery",
+                layer: "generic",
+                platform: "Generic",
+                description: "Research and discovery methodology"
+            },
+            {
+                name: "pattern-analysis-synthesis",
+                layer: "generic",
+                platform: "Generic",
+                description: "Analysis and synthesis patterns"
+            },
+            {
+                name: "pattern-development-gloriaots",
+                layer: "generic",
+                platform: "Gloria OTS",
+                description: ".NET Gloria OTS development patterns"
+            },
+            {
+                name: "gj-reviewer",
+                layer: "project",
+                platform: "Generic",
+                description: "Gloria Jeans code review guidelines"
+            },
+            {
+                name: "test-driven-development",
+                layer: "project",
+                platform: "Generic",
+                description: "Test-driven development workflow"
+            },
+            {
+                name: "data-driven-validation",
+                layer: "project",
+                platform: "Generic",
+                description: "Data-driven validation and testing"
+            },
+            {
+                name: "systematic-debugging",
+                layer: "project",
+                platform: "Generic",
+                description: "Systematic debugging methodology"
+            },
+            {
+                name: "performance-optimization",
+                layer: "project",
+                platform: "Generic",
+                description: "Performance optimization techniques"
+            }
+        ];
+
+        let filteredSkills = [...skillsData];
+
+        function renderSkills() {
+            const grid = document.getElementById('skillsGrid');
+
+            if (filteredSkills.length === 0) {
+                grid.innerHTML = '<div class="no-results"><p>No skills found</p><p>Try adjusting your filters</p></div>';
+                return;
+            }
+
+            grid.innerHTML = filteredSkills.map(skill => `
+                <div class="skill-card layer-${skill.layer}">
+                    <div class="skill-header">
+                        <div class="skill-name">${skill.name}</div>
+                        <div class="skill-badges">
+                            <span class="badge layer">${skill.layer}</span>
+                            <span class="badge platform">${skill.platform}</span>
+                        </div>
+                    </div>
+                    <div class="skill-description">${skill.description}</div>
+                    <div class="skill-footer">
+                        <span>Layer: ${skill.layer}</span>
+                        <span>•</span>
+                        <span>Platform: ${skill.platform}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('search').value.toLowerCase();
+            const layerFilter = document.getElementById('layerFilter').value;
+            const platformFilter = document.getElementById('platformFilter').value;
+
+            const selectedLayers = new Set();
+            const selectedPlatforms = new Set();
+
+            document.querySelectorAll('.layer-check:checked').forEach(cb => {
+                selectedLayers.add(cb.value);
+            });
+
+            document.querySelectorAll('.platform-check:checked').forEach(cb => {
+                selectedPlatforms.add(cb.value);
+            });
+
+            filteredSkills = skillsData.filter(skill => {
+                const matchesSearch = skill.name.toLowerCase().includes(searchTerm) ||
+                                    skill.description.toLowerCase().includes(searchTerm);
+                const matchesLayer = layerFilter === '' || skill.layer === layerFilter;
+                const matchesPlatform = platformFilter === '' || skill.platform === platformFilter;
+                const inSelectedLayers = selectedLayers.size === 0 || selectedLayers.has(skill.layer);
+                const inSelectedPlatforms = selectedPlatforms.size === 0 || selectedPlatforms.has(skill.platform);
+
+                return matchesSearch && matchesLayer && matchesPlatform && inSelectedLayers && inSelectedPlatforms;
+            });
+
+            renderSkills();
+        }
+
+        // Event listeners
+        document.getElementById('search').addEventListener('input', applyFilters);
+        document.getElementById('layerFilter').addEventListener('change', applyFilters);
+        document.getElementById('platformFilter').addEventListener('change', applyFilters);
+
+        document.querySelectorAll('.layer-check, .platform-check').forEach(cb => {
+            cb.addEventListener('change', applyFilters);
+        });
+
+        // Initial render
+        renderSkills();
+    </script>
+</body>
+</html>
