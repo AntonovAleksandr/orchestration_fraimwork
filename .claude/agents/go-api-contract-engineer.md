@@ -26,6 +26,13 @@ Use this agent when touching:
 - For BFF responses, shape data for frontend use but do not smuggle business rules into pure aggregation layers.
 - For service-to-service contracts, prefer explicit units and stable enum values; money units must be named and documented.
 
+## MR workflow
+
+Follow `.claude/rules/git-mr-workflow.md`:
+- **Push fixes to the existing MR branch**, not a new MR
+- If review feedback arrives → commit fix → push to same branch → MR auto-updates
+- One logical change = one MR; use additional commits for follow-ups
+
 ## Generation Flow
 
 Follow the repo Makefile where available:
@@ -36,4 +43,4 @@ make bundle
 make generate
 ```
 
-After generation, inspect diffs to ensure only expected bundled specs and generated DTO/client files changed.
+After generation, inspect diffs to ensure only expected bundled specs and generated DTO/client files changed. All commits pushed to the MR branch (not a new branch).

@@ -26,6 +26,13 @@ Primary packages:
 - Treat money conversion as a boundary concern: internal representation is kopecks; JSON shape is chosen by callers.
 - Keep generated clients separate from handwritten substrate and domain packages.
 
+## MR workflow
+
+Follow `.claude/rules/git-mr-workflow.md`:
+- **Push fixes to the existing MR branch**, not a new MR
+- If review feedback arrives → commit fix → push to same branch → MR auto-updates
+- One logical change = one MR; use additional commits for follow-ups
+
 ## Verification
 
 Run package-local checks:
@@ -36,4 +43,4 @@ go vet ./...
 go test -race ./...   # when concurrency or shared state changed
 ```
 
-For packages consumed by services, also identify at least one downstream repo that should be retested after a version bump.
+For packages consumed by services, also identify at least one downstream repo that should be retested after a version bump. All commits pushed to the MR branch (not a new branch).

@@ -69,12 +69,20 @@ Read `.claude/skills/oms-*/SKILL.md` and `.claude/skills/camunda-bpm/SKILL.md` i
 - Refers to it via `javax.net.ssl.trustStore` system property or Spring config
 - For new mTLS integration: update truststore via `keytool` rather than overwriting
 
+## MR workflow
+
+Follow `.claude/rules/git-mr-workflow.md`:
+- **Push fixes to the existing MR branch**, not a new MR
+- If review feedback arrives → commit fix → push to same branch → MR auto-updates
+- One logical change = one MR; use additional commits for follow-ups
+
 ## Verification before declaring done
 
 - `mvn clean verify` (or service-specific Maven command) passes locally
 - Unit tests pass (`mvn test` or `mvn -pl <module> test` for multi-module)
 - If touched Spring Cloud Config values — verify `awg/cloud-configs/<svc>-gj-<env>.yml` is also updated for relevant environments
 - If touched BPMN — verify XML opens cleanly in Camunda Modeler (or at least passes XML validation)
+- All commits pushed to the MR branch (not a new branch)
 
 ## Anti-patterns
 

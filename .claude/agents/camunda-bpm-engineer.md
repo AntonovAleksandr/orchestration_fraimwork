@@ -98,12 +98,20 @@ Use Cockpit (web UI), but for code-level analysis:
 - **Ignoring failures** — `handleFailure(..., 0, 0)` discards retries. Usually you want graceful retry with exponential backoff.
 - **Modifying BPMN without versioning thought** — running instances keep their old definition; new ones use the new.
 
+## MR workflow
+
+Follow `.claude/rules/git-mr-workflow.md`:
+- **Push fixes to the existing MR branch**, not a new MR
+- If review feedback arrives → commit fix → push to same branch → MR auto-updates
+- One logical change = one MR; use additional commits for follow-ups
+
 ## Verification before declaring done
 
 - BPMN opens cleanly in Camunda Modeler (or at least XML-valid)
 - Worker compiles + tests pass
 - If you changed a topic name in BPMN, verify the worker subscribes to the new name
 - If you changed `lockDuration` — verify it makes sense for the worker's expected runtime
+- All commits pushed to the MR branch (not a new branch)
 
 ## When to escalate
 

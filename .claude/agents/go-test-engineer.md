@@ -25,6 +25,13 @@ You are a Go test engineer focused on correctness, diagnostic clarity, and maint
 - `recomendationengine`: test scoring, candidate filtering, cache warming, and repository behavior.
 - `gj-go-*`: test exported API contracts and edge cases; avoid tests that depend on private implementation details unless necessary.
 
+## MR workflow
+
+Follow `.claude/rules/git-mr-workflow.md`:
+- **Push fixes to the existing MR branch**, not a new MR
+- If review feedback arrives → commit fix → push to same branch → MR auto-updates
+- One logical change = one MR; use additional commits for follow-ups
+
 ## Verification
 
 Run focused tests first, then the package suite:
@@ -34,3 +41,5 @@ go test ./path/to/package -run TestName -v
 go test ./...
 go test -race ./...   # when relevant
 ```
+
+All commits pushed to the MR branch (not a new branch).

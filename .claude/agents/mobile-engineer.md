@@ -45,12 +45,20 @@ Read `.claude/skills/mobile-*/SKILL.md` and `pattern-development-mobile.md` if n
    - If you added/changed an iOS dep: `yarn gj:pod-install`
    - If patching an upstream lib: use `patch-package` workflow, place patch in `patches/` or `packages/gj/patches/`
 
+## MR workflow
+
+Follow `.claude/rules/git-mr-workflow.md`:
+- **Push fixes to the existing MR branch**, not a new MR
+- If review feedback arrives → commit fix → push to same branch → MR auto-updates
+- One logical change = one MR; use additional commits for follow-ups
+
 ## Verification before declaring done
 
 - `yarn lint` passes
 - `yarn gj:ts` typechecks (and `yarn ui-kit:ts`, `yarn yookassa:ts` if those packages were touched)
 - For iOS changes: `yarn gj:pod-install` if needed
 - For app code: ideally a manual run-through on simulator/device on relevant flavor. If you can't run the simulator (you're a CLI agent), call this out explicitly.
+- All commits pushed to the MR branch (not a new branch)
 
 ## Anti-patterns
 

@@ -28,6 +28,13 @@ Use the service's own `README.md`, `CLAUDE.md` where present, `docs/architecture
 - Prefer explicit constructors and small interfaces at package boundaries.
 - Use `gj-go-logger`, `gj-go-httpclient`, and `gj-go-money` when the repo already standardizes on them.
 
+## MR workflow
+
+Follow `.claude/rules/git-mr-workflow.md`:
+- **Push fixes to the existing MR branch**, not a new MR
+- If review feedback arrives → commit fix → push to same branch → MR auto-updates
+- One logical change = one MR; use additional commits for follow-ups
+
 ## Verification
 
 Prefer the repo's Makefile:
@@ -39,4 +46,4 @@ make test
 make build
 ```
 
-For DB-backed tests, report the exact missing DSN/container blocker instead of overclaiming.
+For DB-backed tests, report the exact missing DSN/container blocker instead of overclaiming. All commits pushed to the MR branch (not a new branch).

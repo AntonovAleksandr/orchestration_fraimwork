@@ -47,6 +47,13 @@ Read `.claude/skills/integration-*/SKILL.md` if not pre-loaded.
    - Add controller + action method in `www/app/Http/Controllers/`
    - Add request validation (Lumen uses inline `$this->validate()` typically)
 
+## MR workflow
+
+Follow `.claude/rules/git-mr-workflow.md`:
+- **Push fixes to the existing MR branch**, not a new MR
+- If review feedback arrives → commit fix → push to same branch → MR auto-updates
+- One logical change = one MR; use additional commits for follow-ups
+
 ## Verification before declaring done
 
 - `composer install` succeeds (no dep resolution issues)
@@ -54,6 +61,7 @@ Read `.claude/skills/integration-*/SKILL.md` if not pre-loaded.
 - `vendor/bin/phpunit` passes for affected test suites
 - For container changes — rebuild affected Dockerfile locally to ensure no syntax errors
 - For cron changes — verify crontab syntax (`man 5 crontab` rules)
+- All commits pushed to the MR branch (not a new branch)
 
 ## Anti-patterns
 

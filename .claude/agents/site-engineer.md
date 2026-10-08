@@ -56,6 +56,13 @@ Read `.claude/skills/site-*/SKILL.md` if not pre-loaded.
 7. **Tests**: add `*.spec.ts` next to source for unit. For e2e, add to `apps/site-<locale>-e2e/`.
 8. **Feature flags**: use GrowthBook client when gating new features.
 
+## MR workflow
+
+Follow `.claude/rules/git-mr-workflow.md`:
+- **Push fixes to the existing MR branch**, not a new MR
+- If review feedback arrives → commit fix → push to same branch → MR auto-updates
+- One logical change = one MR; use additional commits for follow-ups
+
 ## Verification before declaring done
 
 - `npm run lint:all` (or scoped: `nx lint <project>`) passes
@@ -64,6 +71,7 @@ Read `.claude/skills/site-*/SKILL.md` if not pre-loaded.
 - `nx build <project>` succeeds for affected projects (try `--configuration development` first; full prod build is slow)
 - If SSR-relevant: `nx run site-ru:serve-ssr` boots without errors
 - If Storybook-relevant: `npm run storybook:ui` or `:shared` boots
+- All commits pushed to the MR branch (not a new branch)
 
 ## Anti-patterns
 

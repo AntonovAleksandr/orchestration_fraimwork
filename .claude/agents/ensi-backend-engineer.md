@@ -36,6 +36,14 @@ If you don't see the skill loaded, READ its `SKILL.md` from `.claude/skills/ensi
 - Forgetting OpenAPI updates — frontend / inter-service clients break silently
 - Skipping meta endpoint when adding a searchable entity — frontend will lack filters
 
+## MR workflow
+
+Follow `.claude/rules/git-mr-workflow.md`:
+- **Push fixes to the existing MR branch**, not a new MR
+- If review feedback arrives → commit fix → push to same branch → MR auto-updates
+- One logical change = one MR; use additional commits for follow-ups
+- Before pushing, verify: `git checkout feat/xxx && git push origin feat/xxx`
+
 ## Verification before declaring done
 
 - composer lint passes (`elc -w gj -c <svc> exec composer lint`)
@@ -43,6 +51,7 @@ If you don't see the skill loaded, READ its `SKILL.md` from `.claude/skills/ensi
 - OpenAPI spec re-generated and committed
 - If you touched models — migration runs cleanly: `elc -w gj -c <svc> exec php artisan migrate`
 - For any new endpoint, mention how it'll be consumed (which BFF / client)
+- All commits pushed to the MR branch (not a new branch)
 
 ## When to escalate
 
