@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Developer Guide - Phase 2 Framework</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #f0f1f3;
+            --text-primary: #0a0e27;
+            --text-secondary: #565d75;
+            --text-tertiary: #8a92a8;
+            --border: #e5e8f0;
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #0a0e27;
+                --bg-secondary: #111630;
+                --bg-tertiary: #1a1f3a;
+                --text-primary: #f5f5f7;
+                --text-secondary: #a8afc4;
+                --text-tertiary: #6b7280;
+                --border: #2d3142;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        header {
+            margin-bottom: 48px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 32px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 40px;
+            overflow-x: auto;
+            padding-bottom: 16px;
+        }
+
+        .tab-button {
+            padding: 10px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 3px solid transparent;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+
+        .tab-button:hover {
+            color: var(--text-primary);
+        }
+
+        .tab-button.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        h2 {
+            font-size: 1.875rem;
+            font-weight: 600;
+            margin: 32px 0 16px 0;
+            letter-spacing: -0.01em;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 24px 0 12px 0;
+        }
+
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            line-height: 1.8;
+        }
+
+        code {
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+            background: var(--bg-secondary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--accent);
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            margin: 16px 0;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        ul, ol {
+            margin: 16px 0;
+            padding-left: 24px;
+        }
+
+        li {
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            line-height: 1.8;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 16px 0;
+        }
+
+        .highlight {
+            background: #fffbeb;
+            border-left: 4px solid var(--warning);
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+            color: var(--text-primary);
+        }
+
+        .success {
+            background: #f0fdf4;
+            border-left: 4px solid var(--success);
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+            color: var(--text-primary);
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 16px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+            text-decoration: none;
+            font-size: 0.95rem;
+        }
+
+        .button:hover {
+            background: var(--accent-hover);
+        }
+
+        footer {
+            text-align: center;
+            color: var(--text-tertiary);
+            padding: 40px 20px;
+            margin-top: 60px;
+            border-top: 1px solid var(--border);
+            font-size: 0.875rem;
+        }
+
+        .faq-item {
+            margin-bottom: 24px;
+        }
+
+        .faq-question {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            cursor: pointer;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .faq-question:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .faq-answer {
+            padding: 12px 16px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.875rem;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+
+            .tabs {
+                gap: 4px;
+            }
+
+            .tab-button {
+                padding: 8px 12px;
+                font-size: 0.875rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Developer Guide</h1>
+            <p class="subtitle">Phase 2 Orchestration Framework — Getting started and best practices</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="switchTab(event, 'quickstart')">Quick Start</button>
+            <button class="tab-button" onclick="switchTab(event, 'phases')">Phases</button>
+            <button class="tab-button" onclick="switchTab(event, 'skills')">Skills</button>
+            <button class="tab-button" onclick="switchTab(event, 'implementation')">Implementation</button>
+            <button class="tab-button" onclick="switchTab(event, 'resources')">Resources</button>
+            <button class="tab-button" onclick="switchTab(event, 'faq')">FAQ</button>
+        </div>
+
+        <!-- Quick Start -->
+        <div id="quickstart" class="tab-content active">
+            <h2>Quick Start</h2>
+
+            <h3>1. Clone and Install</h3>
+            <pre><code>git clone https://github.com/your-org/orchestration_framework.git
+cd orchestration_framework
+pip install -r requirements.txt</code></pre>
+
+            <h3>2. Load Skills</h3>
+            <pre><code>claude-skills load --project gj-opsomn002
+claude-skills list --layer project
+claude-skills search debugging</code></pre>
+
+            <h3>3. Launch Framework</h3>
+            <pre><code>orchestrate.sh task --name my-task --phase 1
+# In another terminal:
+orchestrate.sh watch my-task</code></pre>
+
+            <div class="success">
+                <strong>✓ You're ready!</strong> The framework is now running with Phase 2 hybrid orchestration.
+            </div>
+        </div>
+
+        <!-- Phases -->
+        <div id="phases" class="tab-content">
+            <h2>Phases Overview</h2>
+
+            <h3>Phase 1: Foundation (Aug 2026)</h3>
+            <p>Established core documentation, review patterns, and git hooks.</p>
+            <ul>
+                <li>Code review rules and style guides</li>
+                <li>Git workflow and MR conventions</li>
+                <li>Shell hook integration</li>
+            </ul>
+
+            <h3>Phase 2: Hybrid System (Oct 2026) ✅</h3>
+            <p><strong>Current phase — Production-ready.</strong></p>
+            <ul>
+                <li>Worker messaging (Python, atomic writes)</li>
+                <li>Async phase coordination</li>
+                <li>26 skills organized in 3 layers (project/stack/generic)</li>
+                <li>Skills CLI with full discovery</li>
+                <li>IDE adapters (Claude Code + Cursor)</li>
+            </ul>
+
+            <div class="card">
+                <strong>Phase 2 Score: 10/10</strong><br/>
+                All P0 blockers fixed. Production-ready.
+            </div>
+
+            <h3>Phase 3: Enterprise (Q4 2026) 🚀</h3>
+            <p>Planned for next quarter.</p>
+            <ul>
+                <li>Persistent state store</li>
+                <li>Autonomous worker orchestration</li>
+                <li>Cloud branch support</li>
+                <li>Full IDE ecosystem (VSCode, JetBrains)</li>
+            </ul>
+        </div>
+
+        <!-- Skills -->
+        <div id="skills" class="tab-content">
+            <h2>Skills Management</h2>
+
+            <h3>Understanding 3-Layer Architecture</h3>
+            <pre><code>.claude/skills/
+├── project/     (5 skills) — gj-specific: reviewer, TDD, debugging
+├── stack/      (11 skills) — platform-specific: develop-site-*, develop-oms-*
+└── generic/    (10 skills) — patterns: development-flow, review-standard</code></pre>
+
+            <h3>Available CLI Commands</h3>
+            <pre><code># Load skills for a project
+claude-skills load --project gj-opsomn002
+
+# List all skills by layer
+claude-skills list --layer project
+claude-skills list --layer stack
+claude-skills list --layer generic
+
+# Show details
+claude-skills show pattern-development-ensi
+
+# Search for skills
+claude-skills search debugging
+
+# Validate structure
+claude-skills validate</code></pre>
+
+            <h3>Using Skills in Agents</h3>
+            <p>Each agent prompt includes an "Available Skills" section that lists relevant skills. When working on a task:</p>
+            <ol>
+                <li>Check the agent's available skills section</li>
+                <li>Load the project skills: <code>claude-skills load --project your-project</code></li>
+                <li>Search for relevant patterns: <code>claude-skills search your-keyword</code></li>
+                <li>Reference skills in your prompts</li>
+            </ol>
+        </div>
+
+        <!-- Implementation -->
+        <div id="implementation" class="tab-content">
+            <h2>Implementation Guide</h2>
+
+            <h3>Worker Messaging Pattern</h3>
+            <p>Phase 2 uses atomic file-based messaging between workers:</p>
+            <pre><code>import os
+import fcntl
+import json
+from pathlib import Path
+
+def send_message(worker_id, phase, status):
+    msg_file = Path(f".tasks/{worker_id}/phase-{phase}.msg")
+    msg_file.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(msg_file, 'w') as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        json.dump({"status": status}, f)
+        fcntl.flock(f, fcntl.LOCK_UN)</code></pre>
+
+            <h3>Phase Coordination</h3>
+            <p>Phases run in parallel with data-driven validation:</p>
+            <pre><code>Phase 1: Research     → Phase 2: Analysis     → Phase 3: Synthesis
+         ↓                        ↓                          ↓
+      (1 hour)               (parallel 2h)              (1.5 hours)
+
+Validation gates between phases ensure data quality.</code></pre>
+
+            <h3>Risk Management</h3>
+            <p>6 identified risks in Phase 2 orchestration:</p>
+            <ol>
+                <li><strong>Race conditions:</strong> Mitigated by atomic writes</li>
+                <li><strong>Timeout cascades:</strong> Independent phase timeouts</li>
+                <li><strong>Resource exhaustion:</strong> Worker pool limits</li>
+                <li><strong>Validation gaps:</strong> Data-driven gates</li>
+                <li><strong>IDE incompatibility:</strong> Adapter pattern</li>
+                <li><strong>Skills discovery:</strong> CLI + web UI</li>
+            </ol>
+        </div>
+
+        <!-- Resources -->
+        <div id="resources" class="tab-content">
+            <h2>Resources & References</h2>
+
+            <h3>Core Documents</h3>
+            <ul>
+                <li><strong>PHASE2-QUICKSTART.md</strong> — Step-by-step setup guide</li>
+                <li><strong>PHASE2_AUDIT_REPORT.md</strong> — Complete audit findings</li>
+                <li><strong>PHASE2_COMPLETION_SUMMARY.md</strong> — Final status (10/10)</li>
+            </ul>
+
+            <h3>Dashboards</h3>
+            <ul>
+                <li><strong>Skills Dashboard</strong> — Browse all 26 skills by layer/platform</li>
+                <li><strong>Framework Control Panel</strong> — Phase status and component overview</li>
+            </ul>
+
+            <h3>External Links</h3>
+            <ul>
+                <li><a href="https://github.com/your-org/orchestration_framework" target="_blank">Framework on GitHub</a></li>
+                <li><a href="https://claude.com/claude-code" target="_blank">Claude Code Documentation</a></li>
+            </ul>
+
+            <h3>IDE Adapters</h3>
+            <ul>
+                <li><strong>Claude Code:</strong> Native support (built-in)</li>
+                <li><strong>Cursor:</strong> Symlink adapter in <code>.cursor/rules/</code></li>
+                <li><strong>VSCode/JetBrains:</strong> Planned for Phase 3</li>
+            </ul>
+        </div>
+
+        <!-- FAQ -->
+        <div id="faq" class="tab-content">
+            <h2>Frequently Asked Questions</h2>
+
+            <div class="faq-item">
+                <div class="faq-question">What is the orchestration framework?</div>
+                <div class="faq-answer">A hybrid multi-agent coordination system that combines async worker messaging with parallel phase execution. It enables complex workflows across multiple agents with data validation gates between phases.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">How do I run my first orchestration task?</div>
+                <div class="faq-answer">
+                    <code>orchestrate.sh task --name my-task --phase 1</code> starts a new task. Run <code>orchestrate.sh watch my-task</code> in another terminal to monitor progress.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">What are the 3 skill layers?</div>
+                <div class="faq-answer">
+                    <strong>Project:</strong> GJ-specific (gj-reviewer, TDD, debugging)<br/>
+                    <strong>Stack:</strong> Platform-specific (develop-site-ui, develop-oms-java)<br/>
+                    <strong>Generic:</strong> Universal patterns (pattern-development-flow, pattern-review-standard)
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">How do I discover available skills?</div>
+                <div class="faq-answer">
+                    Use the CLI: <code>claude-skills list</code><br/>
+                    Use the web dashboard: Skills Dashboard<br/>
+                    Check your agent's "Available Skills" section in its prompt
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">What if a phase times out?</div>
+                <div class="faq-answer">Each phase has an independent timeout (default 2 hours). If a phase times out, check the logs with <code>orchestrate.sh logs task-name phase-N</code> and retry the phase independently.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Can I use the framework on my own project?</div>
+                <div class="faq-answer">Yes! The framework is fully open-source and sanitized. Clone it from GitHub and follow PHASE2-QUICKSTART.md. It's designed to be reusable across projects.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Is Phase 2 production-ready?</div>
+                <div class="faq-answer">Yes, Phase 2 is at 10/10 status and ready for production. All P0 blockers are fixed. Phase 3 (enterprise features) is planned for Q4 2026.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">How does data validation between phases work?</div>
+                <div class="faq-answer">Each phase gate checks validation rules before advancing. If validation fails, the phase can retry or escalate. This prevents bad data from propagating downstream.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">What IDEs are supported?</div>
+                <div class="faq-answer">Currently: Claude Code (native) and Cursor (via symlink adapter). VSCode and JetBrains adapters are planned for Phase 3.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question">Can I contribute to the framework?</div>
+                <div class="faq-answer">Absolutely! The repository is open to contributions. Please follow the Phase 2 patterns documented here and open PRs with clear descriptions.</div>
+            </div>
+        </div>
+
+        <footer>
+            Phase 2 Framework — Production-Ready (10/10) · October 2026
+        </footer>
+    </div>
+
+    <script>
+        function switchTab(event, tabName) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            // Remove active class from all buttons
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
