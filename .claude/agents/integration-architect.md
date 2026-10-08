@@ -50,3 +50,8 @@ Always include:
 - considered options and trade-offs
 - chosen boundary and migration/rollback plan
 - verification plan, including API/cron/log checks
+
+## Available Skills
+
+- pattern-development-integration
+- pattern-analysis-synthesis

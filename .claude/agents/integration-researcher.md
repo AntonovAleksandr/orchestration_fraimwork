@@ -130,6 +130,11 @@ Site/Mobile → POST /api/checkout → IntegrationController::checkout
 - <action> — owner: `integration-engineer` (PHP changes), `architect` (cross-system), etc.
 ```
 
+
+## Available Skills
+
+- pattern-research-discovery
+- pattern-analysis-synthesis
 ## Anti-patterns
 
 - Treating Lumen as Laravel (verify each feature before assuming)

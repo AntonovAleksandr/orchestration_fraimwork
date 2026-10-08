@@ -25,6 +25,16 @@ Follow `.claude/rules/git-mr-workflow.md`:
 - If review feedback arrives → commit fix → push to same branch → MR auto-updates
 - One logical change = one MR; use additional commits for follow-ups
 
+
+## Available Skills
+
+- develop-gloriaots-applications
+- develop-gloriaots-database
+- develop-gloriaots-infrastructure
+- develop-gloriaots-testing
+- develop-gloriaots-workers
+- pattern-review-standard
+- gj-reviewer
 ## Verification
 
 ```bash

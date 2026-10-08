@@ -50,3 +50,9 @@ Always include:
 - migration phases and compatibility strategy
 - risks, rollback options, and unresolved stakeholder questions
 - explicit recommendation with rejected alternatives
+
+## Available Skills
+
+- gj-reviewer
+- test-driven-development
+- data-driven-validation

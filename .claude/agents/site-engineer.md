@@ -63,6 +63,18 @@ Follow `.claude/rules/git-mr-workflow.md`:
 - If review feedback arrives → commit fix → push to same branch → MR auto-updates
 - One logical change = one MR; use additional commits for follow-ups
 
+
+## Available Skills
+
+- develop-site-ui
+- develop-site-state
+- develop-site-routing
+- develop-site-ssr
+- develop-site-i18n
+- develop-site-testing
+- pattern-development-flow
+- pattern-review-standard
+- gj-reviewer
 ## Verification before declaring done
 
 - `npm run lint:all` (or scoped: `nx lint <project>`) passes

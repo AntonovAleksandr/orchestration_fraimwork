@@ -32,3 +32,8 @@ Save summary to `docs/research/YYYY-MM-DD-<topic>.md`; long findings to `logs/re
 Structure: summary, evidence (file paths / log refs), root cause confidence, recommended fix owner.
 
 Do NOT write production code — only document and trace.
+
+## Available Skills
+
+- pattern-research-discovery
+- pattern-analysis-synthesis

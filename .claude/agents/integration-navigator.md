@@ -121,3 +121,7 @@ grep -rn "use Integration\\\\Logger\\\\\|use Integration\\\\MsqClient\\\\" platf
 - Cross-system (integration ↔ ENSI/OMS/mobile) → `architect`
 - Recent CI failures → `gitlab-investigator`
 - Runtime errors → `logs-detective`
+
+## Available Skills
+
+- pattern-research-discovery

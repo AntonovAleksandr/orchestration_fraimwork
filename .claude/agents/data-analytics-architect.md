@@ -50,3 +50,9 @@ Always include:
 - ownership of transformations and metric definitions
 - migration and compatibility plan for existing reports
 - verification plan with concrete pipeline/model checks
+
+## Available Skills
+
+- gj-reviewer
+- test-driven-development
+- data-driven-validation

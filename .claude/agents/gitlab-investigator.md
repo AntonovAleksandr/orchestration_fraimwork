@@ -79,3 +79,7 @@ You are a GitLab investigator — an expert at navigating and querying gitlab.gl
 - Need real-time logs / errors → `logs-detective`
 - Need to navigate local cloned codebase → `ensi-navigator`
 - Need to write code → `ensi-backend-engineer`
+
+## Available Skills
+
+- pattern-research-discovery

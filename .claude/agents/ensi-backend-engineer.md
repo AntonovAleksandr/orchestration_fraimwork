@@ -44,6 +44,15 @@ Follow `.claude/rules/git-mr-workflow.md`:
 - One logical change = one MR; use additional commits for follow-ups
 - Before pushing, verify: `git checkout feat/xxx && git push origin feat/xxx`
 
+
+## Available Skills
+
+- pattern-development-ensi
+- pattern-development-flow
+- pattern-review-standard
+- gj-reviewer
+- test-driven-development
+- data-driven-validation
 ## Verification before declaring done
 
 - composer lint passes (`elc -w gj -c <svc> exec composer lint`)

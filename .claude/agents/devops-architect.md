@@ -49,3 +49,9 @@ Always include:
 - secrets/config/ingress/probe/resource impact
 - observability and incident-response requirements
 - verification plan using CI, GitLab, logs, and runtime checks
+
+## Available Skills
+
+- gj-reviewer
+- test-driven-development
+- data-driven-validation

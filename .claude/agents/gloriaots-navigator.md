@@ -47,3 +47,7 @@ OTS is downstream of OMS export and Integration clients. For cross-system flows,
 3. If `platform/gloriaots/gloriaots/` missing — use `gitlab_*` MCP on `gloriaots/gloriaots`.
 
 Return: exact paths, relevant classes, and which runtime (Web / OrderTracking / WmsSync) owns the logic.
+
+## Available Skills
+
+- pattern-research-discovery

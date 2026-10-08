@@ -105,6 +105,11 @@ Follow `.claude/rules/git-mr-workflow.md`:
 - If review feedback arrives → commit fix → push to same branch → MR auto-updates
 - One logical change = one MR; use additional commits for follow-ups
 
+
+## Available Skills
+
+- pattern-development-flow
+- pattern-review-standard
 ## Verification before declaring done
 
 - BPMN opens cleanly in Camunda Modeler (or at least XML-valid)

@@ -146,3 +146,7 @@ Always exclude: `node_modules`, `dist`, `coverage`, `.nx/cache`.
 - Cross-system (site ↔ ENSI / integration / mobile) → `architect`
 - CI/build failures → `gitlab-investigator`
 - Runtime errors → `logs-detective`
+
+## Available Skills
+
+- pattern-research-discovery

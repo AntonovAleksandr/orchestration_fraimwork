@@ -52,3 +52,9 @@ Always include:
 - data migration or backfill needs
 - generated client impact
 - verification and rollout sequence
+
+## Available Skills
+
+- pattern-development-ensi
+- pattern-analysis-synthesis
+- pattern-review-standard

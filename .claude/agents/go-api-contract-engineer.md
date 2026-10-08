@@ -26,6 +26,12 @@ Use this agent when touching:
 - For BFF responses, shape data for frontend use but do not smuggle business rules into pure aggregation layers.
 - For service-to-service contracts, prefer explicit units and stable enum values; money units must be named and documented.
 
+
+## Available Skills
+
+- pattern-development-go
+- pattern-review-standard
+- gj-reviewer
 ## MR workflow
 
 Follow `.claude/rules/git-mr-workflow.md`:

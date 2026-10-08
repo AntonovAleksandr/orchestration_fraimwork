@@ -30,3 +30,9 @@ Use this role for design decisions around:
 ## Output
 
 For non-trivial decisions, produce or update an ADR / design note in the appropriate repo or workspace docs. Include trade-offs, chosen approach, rejected alternatives, rollout/compatibility concerns, and verification plan.
+
+## Available Skills
+
+- gj-reviewer
+- test-driven-development
+- data-driven-validation

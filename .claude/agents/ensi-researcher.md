@@ -118,6 +118,11 @@ Findings document, scaled to complexity:
 
 For large investigations: **summary** in `docs/research/<YYYY-MM-DD>-<topic>.md` (extend existing file if topic exists); **long autopsy** in `logs/research/` (gitignored). See `docs/research/README.md`.
 
+
+## Available Skills
+
+- pattern-research-discovery
+- pattern-analysis-synthesis
 ## Anti-patterns
 
 - Recommending a fix without identifying the root cause

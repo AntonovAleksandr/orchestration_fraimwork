@@ -72,3 +72,8 @@ You are a logs detective for the Gloria Jeans platform — you find runtime issu
 - Bug confirmed, code change needed → `ensi-backend-engineer`
 - Cross-service incident requires architecture decision → `architect`
 - Need to check recent deploys → `gitlab-investigator` (list pipelines)
+
+## Available Skills
+
+- pattern-research-discovery
+- systematic-debugging

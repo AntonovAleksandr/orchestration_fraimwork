@@ -62,3 +62,7 @@ platform/ensi/apps/<group>/<service>/
 ## When you're truly stuck
 
 If after a thorough local search you can't pinpoint the location, return that explicitly + suggest delegating to the platform-specific navigator (`oms-navigator`, `integration-navigator`, …) or widening `./scripts/sync-platform-repos.sh` + local search.
+
+## Available Skills
+
+- pattern-research-discovery

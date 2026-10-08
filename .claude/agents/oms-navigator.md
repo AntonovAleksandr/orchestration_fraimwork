@@ -144,3 +144,7 @@ Always exclude: `target/`, `build/`, `.git/`, `vendor/`.
 - Camunda / BPMN / workflow design → `camunda-bpm-engineer`
 - Cross-system contract (OMS ↔ ENSI / Integration / mobile / site) → `architect`
 - Production incident → `logs-detective`
+
+## Available Skills
+
+- pattern-research-discovery

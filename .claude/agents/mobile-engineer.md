@@ -52,6 +52,14 @@ Follow `.claude/rules/git-mr-workflow.md`:
 - If review feedback arrives → commit fix → push to same branch → MR auto-updates
 - One logical change = one MR; use additional commits for follow-ups
 
+
+## Available Skills
+
+- pattern-development-mobile
+- pattern-development-flow
+- pattern-review-standard
+- gj-reviewer
+- test-driven-development
 ## Verification before declaring done
 
 - `yarn lint` passes

@@ -54,6 +54,13 @@ Follow `.claude/rules/git-mr-workflow.md`:
 - If review feedback arrives → commit fix → push to same branch → MR auto-updates
 - One logical change = one MR; use additional commits for follow-ups
 
+
+## Available Skills
+
+- pattern-development-integration
+- pattern-development-flow
+- pattern-review-standard
+- gj-reviewer
 ## Verification before declaring done
 
 - `composer install` succeeds (no dep resolution issues)

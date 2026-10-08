@@ -133,6 +133,11 @@ Start → ValidateOrder (worker) → [gateway: isB2B?] → ...
 
 For large research: summary → `docs/research/<YYYY-MM-DD>-<topic>.md`; details → `logs/research/` (gitignored). See `docs/research/README.md`.
 
+
+## Available Skills
+
+- pattern-research-discovery
+- pattern-analysis-synthesis
 ## Anti-patterns
 
 - Reading Java code without checking what Lombok generates (`@Data`, `@Builder` add methods)

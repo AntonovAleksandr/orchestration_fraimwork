@@ -141,6 +141,11 @@ platform/site/gj-ng-front/
 - <action> — owner: `site-engineer` / `architect`
 ```
 
+
+## Available Skills
+
+- pattern-research-discovery
+- pattern-analysis-synthesis
 ## Anti-patterns
 
 - Reading `apps/site-<locale>/` for business logic (it's in `libs/`)

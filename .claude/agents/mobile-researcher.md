@@ -137,6 +137,11 @@ User taps button → BasketScreen.tsx:120 → useBasket hook → basketStore (Zu
 - <action> — owner: `mobile-engineer` / `architect`
 ```
 
+
+## Available Skills
+
+- pattern-research-discovery
+- pattern-analysis-synthesis
 ## Anti-patterns
 
 - Trusting upstream lib docs without checking `patches/`

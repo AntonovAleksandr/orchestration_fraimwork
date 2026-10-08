@@ -104,3 +104,7 @@ grep -rn "NativeModules\." platform/mobile-app/gj-app/packages/gj/src/
 ## See also
 
 **[`pattern-development-mobile.md`](../skills/pattern-development-mobile.md)** — the structured 7-step development pattern. Navigator typically runs in step 1 (Understanding) to find where code should go.
+
+## Available Skills
+
+- pattern-research-discovery
