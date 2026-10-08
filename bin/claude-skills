@@ -1,0 +1,15 @@
+#!/bin/bash
+# Claude Skills CLI wrapper
+# Finds the orchestration framework and runs the skills CLI
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Look for .claude/cli/claude-skills.py
+if [ -f "$PROJECT_ROOT/.claude/cli/claude-skills.py" ]; then
+    python3 "$PROJECT_ROOT/.claude/cli/claude-skills.py" "$@"
+else
+    echo "Error: claude-skills.py not found"
+    echo "Expected: $PROJECT_ROOT/.claude/cli/claude-skills.py"
+    exit 1
+fi
