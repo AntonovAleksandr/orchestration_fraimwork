@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skills Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #f0f1f3;
+            --text-primary: #0a0e27;
+            --text-secondary: #565d75;
+            --text-tertiary: #8a92a8;
+            --border: #e5e8f0;
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #0a0e27;
+                --bg-secondary: #111630;
+                --bg-tertiary: #1a1f3a;
+                --text-primary: #f5f5f7;
+                --text-secondary: #a8afc4;
+                --text-tertiary: #6b7280;
+                --border: #2d3142;
+                --accent: #6366f1;
+                --accent-hover: #818cf8;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        header {
+            margin-bottom: 48px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        input, select {
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: border-color 0.2s, background 0.2s;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: var(--bg-primary);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 48px;
+        }
+
+        .stat-box {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-tertiary);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 32px;
+        }
+
+        .sidebar {
+            height: fit-content;
+            position: sticky;
+            top: 40px;
+        }
+
+        .sidebar h3 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-tertiary);
+            margin-bottom: 16px;
+        }
+
+        .filter-group {
+            margin-bottom: 24px;
+        }
+
+        .filter-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+
+        .filter-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .filter-option:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .filter-option input[type="checkbox"] {
+            cursor: pointer;
+            accent-color: var(--accent);
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .skill-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .skill-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .skill-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            gap: 12px;
+        }
+
+        .skill-name {
+            font-size: 1.0625rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            word-break: break-word;
+            flex: 1;
+        }
+
+        .skill-badges {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge.layer-project {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge.layer-stack {
+            background: #ede9fe;
+            color: #5b21b6;
+        }
+
+        .badge.layer-generic {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge.platform {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+        }
+
+        .skill-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 16px;
+            font-size: 0.95rem;
+        }
+
+        .skill-footer {
+            display: flex;
+            gap: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 40px;
+            color: var(--text-secondary);
+            grid-column: 1 / -1;
+        }
+
+        .no-results-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        footer {
+            text-align: center;
+            color: var(--text-tertiary);
+            padding: 40px 20px;
+            margin-top: 60px;
+            border-top: 1px solid var(--border);
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 1024px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            h1 {
+                font-size: 1.875rem;
+            }
+
+            .skills-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Skills Dashboard</h1>
+            <p class="subtitle">Discover and manage orchestration framework skills</p>
+
+            <div class="controls">
+                <input type="text" id="search" placeholder="Search skills...">
+                <select id="layerFilter">
+                    <option value="">All Layers</option>
+                    <option value="project">Project Skills</option>
+                    <option value="stack">Stack Skills</option>
+                    <option value="generic">Generic Skills</option>
+                </select>
+                <select id="platformFilter">
+                    <option value="">All Platforms</option>
+                    <option value="ENSI">ENSI</option>
+                    <option value="Site">Site</option>
+                    <option value="OMS">OMS</option>
+                    <option value="Generic">Generic</option>
+                </select>
+            </div>
+
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-label">Total Skills</div>
+                    <div class="stat-value">26</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Project</div>
+                    <div class="stat-value">5</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Stack</div>
+                    <div class="stat-value">11</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Generic</div>
+                    <div class="stat-value">10</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="sidebar">
+                <h3>Filters</h3>
+
+                <div class="filter-group">
+                    <div class="filter-label">Layers</div>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <input type="checkbox" class="layer-check" value="project" checked>
+                            <span>Project</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="layer-check" value="stack" checked>
+                            <span>Stack</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="layer-check" value="generic" checked>
+                            <span>Generic</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <div class="filter-label">Platforms</div>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <input type="checkbox" class="platform-check" value="ENSI" checked>
+                            <span>ENSI</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="platform-check" value="Site" checked>
+                            <span>Site</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="platform-check" value="OMS" checked>
+                            <span>OMS</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" class="platform-check" value="Generic" checked>
+                            <span>Generic</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="skills-grid" id="skillsGrid">
+                    <!-- Skills loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            Orchestration Framework v1.0 • Phase 2 Production-Ready
+        </footer>
+    </div>
+
+    <script>
+        const skillsData = [
+            {name: "pattern-development-ensi", layer: "generic", platform: "ENSI", description: "ENSI-specific development patterns and best practices"},
+            {name: "pattern-development-flow", layer: "generic", platform: "Generic", description: "Standard development workflow patterns"},
+            {name: "pattern-review-standard", layer: "generic", platform: "Generic", description: "8-point code review checklist"},
+            {name: "develop-site-ui", layer: "stack", platform: "Site", description: "Angular component development patterns"},
+            {name: "develop-site-state", layer: "stack", platform: "Site", description: "NgRx state management"},
+            {name: "develop-site-routing", layer: "stack", platform: "Site", description: "Angular routing patterns"},
+            {name: "develop-site-ssr", layer: "stack", platform: "Site", description: "NestJS SSR rendering"},
+            {name: "develop-site-i18n", layer: "stack", platform: "Site", description: "Transloco i18n"},
+            {name: "develop-site-testing", layer: "stack", platform: "Site", description: "Jest and Cypress testing"},
+            {name: "develop-gloriaots-applications", layer: "stack", platform: "OMS", description: "Application layer patterns"},
+            {name: "develop-gloriaots-database", layer: "stack", platform: "OMS", description: "EF Core database patterns"},
+            {name: "develop-gloriaots-infrastructure", layer: "stack", platform: "OMS", description: "Infrastructure patterns"},
+            {name: "develop-gloriaots-testing", layer: "stack", platform: "OMS", description: "Unit testing patterns"},
+            {name: "develop-gloriaots-workers", layer: "stack", platform: "OMS", description: "Async worker patterns"},
+            {name: "pattern-development-mobile", layer: "generic", platform: "Generic", description: "React Native patterns"},
+            {name: "pattern-development-oms", layer: "generic", platform: "OMS", description: "OMS Java patterns"},
+            {name: "pattern-development-integration", layer: "generic", platform: "Generic", description: "Integration patterns"},
+            {name: "pattern-development-go", layer: "generic", platform: "Generic", description: "Go service patterns"},
+            {name: "pattern-research-discovery", layer: "generic", platform: "Generic", description: "Research methodology"},
+            {name: "pattern-analysis-synthesis", layer: "generic", platform: "Generic", description: "Analysis patterns"},
+            {name: "pattern-development-gloriaots", layer: "generic", platform: "OMS", description: ".NET patterns"},
+            {name: "gj-reviewer", layer: "project", platform: "Generic", description: "Code review guidelines"},
+            {name: "test-driven-development", layer: "project", platform: "Generic", description: "TDD workflow"},
+            {name: "data-driven-validation", layer: "project", platform: "Generic", description: "Data validation"},
+            {name: "systematic-debugging", layer: "project", platform: "Generic", description: "Debugging methodology"},
+            {name: "performance-optimization", layer: "project", platform: "Generic", description: "Performance techniques"}
+        ];
+
+        let filteredSkills = [...skillsData];
+
+        function renderSkills() {
+            const grid = document.getElementById('skillsGrid');
+
+            if (filteredSkills.length === 0) {
+                grid.innerHTML = '<div class="no-results"><div class="no-results-icon">🔍</div><p>No skills found</p></div>';
+                return;
+            }
+
+            grid.innerHTML = filteredSkills.map(skill => `
+                <div class="skill-card">
+                    <div class="skill-header">
+                        <div class="skill-name">${skill.name}</div>
+                        <div class="skill-badges">
+                            <span class="badge layer-${skill.layer}">${skill.layer}</span>
+                        </div>
+                    </div>
+                    <div class="skill-description">${skill.description}</div>
+                    <div class="skill-footer">
+                        <span>${skill.platform}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('search').value.toLowerCase();
+            const layerFilter = document.getElementById('layerFilter').value;
+            const platformFilter = document.getElementById('platformFilter').value;
+
+            const selectedLayers = new Set();
+            document.querySelectorAll('.layer-check:checked').forEach(cb => selectedLayers.add(cb.value));
+
+            const selectedPlatforms = new Set();
+            document.querySelectorAll('.platform-check:checked').forEach(cb => selectedPlatforms.add(cb.value));
+
+            filteredSkills = skillsData.filter(skill => {
+                const matchesSearch = skill.name.toLowerCase().includes(searchTerm) || skill.description.toLowerCase().includes(searchTerm);
+                const matchesLayer = layerFilter === '' || skill.layer === layerFilter;
+                const matchesPlatform = platformFilter === '' || skill.platform === platformFilter;
+                const inSelectedLayers = selectedLayers.size === 0 || selectedLayers.has(skill.layer);
+                const inSelectedPlatforms = selectedPlatforms.size === 0 || selectedPlatforms.has(skill.platform);
+
+                return matchesSearch && matchesLayer && matchesPlatform && inSelectedLayers && inSelectedPlatforms;
+            });
+
+            renderSkills();
+        }
+
+        document.getElementById('search').addEventListener('input', applyFilters);
+        document.getElementById('layerFilter').addEventListener('change', applyFilters);
+        document.getElementById('platformFilter').addEventListener('change', applyFilters);
+        document.querySelectorAll('.layer-check, .platform-check').forEach(cb => cb.addEventListener('change', applyFilters));
+
+        renderSkills();
+    </script>
+</body>
+</html>
