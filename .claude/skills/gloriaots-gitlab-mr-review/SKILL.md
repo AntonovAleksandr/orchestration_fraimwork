@@ -1,7 +1,13 @@
 ---
-name: gloriaots-gitlab-mr-review
-description: MR review checklist for Gloria OTS (.NET 10, C#, EF Core, RabbitMQ). Verifies layering (ApplicationCore → Infrastructure → Web/Workers), DI keyed registration, DB migrations, security, and test coverage. Trigger on any GloriaOTS merge request review.
+name: SKILL
+version: 1.0.0
+layer: gloriaots-gitlab-mr-review
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Gloria OTS GitLab MR Review Checklist
 

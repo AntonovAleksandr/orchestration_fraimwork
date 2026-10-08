@@ -1,3 +1,13 @@
+---
+name: SKILL
+version: 1.0.0
+layer: gj-task-docs
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
+---
+
 # gj-task-docs Skill
 
 **Версия:** 1.0  

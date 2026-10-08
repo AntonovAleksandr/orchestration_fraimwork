@@ -1,3 +1,13 @@
+---
+name: pattern-development-go
+version: 1.0.0
+layer: generic
+platform: Go
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
+---
+
 # 🐹 pattern-development-go.md
 
 **Категория:** [PATTERNS] Go-специфичная разработка  

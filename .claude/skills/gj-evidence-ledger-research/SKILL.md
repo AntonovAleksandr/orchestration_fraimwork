@@ -1,7 +1,13 @@
 ---
-name: gj-evidence-ledger-research
-description: Use when running long, multi-session GJ research or preproject work that needs stages, source inventory, evidence ledger, resume pointers, gap matrices, acceptance gates, Confluence/Jira/log/DB/code evidence, or durable docs under docs/research rather than immediate implementation.
+name: SKILL
+version: 1.0.0
+layer: gj-evidence-ledger-research
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # GJ Evidence-Ledger Research
 

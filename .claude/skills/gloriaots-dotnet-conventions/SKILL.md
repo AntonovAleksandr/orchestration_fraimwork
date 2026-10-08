@@ -1,7 +1,13 @@
 ---
-name: gloriaots-dotnet-conventions
-description: C# and .NET coding conventions for Gloria OTS. Covers naming (PascalCase, camelCase), async/await patterns, EF Core best practices, null-safety, exception handling, DI patterns, and Xunit testing. Use when writing or reviewing C# code in platform/gloriaots/.
+name: SKILL
+version: 1.0.0
+layer: gloriaots-dotnet-conventions
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Gloria OTS .NET / C# Conventions
 

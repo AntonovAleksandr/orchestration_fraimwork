@@ -1,3 +1,13 @@
+---
+name: pattern-development-flow
+version: 1.0.0
+layer: generic
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
+---
+
 # 💻 pattern-development-flow.md
 
 **Категория:** [PATTERNS]  

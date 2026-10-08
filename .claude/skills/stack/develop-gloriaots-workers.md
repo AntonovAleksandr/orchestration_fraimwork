@@ -1,7 +1,13 @@
 ---
 name: develop-gloriaots-workers
-description: Develop background workers for Gloria OTS (OrderTracking, WmsSync). Covers HostedServices, Hangfire jobs, RabbitMQ consumers, polling logic, status updates, cancellation flows, warehouse synchronization, and configuration mirroring between Web and Workers.
+version: 1.0.0
+layer: stack
+platform: Gloria OTS
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Develop Gloria OTS Background Workers
 

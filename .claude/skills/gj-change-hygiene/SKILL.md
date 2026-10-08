@@ -1,7 +1,13 @@
 ---
-name: gj-change-hygiene
-description: Use before declaring a change ready or opening an MR — structure of the diff, copy-paste, state ownership, comments, tests against prod-shaped data, MR description vs code. Triggers: «готово к MR», «перед сдачей», «самопроверка», «проверь свой дифф».
+name: SKILL
+version: 1.0.0
+layer: gj-change-hygiene
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Устройство правки: что ревьюер увидит первым
 

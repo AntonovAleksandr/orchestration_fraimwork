@@ -1,7 +1,13 @@
 ---
-name: gj-fail-loud-boundaries
-description: Use when writing request validation, error codes, presenters, state mappings or mappers between systems — no plausible 200 on bad input. Triggers: «валидация», «код ошибки», «презентер», «значение по умолчанию», «статус оплаты», «что вернуть при ошибке».
+name: SKILL
+version: 1.0.0
+layer: gj-fail-loud-boundaries
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Отказ громко, а не правдоподобный ответ
 

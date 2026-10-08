@@ -1,7 +1,13 @@
 ---
-name: mobile-emulator-adb
-description: Use when running, installing, debugging, or testing the Gloria Jeans mobile app (React Native) on an Android emulator via adb — booting AVDs, adb install/launch/logcat/reverse/screenshot/input, the build→run→verify loop, unit/detox tests on a device. Triggers on "запусти на эмуляторе", "adb", "logcat", "поставь apk", "почему не коннектится к metro", "сделай скриншот экрана", "прогони тесты на девайсе". Supports verification step of `pattern-development-mobile`.
+name: SKILL
+version: 1.0.0
+layer: mobile-emulator-adb
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Mobile Emulator + adb (Android)
 

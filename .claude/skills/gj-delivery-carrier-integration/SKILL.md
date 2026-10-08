@@ -1,7 +1,13 @@
 ---
-name: gj-delivery-carrier-integration
-description: Use when working with Gloria Jeans delivery/carrier flows, OMS logistics, OTS carrier integrations, transport_id, carrierId, delivery_type, pickup points, Yandex/DPD/CDEK/5Post/Russian Post onboarding, SFS/Courier/PVZ delivery incidents, WMS/1C carrier mappings, or end-to-end carrier code tracing.
+name: SKILL
+version: 1.0.0
+layer: gj-delivery-carrier-integration
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # GJ Delivery Carrier Integration
 

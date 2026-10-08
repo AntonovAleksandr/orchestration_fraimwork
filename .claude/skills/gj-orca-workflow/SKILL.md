@@ -1,7 +1,13 @@
 ---
-name: gj-orca-workflow
-description: Entry point for development work in this workspace when Orca is available — which Orca skill covers which phase, and why delegation goes to Orca workers rather than in-process subagents. Phases, context budgets and the delivery order live in gj-task-orchestration; this skill only maps Orca onto them.
+name: SKILL
+version: 1.0.0
+layer: gj-orca-workflow
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Orca в работе над проектом
 

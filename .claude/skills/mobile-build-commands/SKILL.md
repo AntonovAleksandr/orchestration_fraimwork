@@ -1,7 +1,13 @@
 ---
-name: mobile-build-commands
-description: Use when running, building, installing, or scripting commands for the Gloria Jeans mobile app — yarn scripts (gj:start, gj:ios:*, gj:android:*, gj:pod-install, yookassa:prepare), lint/ts checks, env flavors. Triggers on "how do I run the app", "build for staging", "install pods", "metro reset", etc. Pairs with `pattern-development-mobile` for structured development flow.
+name: SKILL
+version: 1.0.0
+layer: mobile-build-commands
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Mobile Build Commands
 

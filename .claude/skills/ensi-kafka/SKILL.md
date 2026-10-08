@@ -1,7 +1,13 @@
 ---
-name: ensi-kafka
-description: Work with Kafka in Ensi Laravel services following project standards. Use this skill whenever the user mentions creating Kafka producers, consumers, observers, or any Kafka-related work in Ensi context. This includes requests like "create a Kafka producer for Product entity", "set up Kafka consumer", "add observer to send events", "create Kafka payload", "configure Kafka topics", or any work related to Kafka integration, message producers/consumers, observers, or event-driven architecture in Ensi Laravel projects.
+name: SKILL
+version: 1.0.0
+layer: ensi-kafka
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Ensi Kafka Integration Guide
 

@@ -1,7 +1,13 @@
 ---
-name: mobile-gitlab-mr-review
-description: "Use when reviewing a GitLab Merge Request in mobapp/gj-app or mobapp/mobapp-api-types, including React Native/TypeScript, Redux/Saga, UI packages, iOS/Android bridges, YooKassa, analytics, API contracts, build flavors, or mobile release compatibility. Validates alignment with `pattern-development-mobile` where applicable."
+name: SKILL
+version: 1.0.0
+layer: mobile-gitlab-mr-review
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Mobile GitLab MR Review
 

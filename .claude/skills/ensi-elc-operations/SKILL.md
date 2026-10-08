@@ -1,7 +1,13 @@
 ---
-name: ensi-elc-operations
-description: Use when running ENSI services locally — starting/stopping containers, executing commands inside service containers (composer, artisan, npm), managing the elc workspace. Triggers on requests like "start the catalog services", "run migrations", "composer install in pim", "what's the elc command for X".
+name: SKILL
+version: 1.0.0
+layer: ensi-elc-operations
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # ENSI ELC Operations
 

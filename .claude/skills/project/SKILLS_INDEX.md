@@ -1,3 +1,13 @@
+---
+name: SKILLS_INDEX
+version: 1.0.0
+layer: project
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
+---
+
 # Система скилов для многоагентной архитектуры
 
 **Версия:** 1.0  

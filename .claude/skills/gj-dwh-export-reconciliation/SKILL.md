@@ -1,7 +1,13 @@
 ---
-name: gj-dwh-export-reconciliation
-description: Use when working with Gloria Jeans DWH exports, Integration cron transfers, ReportDWH CSV, order/status history exports, reconciliation, analytics data quality, OOM or slow export incidents, Airflow/dbt lineage, pickedSKU/fulfilledSKU reporting, or operational-to-analytical data contracts.
+name: SKILL
+version: 1.0.0
+layer: gj-dwh-export-reconciliation
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # GJ DWH Export And Reconciliation
 

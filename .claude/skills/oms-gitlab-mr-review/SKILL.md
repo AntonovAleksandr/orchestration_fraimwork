@@ -1,7 +1,13 @@
 ---
-name: oms-gitlab-mr-review
-description: "Use when reviewing a GitLab Merge Request in Starfish/OMS, including Java Spring services, Go logistics, shared DTOs, Camunda BPMN or external workers, Spring Cloud Config, order/payment/status transitions, delivery, Adapter exports, OTS, 1C, carriers, or running process instances."
+name: SKILL
+version: 1.0.0
+layer: oms-gitlab-mr-review
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # OMS GitLab MR Review
 

@@ -1,7 +1,13 @@
 ---
-name: ensi-meta
-description: Создание и модификация meta эндпоинтов в Ensi сервисах. Использовать при работе с мета-информацией полей, Field классами, ModelMetaResource, EnumInfo классами, а также при упоминании meta методов в контроллерах, создании мета-эндпоинтов, настройке фильтров/сортировки для фронтенда.
+name: SKILL
+version: 1.0.0
+layer: ensi-meta
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Ensi Meta Endpoints
 

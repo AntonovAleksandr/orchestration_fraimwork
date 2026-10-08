@@ -1,3 +1,13 @@
+---
+name: INTEGRATION_GUIDE
+version: 1.0.0
+layer: project
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
+---
+
 # 🔗 Гайд интеграции паттернов
 
 **Дата:** 2026-10-06  

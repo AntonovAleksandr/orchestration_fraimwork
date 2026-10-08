@@ -1,7 +1,13 @@
 ---
-name: gj-value-precision
-description: Use when PHP code computes money, bonuses, discounts, refunds, stores dates or source timestamps, or matches records by a human-typed number. Triggers: «сумма», «копейки», «округление», «бонусы», «дата действия», «часовой пояс», «номер документа».
+name: SKILL
+version: 1.0.0
+layer: gj-value-precision
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Деньги, время и номера без тихих искажений
 

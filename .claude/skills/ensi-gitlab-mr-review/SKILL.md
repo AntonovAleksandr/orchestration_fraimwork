@@ -1,7 +1,13 @@
 ---
-name: ensi-gitlab-mr-review
-description: "Use when reviewing a GitLab Merge Request in an ENSI repository under greensight/gj, including PIM, offers, catalog-cache, baskets, customers-api-web, admin APIs, connectors, generated PHP clients, OpenAPI, Kafka, migrations, or PHP-to-Go parity changes."
+name: SKILL
+version: 1.0.0
+layer: ensi-gitlab-mr-review
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # ENSI GitLab MR Review
 

@@ -1,7 +1,13 @@
 ---
-name: gj-task-orchestration
-description: Use when starting, planning or running any development task in this workspace — how to split it across sessions, what to delegate to subagents, and which control form closes it. Covers the token economics measured over 66 session logs (6.7 billion tokens, parent sessions only), the phase model with context budgets, the subagent contract, and the scripts in scripts/gj (task.sh, mr-brief.py, shot.sh, golden.sh, visual-check.py). Also covers the reconnaissance contract: refresh the codegraph index first, close every open question against the spec (buddy) and the code before bringing anything to a human, and hand over only questions that stayed genuinely open. Triggers on a bare Jira URL (jira.gloria-jeans.ru/browse/...) or GitLab MR URL pasted with or without words, and on "приступи к задаче", "приступай", "начни работу над", "возьми задачу", "проанализируй задачу", "обрати внимание на", "проверь задачу", "сделай задачу", "как вести задачу", "разбей на сессии", "сколько это будет стоить", "почему сессия дорогая".
+name: SKILL
+version: 1.0.0
+layer: gj-task-orchestration
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Организация работы над задачей
 

@@ -1,7 +1,13 @@
 ---
-name: ensi-tests
-description: Work with Pest PHP tests in Ensi services. Use this skill whenever the user mentions creating tests, writing tests, testing API endpoints, testing components, unit testing, or test files in Ensi Laravel projects. This includes requests like "create a test for this endpoint", "write component tests", "add unit tests", "create test coverage", or any mention of Pest PHP, PHPUnit, or testing in the context of Ensi services.
+name: SKILL
+version: 1.0.0
+layer: ensi-tests
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Ensi Tests Skill
 

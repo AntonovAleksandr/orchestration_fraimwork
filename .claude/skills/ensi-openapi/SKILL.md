@@ -1,8 +1,13 @@
 ---
-name: ensi-openapi
-description: Работайте с OpenAPI спецификациями в сервисах Ensi. Используйте этот скилл всегда, когда пользователь упоминает OpenAPI, API спецификации, создание endpoints, схем, перечислений или работу с yaml файлами в `public/api-docs/`. Также используйте при упоминании Swagger, спецификаций API, создании новых API endpoints или обновлении существующей документации API.
-compatibility: "Requires access to PHP Laravel project with Ensi OpenAPI structure. Files should be in `public/api-docs/` directory with OpenAPI 3.0.1 format."
+name: SKILL
+version: 1.0.0
+layer: ensi-openapi
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Работа с OpenAPI спецификациями в сервисах Ensi
 

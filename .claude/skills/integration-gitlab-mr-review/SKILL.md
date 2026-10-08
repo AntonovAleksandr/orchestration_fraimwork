@@ -1,7 +1,13 @@
 ---
-name: integration-gitlab-mr-review
-description: "Use when reviewing a GitLab Merge Request in avg-integration-service Integration, logger, msq-client, or health, including Lumen APIs, checkout/order-create versions, cron or supervisor workers, Kafka and queues, exports, payments, delivery, runtime containers, or ENSI/OMS/OTS handoffs."
+name: SKILL
+version: 1.0.0
+layer: integration-gitlab-mr-review
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Integration GitLab MR Review
 

@@ -1,7 +1,13 @@
 ---
-name: gj-workspace-maintenance
-description: "Use when maintaining the GJ-Ecommerce workspace metadata and agent layer: CLAUDE.md, README.md, docs/service-index.md, docs/onboarding.md, .gitignore, .claude/agents, .claude/skills, generated .codex/agents, generated .agents/skills, platform/platform-new/platform-next descriptions, counts, indexes, and source-of-truth cleanup."
+name: SKILL
+version: 1.0.0
+layer: gj-workspace-maintenance
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # GJ Workspace Maintenance
 

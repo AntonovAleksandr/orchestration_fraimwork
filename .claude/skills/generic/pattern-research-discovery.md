@@ -1,3 +1,13 @@
+---
+name: pattern-research-discovery
+version: 1.0.0
+layer: generic
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
+---
+
 # 🔍 pattern-research-discovery.md
 
 **Категория:** [PATTERNS]  

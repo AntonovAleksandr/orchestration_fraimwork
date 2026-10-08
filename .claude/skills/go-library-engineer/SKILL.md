@@ -1,7 +1,13 @@
 ---
-name: go-library-engineer
-description: Use when designing, implementing, or maintaining shared Go libraries in `platform-new/` (e.g., gj-go-logger, gj-go-httpclient, gj-go-money, generated clients). Covers API design for reusable code, versioning, backward compatibility, documentation, and distribution. Ensures libraries are stable, focused, and easily integrated by multiple services.
+name: SKILL
+version: 1.0.0
+layer: go-library-engineer
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Go Library Engineer — Shared Code & Dependencies
 

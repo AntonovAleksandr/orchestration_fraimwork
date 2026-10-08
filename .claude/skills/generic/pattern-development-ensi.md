@@ -1,3 +1,13 @@
+---
+name: pattern-development-ensi
+version: 1.0.0
+layer: generic
+platform: ENSI
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
+---
+
 # 💻 pattern-development-ensi.md
 
 **Категория:** [PATTERNS]  

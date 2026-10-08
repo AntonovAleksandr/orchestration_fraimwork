@@ -1,7 +1,13 @@
 ---
-name: go-architect
-description: Use for architecture design of Go services in `platform-new/` (checkout, intgateway, policyengine, recommendationengine). Covers service boundaries, inter-service communication (Kafka, gRPC, HTTP), database schema design, domain modeling, API contracts, deployment topology, scaling strategies, and trade-offs. Produces ADRs, architecture diagrams, and integration plans.
+name: SKILL
+version: 1.0.0
+layer: go-architect
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Go Architect — Service Design & Integration
 

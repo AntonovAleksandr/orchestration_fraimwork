@@ -1,7 +1,13 @@
 ---
-name: ansible-component
-description: Work with DevOps components in IaC repository. Use when user mentions creating, modifying, or analyzing ansible playbooks for DevOps components like kubernetes resources, server applications, configs, secrets, helm charts, systemd services. Triggers on "create component", "new playbook", "add inventory", "ansible component", "devops component", "helm chart", "k8s secret", "systemd service", "docker-compose service".
+name: SKILL
+version: 1.0.0
+layer: ansible-component
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Ansible Component Skill
 

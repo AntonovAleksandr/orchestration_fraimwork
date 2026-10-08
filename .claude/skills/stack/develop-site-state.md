@@ -1,3 +1,13 @@
+---
+name: develop-site-state
+version: 1.0.0
+layer: stack
+platform: Site
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
+---
+
 # 🔄 develop-site-state.md
 
 **Категория:** [DEVELOPMENT]  

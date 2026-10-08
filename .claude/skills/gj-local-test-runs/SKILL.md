@@ -1,7 +1,13 @@
 ---
-name: gj-local-test-runs
-description: Use when running PHP tests locally for ENSI services in this workspace (baskets, customers-api-web, pim, catalog-cache…) — setting up the DB and .env, choosing the PHP binary, narrowing by path or group, running php-cs-fixer and phpstan, or debugging why a run does not start. Covers the concrete traps found here: Pest failing on paths with a leading dot, symlinked vendor breaking class resolution, 500 instead of an assertion in component tests, factory-driven flakiness, shared clones occupied by peer sessions. Triggers on "прогони тесты", "запусти pest", "тесты не стартуют", "Unable to create test case", "500 в компонентном тесте", "как проверить правку локально".
+name: SKILL
+version: 1.0.0
+layer: gj-local-test-runs
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Локальный прогон тестов ENSI-сервисов
 

@@ -1,3 +1,13 @@
+---
+name: ARCHITECTURE_DIAGRAM
+version: 1.0.0
+layer: project
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
+---
+
 # Архитектура системы скилов: визуальное представление
 
 ## Диаграмма 1: Фазы выполнения и роли агентов

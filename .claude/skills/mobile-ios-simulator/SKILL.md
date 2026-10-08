@@ -1,7 +1,13 @@
 ---
-name: mobile-ios-simulator
-description: Use when running, building, installing, debugging, or testing the Gloria Jeans mobile app (React Native) on an iOS Simulator — booting simulators via simctl, xcodebuild/run-ios, install/launch/logs/screenshot, Metro connection, pods, detox e2e. Triggers on "запусти на симуляторе", "simctl", "iOS билд не собирается", "сделай скриншот симулятора", "почему белый экран на iOS", "прогони detox". Supports verification step of `pattern-development-mobile`.
+name: SKILL
+version: 1.0.0
+layer: mobile-ios-simulator
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Mobile iOS Simulator (simctl / xcodebuild)
 

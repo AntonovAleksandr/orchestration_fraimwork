@@ -1,7 +1,13 @@
 ---
-name: integration-php-conventions
-description: Use when writing or reviewing PHP code for the Integration Service. Covers Lumen-specific patterns (vs full Laravel), composer-managed internal libs (logger, msq-client, health), test conventions (phpunit), static analysis (phpstan), and how to integrate cross-cutting concerns properly.
+name: SKILL
+version: 1.0.0
+layer: integration-php-conventions
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Integration Service PHP Conventions
 

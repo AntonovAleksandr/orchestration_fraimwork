@@ -1,7 +1,13 @@
 ---
-name: gj-gitlab-mr-review
-description: "Use when reviewing an ENSI, Integration Service, OMS, Site, or Mobile Merge Request in Gloria Jeans GitLab, checking an MR URL or IID, deciding whether to approve, preparing review comments, or повторно проверяя исправления after author changes."
+name: SKILL
+version: 1.0.0
+layer: gj-gitlab-mr-review
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # GJ GitLab Merge Request Review
 

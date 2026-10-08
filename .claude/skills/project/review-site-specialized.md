@@ -1,3 +1,13 @@
+---
+name: review-site-specialized
+version: 1.0.0
+layer: project
+platform: Site
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
+---
+
 # 🔍 review-site-specialized.md
 
 **Категория:** [REVIEW]  

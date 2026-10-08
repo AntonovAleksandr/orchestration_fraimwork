@@ -1,7 +1,13 @@
 ---
-name: gj-money-discount-contracts
-description: Use when working with Gloria Jeans money amounts, rubles vs kopecks, discounts, promo codes, coupons, loyalty bonuses, certificates, checkout totals, OMS InvalidateTotalCost, YooKassa/ATOL payment amounts, discount server clients, or Go Money/client contract changes.
+name: SKILL
+version: 1.0.0
+layer: gj-money-discount-contracts
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # GJ Money And Discount Contracts
 

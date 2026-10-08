@@ -1,7 +1,13 @@
 ---
-name: gj-review-checklists
-description: Use with gj-gitlab-mr-review when reviewing an MR or answering a review of our own MR — Russian checklists, defect catalog, comment labels and format, where merged code lives now. Triggers: «ответь на замечания», «закрыты ли замечания», «подготовь ответы в треды», «чек-лист ревью».
+name: SKILL
+version: 1.0.0
+layer: gj-review-checklists
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Чек-листы ревью и ответ на ревью
 

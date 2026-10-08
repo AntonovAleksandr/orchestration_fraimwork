@@ -1,7 +1,13 @@
 ---
-name: camunda-bpm
-description: Use when working with Camunda BPM in the OMS — designing or modifying BPMN process definitions, implementing external task workers, choosing between embedded service tasks vs external tasks, modeling DMN decisions, troubleshooting stuck processes/incidents, migrating running instances. Trigger on BPMN/DMN files, camunda-worker code, or workflow questions.
+name: SKILL
+version: 1.0.0
+layer: camunda-bpm
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Camunda BPM in OMS
 

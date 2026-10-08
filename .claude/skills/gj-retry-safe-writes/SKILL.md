@@ -1,7 +1,13 @@
 ---
-name: gj-retry-safe-writes
-description: Use when a change does several writes or external calls in a row, keeps state between requests, imports batches or publishes/consumes events — retries, ordering, concurrency, idempotency. Triggers: «повтор», «идемпотентность», «откат», «списание», «импорт пакета», «событие», «касса повторяет».
+name: SKILL
+version: 1.0.0
+layer: gj-retry-safe-writes
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Многошаговая запись, которая переживает повтор
 

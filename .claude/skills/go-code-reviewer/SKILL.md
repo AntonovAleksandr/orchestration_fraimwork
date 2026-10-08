@@ -1,7 +1,13 @@
 ---
-name: go-code-reviewer
-description: Use when reviewing Go code changes in MRs for `platform-new/` services. Verifies correctness (race-safety, goroutine cleanup, error handling), idiomatic Go style, test coverage, security (SQL injection, secrets), performance, and alignment with pattern-development-go. Provides structured code review feedback and approval guidance.
+name: SKILL
+version: 1.0.0
+layer: go-code-reviewer
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Go Code Reviewer — MR Review & Approval
 

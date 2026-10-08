@@ -1,7 +1,13 @@
 ---
-name: oms-java-conventions
-description: Use when writing or reviewing Java code for OMS services in platform/starfish24/core/. Covers Spring Boot patterns, Maven (single-module + multi-module), Lombok usage, JKS truststore handling, Spring Cloud Config integration, shared libs (oms-objects/oms-json/telemetry-starter), error handling, Kafka, testing conventions, and CI quirks (Jenkins + bitbucket-pipelines + gitlab-ci coexistence).
+name: SKILL
+version: 1.0.0
+layer: oms-java-conventions
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # OMS Java Conventions
 

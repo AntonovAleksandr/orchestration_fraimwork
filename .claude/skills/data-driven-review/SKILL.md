@@ -1,3 +1,13 @@
+---
+name: SKILL
+version: 1.0.0
+layer: data-driven-review
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
+---
+
 # Data-Driven Code Review
 
 **Когда использовать:** При ревью ВСЕХ MR которые меняют логику с данными.

@@ -1,7 +1,13 @@
 ---
-name: gj-checkout-order-flow
-description: Use when working on Gloria Jeans checkout, pre-checkout, cart commit, order creation, Integration V1/V3/V4 order routes, OMS /order/create, clientOrderId idempotency, delivery interval drift, split-shipment selection, checkout incidents, or checkout TO-BE design.
+name: SKILL
+version: 1.0.0
+layer: gj-checkout-order-flow
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # GJ Checkout Order Flow
 

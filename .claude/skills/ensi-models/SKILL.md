@@ -1,7 +1,13 @@
 ---
-name: ensi-models
-description: Work with Eloquent models in Ensi projects following project standards. Use this skill whenever the user mentions creating, modifying, or working with Laravel Eloquent models, database models, model factories, model relationships, model scopes, database migrations, or database tables in the Ensi context. This includes requests like "create a new model", "add a relationship to this model", "create a factory for this model", "add a scope method", "create a migration", or any work related to database modeling and Laravel Eloquent patterns in Ensi projects.
+name: SKILL
+version: 1.0.0
+layer: ensi-models
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Ensi Models Skill
 

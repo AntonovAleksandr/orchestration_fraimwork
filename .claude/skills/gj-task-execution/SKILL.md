@@ -1,7 +1,13 @@
 ---
-name: gj-task-execution
-description: Use when starting or executing a development task in this workspace — a Jira ticket, a bug fix, a cross-service change. Checklist and workflow distilled from real mistakes made here: tracing the full client→BFF→service chain before relying on payload shape, border tests between systems, verifying claims with prod data instead of code reading, semantics of shared DB columns, paired MRs and deploy order. Triggers on a bare Jira URL pasted with "приступи", "приступай", "начни работу над", "проанализируй", "обрати внимание на", "проверь", "сделай", and on "правлю баг", "как проверить правку", "что ещё проверить перед MR".
+name: SKILL
+version: 1.0.0
+layer: gj-task-execution
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Выполнение задач в GJ-Ecommerce
 

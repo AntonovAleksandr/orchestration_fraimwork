@@ -1,7 +1,13 @@
 ---
-name: gj-review-delegation
-description: Use whenever a GitLab merge request has to be reviewed in this workspace — a pasted MR URL, "сделай ревью", "посмотри запрос", "проверь MR", a re-review after fixes, or a request to approve. This skill is the LAUNCHER, not the review itself: it compacts the diff with scripts/gj/mr-brief.py, fills the input template, and delegates the substantive review through orchestration — a fresh Orca worker started by scripts/gj/orchestrate.sh review (an architect subagent only when Orca is unavailable) — so the parent session never carries the diff. The review procedure itself lives in gj-gitlab-mr-review plus one platform addendum. Triggers on ANY mention of ревью — most often "проведи ревью", "проведи ревью по шаблону", "проведи ещё раз ревью", "сделай ревью", "посмотри MR", "проверь MR", "изучи <ссылка на merge_requests>", "можно ли апрувить", and on a bare GitLab merge_requests URL. The phrase "по шаблону" refers to THIS skill: the input template lives here, it no longer has to be pasted by hand.
+name: SKILL
+version: 1.0.0
+layer: gj-review-delegation
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Запуск ревью запроса на слияние
 

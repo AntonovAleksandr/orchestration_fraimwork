@@ -1,7 +1,13 @@
 ---
-name: go-test-engineer
-description: Use when designing, writing, or refactoring tests for Go services in `platform-new/`. Covers test structure (table-driven tests, unit/integration/e2e), mocking patterns, race detector integration, goroutine leak detection, context timeout testing, test fixtures, and coverage validation. Ensures tests follow Go idioms and support CI/CD pipelines.
+name: SKILL
+version: 1.0.0
+layer: go-test-engineer
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Go Test Engineer — Test Strategy & Implementation
 

@@ -1,7 +1,13 @@
 ---
-name: site-stack-anatomy
-description: Use when working with the Gloria Jeans site (gj-ng-front). Explains the Nx monorepo layout (apps + libs + tools), Angular SSR + NestJS server architecture, NgRx state organization, build profiles (dev/demo/testing/staging/production), Storybook setup, and what lives where. Trigger on anything related to platform/site/.
+name: SKILL
+version: 1.0.0
+layer: site-stack-anatomy
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Site Stack Anatomy
 

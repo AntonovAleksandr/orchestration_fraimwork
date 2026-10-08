@@ -1,7 +1,13 @@
 ---
-name: integration-stack-anatomy
-description: Use when working with the Integration Service. Explains the structure of platform/integration/ — main monorepo (Lumen app in www/, deploy configs in containers/), and 3 PHP libraries (logger, msq-client, health) used by the app. Trigger on anything related to platform/integration/.
+name: SKILL
+version: 1.0.0
+layer: integration-stack-anatomy
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Integration Service Anatomy
 

@@ -1,7 +1,13 @@
 ---
 name: develop-gloriaots-infrastructure
-description: Develop Infrastructure layer for Gloria OTS. Covers service implementations, EF Core repositories, event handlers, RabbitMQ consumers, DI keyed registration, and integration with ApplicationCore contracts. Follows layered architecture with proper dependency direction.
+version: 1.0.0
+layer: stack
+platform: Gloria OTS
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Develop Gloria OTS Infrastructure Layer
 

@@ -1,7 +1,13 @@
 ---
-name: ensi-api-design
-description: Apply Ensi API Design Guide principles when designing, implementing, or reviewing REST API endpoints in Ensi projects. Use this skill when creating API endpoints, defining request/response formats, implementing filters and pagination, working with OpenAPI specifications, or any API-related work in Ensi services.
+name: SKILL
+version: 1.0.0
+layer: ensi-api-design
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Ensi API Design Guide
 

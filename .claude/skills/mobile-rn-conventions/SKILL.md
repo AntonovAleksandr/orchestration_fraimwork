@@ -1,7 +1,13 @@
 ---
-name: mobile-rn-conventions
-description: Use when writing or reviewing TypeScript/TSX code for the Gloria Jeans mobile app. Covers code style, styled-components patterns, when to put code in ui-kit vs packages/gj, env-flavor handling, API type sourcing from mobapp-api-types, native bridge etiquette, common React Native pitfalls. Pairs with `pattern-development-mobile` for structured development.
+name: SKILL
+version: 1.0.0
+layer: mobile-rn-conventions
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Mobile RN Conventions
 

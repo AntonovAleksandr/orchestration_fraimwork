@@ -1,7 +1,13 @@
 ---
-name: site-nx-commands
-description: Use when running, building, testing, generating, or scripting commands for the Gloria Jeans site. Covers npm scripts (start/dev/build), nx targets (serve/build/test/lint/storybook), generators (g @nx/angular:app/library), dependency graph, e2e (Cypress), and mocked API workflows.
+name: SKILL
+version: 1.0.0
+layer: site-nx-commands
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Site Nx Commands
 

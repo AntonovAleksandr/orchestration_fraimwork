@@ -1,3 +1,13 @@
+---
+name: pattern-development-integration
+version: 1.0.0
+layer: generic
+platform: Integration
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
+---
+
 # 💻 pattern-development-integration.md
 
 **Категория:** [PATTERNS] — Integration Platform  

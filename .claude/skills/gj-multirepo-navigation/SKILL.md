@@ -1,7 +1,13 @@
 ---
-name: gj-multirepo-navigation
-description: Use when you need to find code/configs across ENSI and other GJ-Ecommerce platforms. Triggers on questions like "which service does X", "find all uses of Y", "search across catalog". Explains how to efficiently navigate local clones under platform/ without scanning vendor unnecessarily. GitLab MCP only for MR/CI or repos missing locally.
+name: SKILL
+version: 1.0.0
+layer: gj-multirepo-navigation
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Multi-Repo Navigation in GJ-Ecommerce
 

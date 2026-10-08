@@ -1,3 +1,13 @@
+---
+name: SKILL
+version: 1.0.0
+layer: data-driven-implementation
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
+---
+
 # Data-Driven Implementation
 
 **Когда использовать:** ВСЕГДА после написания кода, который работает с данными.

@@ -1,7 +1,13 @@
 ---
-name: gj-commit-and-mr-writing
-description: Use when writing a commit message or a merge request description in this workspace, squashing commits before opening an MR, or rewriting an MR description that reviewers find unreadable. Defines the compact scannable format measured against real MRs here — the reviewer must decide within the first five lines — plus the commit convention, the ticket-key placement, length budgets, and the deploy-order block for paired MRs. Triggers on "оформи MR", "напиши описание", "подготовь MR", "схлопни коммиты", "закоммить", "опиши изменения", "переоформи описание", "сделай описание читаемым".
+name: SKILL
+version: 1.0.0
+layer: gj-commit-and-mr-writing
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Описания коммитов и запросов на слияние
 

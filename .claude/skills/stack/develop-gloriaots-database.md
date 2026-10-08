@@ -1,7 +1,13 @@
 ---
 name: develop-gloriaots-database
-description: Manage SQL Server database for Gloria OTS. Covers database migrations (SqlDeploy), schema design, reference data, stored procedures, T-SQL patterns, idempotency, versioning, and rollback strategies. Ensures schema changes are safe, trackable, and reversible.
+version: 1.0.0
+layer: stack
+platform: Gloria OTS
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Develop Gloria OTS Database Layer
 

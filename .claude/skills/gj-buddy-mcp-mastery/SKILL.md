@@ -1,7 +1,13 @@
 ---
-name: gj-buddy-mcp-mastery
-description: Use when working with anything in Gloria Jeans's external systems — GitLab, Jira, Confluence, application logs, or Context Engine. Explains the gj-buddy MCP toolkit (mcp__gj-buddy__*) and when each tool is the right choice. Helps avoid manual gh/curl/grep when an MCP tool is more precise.
+name: SKILL
+version: 1.0.0
+layer: gj-buddy-mcp-mastery
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # gj-buddy MCP Mastery
 

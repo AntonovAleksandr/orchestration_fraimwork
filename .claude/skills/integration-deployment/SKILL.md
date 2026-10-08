@@ -1,7 +1,13 @@
 ---
-name: integration-deployment
-description: Use when working with Integration Service deployment configs — Dockerfile, nginx.conf, php-fpm.conf, lumen.conf, supervisor configs, crontab, filebeat. Explains the two-deploy model (integration-api vs integration-cron), what each container does, and how to safely modify deploy configs. Trigger on changes under platform/integration/integration/containers/.
+name: SKILL
+version: 1.0.0
+layer: integration-deployment
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Integration Deployment
 

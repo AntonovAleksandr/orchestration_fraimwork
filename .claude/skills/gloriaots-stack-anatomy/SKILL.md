@@ -1,7 +1,13 @@
 ---
-name: gloriaots-stack-anatomy
-description: Use when working with Gloria OTS (Order Transport System) in platform/gloriaots/. Explains monorepo layout, .NET projects, workers, WMS/carrier integrations, RabbitMQ event bus, and ties to OMS/Integration e-commerce flows. Trigger on anything related to GloriaOTS, OTS, gloriaots/.
+name: SKILL
+version: 1.0.0
+layer: gloriaots-stack-anatomy
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Gloria OTS Stack Anatomy
 

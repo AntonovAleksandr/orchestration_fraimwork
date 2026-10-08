@@ -1,7 +1,13 @@
 ---
-name: gj-marking-fiscalization
-description: "Use when working with Gloria Jeans legal marking and fiscalization flows: Chestny Znak, GIS MT, DataMatrix, crypto-tail, good_mark_validation_uuid/timestamp/inst/version, permission mode, WebGJISMP, OTS/OMS marking handoff, YooKassa full_payment, ATOL/OFD, or marked-product checkout incidents."
+name: SKILL
+version: 1.0.0
+layer: gj-marking-fiscalization
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # GJ Marking And Fiscalization
 

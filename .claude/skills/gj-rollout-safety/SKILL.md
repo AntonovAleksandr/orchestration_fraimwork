@@ -1,7 +1,13 @@
 ---
-name: gj-rollout-safety
-description: Use when a change must reach an environment safely — index mappings, k8s cronjobs, ms-helm-values, per-environment keys and endpoints, deploy order of provider and consumer. Triggers: «выкатка», «порядок выкатки», «маппинг», «переиндексация», «helm», «cronjob», «ключ API».
+name: SKILL
+version: 1.0.0
+layer: gj-rollout-safety
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Выкатка без простоя и без чужих ключей
 

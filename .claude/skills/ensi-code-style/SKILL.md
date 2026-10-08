@@ -1,7 +1,13 @@
 ---
-name: ensi-code-style
-description: Enforce PHP and Laravel code style according to Ensi guidelines. Use this skill whenever writing, modifying, or reviewing PHP/Laravel code in Ensi projects, creating new classes (Controllers, Models, Actions, Events, etc.), refactoring existing code, setting up validation, routes, migrations, or working with Domain/Http layers in Laravel applications. Also trigger when checking code style compliance or generating Laravel components to ensure they follow Ensi conventions.
+name: SKILL
+version: 1.0.0
+layer: ensi-code-style
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Ensi Code Style Guide
 

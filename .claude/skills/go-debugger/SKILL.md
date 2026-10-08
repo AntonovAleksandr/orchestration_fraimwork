@@ -1,7 +1,13 @@
 ---
-name: go-debugger
-description: Use when diagnosing crashes, data races, goroutine leaks, deadlocks, or performance issues in Go services. Covers debugging techniques (pprof, dlv, race detector output), log analysis, panic stack traces, CPU/memory profiling, and common patterns that lead to bugs. Read-only analysis and diagnostic recommendations.
+name: SKILL
+version: 1.0.0
+layer: go-debugger
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Go Debugger — Diagnosis & Root Cause Analysis
 

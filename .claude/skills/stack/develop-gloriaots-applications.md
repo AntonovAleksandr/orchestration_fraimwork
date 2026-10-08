@@ -1,7 +1,13 @@
 ---
 name: develop-gloriaots-applications
-description: Develop Web API layer for Gloria OTS. Covers ASP.NET Core controllers, HTTP endpoints (order/balance/admin APIs), Swagger/OpenAPI, DI registration, configuration, SignalR, and integration with Infrastructure layer. Follows layering architecture and security patterns.
+version: 1.0.0
+layer: stack
+platform: Gloria OTS
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Develop Gloria OTS Web/Applications Layer
 

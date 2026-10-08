@@ -1,3 +1,13 @@
+---
+name: pattern-development-gloriaots
+version: 1.0.0
+layer: generic
+platform: Gloria OTS
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
+---
+
 # 💻 pattern-development-gloriaots.md
 
 **Категория:** [PATTERNS]  

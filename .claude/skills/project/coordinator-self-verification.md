@@ -1,3 +1,13 @@
+---
+name: coordinator-self-verification
+version: 1.0.0
+layer: project
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
+---
+
 # Coordinator Self-Verification Skill
 
 **Purpose:** Методы для координирующего агента и других агентов при делегировании задач: проверка целостности ссылок, определение принадлежности пути репозиторию, разрешение веток в коммиты.

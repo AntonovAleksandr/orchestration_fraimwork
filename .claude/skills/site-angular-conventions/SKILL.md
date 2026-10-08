@@ -1,7 +1,13 @@
 ---
-name: site-angular-conventions
-description: Use when writing or reviewing Angular / NgRx / RxJS / NestJS-SSR code for the Gloria Jeans site. Covers Angular 20 patterns (standalone components, signals, new control flow), NgRx structure (actions/reducers/effects/selectors), RxJS best practices, Transloco i18n, SCSS+stylelint, SSR considerations, and module-boundary discipline in Nx.
+name: SKILL
+version: 1.0.0
+layer: site-angular-conventions
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Site Angular Conventions
 

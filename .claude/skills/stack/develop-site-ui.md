@@ -1,3 +1,13 @@
+---
+name: develop-site-ui
+version: 1.0.0
+layer: stack
+platform: Site
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
+---
+
 # 🎨 develop-site-ui.md
 
 **Категория:** [DEVELOPMENT]  

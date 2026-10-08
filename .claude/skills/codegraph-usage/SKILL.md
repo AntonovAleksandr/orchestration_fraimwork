@@ -1,7 +1,13 @@
 ---
-name: codegraph-usage
-description: Use when navigating/understanding code with the codegraph MCP (code intelligence over a SQLite knowledge graph) or maintaining its index — "how does X work", where/what is X, callers/callees, refactor impact, or reindexing. Covers MCP tools (explore/search/node/callers/callees/impact/status), the `codegraph` CLI (index/sync/status/unlock), and GJ-workspace specifics: only gj-app is indexed + MCP needs projectPath. Triggers on "реиндексация кодграфа", "codegraph", "где в коде X", "кто вызывает", "impact рефактора", "codegraph no project loaded".
+name: SKILL
+version: 1.0.0
+layer: codegraph-usage
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # codegraph — code intelligence + index maintenance
 

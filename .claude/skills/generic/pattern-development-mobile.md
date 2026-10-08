@@ -1,3 +1,13 @@
+---
+name: pattern-development-mobile
+version: 1.0.0
+layer: generic
+platform: Mobile
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
+---
+
 # 📱 pattern-development-mobile.md
 
 **Категория:** [PATTERNS]  

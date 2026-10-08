@@ -1,3 +1,13 @@
+---
+name: pattern-development-oms
+version: 1.0.0
+layer: generic
+platform: OMS
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
+---
+
 # 🎯 pattern-development-oms.md
 
 **Категория:** [PATTERNS] OMS-specific  

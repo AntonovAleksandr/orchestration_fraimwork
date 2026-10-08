@@ -1,7 +1,13 @@
 ---
 name: develop-gloriaots-testing
-description: Write xUnit tests for Gloria OTS (.NET 10). Covers unit tests (Moq, InMemory EF Core), integration tests, handler tests, API endpoint tests, mocking external services, test fixtures, and coverage validation. Ensures >80% coverage for critical paths.
+version: 1.0.0
+layer: stack
+platform: Gloria OTS
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Develop Gloria OTS Testing
 

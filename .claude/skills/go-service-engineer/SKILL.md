@@ -1,7 +1,13 @@
 ---
-name: go-service-engineer
-description: Use when implementing or modifying Go services in `platform-new/` (checkout, intgateway, policyengine, recommendationengine). Covers chi/Fiber HTTP handlers, domain packages, adapters, database migrations, metrics, config, Dockerfiles, Makefile targets, and service composition under `internal/app`. Follows structured development pattern with mandatory context propagation, goroutine lifecycle management, and Go-specific security checks.
+name: SKILL
+version: 1.0.0
+layer: go-service-engineer
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Go Service Engineer — platform-new Development
 

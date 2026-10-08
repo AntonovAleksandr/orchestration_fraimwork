@@ -1,7 +1,13 @@
 ---
-name: oms-stack-anatomy
-description: Use when working with the Gloria Jeans OMS (starfish24). Explains the multi-repo layout — awg/ (GJ overlays) vs core/ (Starfish core), Java services vs the single Go service (logistics), Camunda BPM at the center, Spring Cloud Config for env-specific values. Trigger on anything related to platform/starfish24/.
+name: SKILL
+version: 1.0.0
+layer: oms-stack-anatomy
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # OMS Stack Anatomy
 

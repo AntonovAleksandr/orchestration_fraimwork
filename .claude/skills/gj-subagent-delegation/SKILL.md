@@ -1,7 +1,13 @@
 ---
-name: gj-subagent-delegation
-description: Use whenever a deploy, a branch or task-status check, a research question, or a merge-request review has to be done in this workspace — hand it to a background subagent instead of doing it in the current session. Defines which subagent to raise for each kind of work, exactly what context to pass (the context packs), the budget and answer format, and the two-way channel — the subagent asks the parent through SendMessage to "main", the parent answers or resumes it through SendMessage to its agentId. Triggers on "задеплой", "выкати на стенд", "запусти деплой", "проверь пайплайн", "в каком статусе задача", "что влито", "что в какой ветке", "сравни ветки", "доехало ли", "что осталось по задаче", "исследуй", "разберись почему", "проведи ревью", "посмотри MR", and on any moment the current session is about to run git, curl to GitLab, buddy data queries or CI checks itself.
+name: SKILL
+version: 1.0.0
+layer: gj-subagent-delegation
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Подагенты для деплоя, веток, исследования и ревью
 

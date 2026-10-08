@@ -1,7 +1,13 @@
 ---
-name: site-gitlab-mr-review
-description: "Use when reviewing a GitLab Merge Request in site-front/gj-ng-front or related Site API-types, shared-library, build, or DevOps repositories, including Angular/Nx/NgRx, NestJS SSR, storefront flows, locale/profile behavior, or backend contract changes."
+name: SKILL
+version: 1.0.0
+layer: site-gitlab-mr-review
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Site GitLab MR Review
 

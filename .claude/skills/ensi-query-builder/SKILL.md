@@ -1,7 +1,13 @@
 ---
-name: ensi-query-builder
-description: Создание и модификация Query классов для spatie/laravel-query-builder в Ensi сервисах. Использовать при работе с Query классами, фильтрами API, search endpoints, allowedFilters, allowedSorts, allowedIncludes, а также при упоминании фильтрации в контроллерах API, создании search-эндпоинтов, добавлении фильтров к моделям.
+name: SKILL
+version: 1.0.0
+layer: ensi-query-builder
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Ensi Query Builder
 

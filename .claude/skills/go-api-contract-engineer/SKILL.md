@@ -1,7 +1,13 @@
 ---
-name: go-api-contract-engineer
-description: Use when designing, documenting, or validating API contracts for Go services in `platform-new/`. Covers OpenAPI/Swagger specifications, request/response DTO design, error codes, versioning strategy, backward compatibility, client code generation, and contract-first development. Ensures APIs are clear, stable, and machine-readable.
+name: SKILL
+version: 1.0.0
+layer: go-api-contract-engineer
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Go API Contract Engineer — API Design & Governance
 

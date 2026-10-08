@@ -1,7 +1,13 @@
 ---
-name: gj-session-analytics
-description: Use when measuring how agent work in this workspace actually costs and whether changes to the process help — token spend per task, phase structure, where volume goes, waste, skill and subagent usage, period-over-period comparison. Runs scripts/gj/stats.py over the session logs in ~/.claude/projects. Also documents the two measurement traps found here: one model response is written as several log records sharing one usage block (raw counting inflates by roughly 2x), and subagent turns are not logged at all. Triggers on "дай аналитику", "проанализируй сессии", "сколько мы тратим", "куда уходят токены", "стало ли лучше", "замерь", "сравни с прошлой неделей", "посчитай расход", "почему так дорого".
+name: SKILL
+version: 1.0.0
+layer: gj-session-analytics
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Аналитика сессий
 

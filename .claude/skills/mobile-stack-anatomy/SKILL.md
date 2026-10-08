@@ -1,7 +1,13 @@
 ---
-name: mobile-stack-anatomy
-description: Use when working with the Gloria Jeans mobile app (React Native). Explains the monorepo layout (gj-app yarn workspaces + mobapp-api-types), key directories, native integration points (iOS Pods, Android gradle), env flavors, and the role of ui-kit / rn-yookassa-sdk packages. Trigger on anything related to platform/mobile-app/. Pairs with `pattern-development-mobile` for structured feature development.
+name: SKILL
+version: 1.0.0
+layer: mobile-stack-anatomy
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # Mobile App Anatomy
 

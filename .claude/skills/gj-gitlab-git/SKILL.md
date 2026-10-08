@@ -1,7 +1,13 @@
 ---
-name: gj-gitlab-git
-description: Use for git write-ops against Gloria Jeans GitLab (gitlab.gloria.aaanet.ru) — fetch/push, creating branches, opening MRs, and managing the PAT. Covers the file-based credential helper, safe token handling (never echo it), token validity checks, the "invalid token → open the file myself + ask user to replace" flow, and clean branch+MR creation via API. Triggers on "запушь", "открой MR", "git push не проходит", "авторизуйся в gitlab", "поменяй токен", auth 401 from gitlab.gloria.aaanet.ru.
+name: SKILL
+version: 1.0.0
+layer: gj-gitlab-git
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # GJ GitLab — git auth & write-ops
 

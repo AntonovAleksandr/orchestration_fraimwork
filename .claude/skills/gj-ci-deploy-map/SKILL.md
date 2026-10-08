@@ -1,7 +1,13 @@
 ---
-name: gj-ci-deploy-map
-description: Use when a GitLab job fails, a deploy does not reach a stand, you need to know whether a fix actually got to prod, or you are about to run or retry a deploy job in this workspace. Covers the known CI traps measured here — the Teams-notification proxy that kills a deploy before helm runs, images built only on a web trigger, stage feed cronjobs disabled by default, and how to prove something is really in prod. Branch layout lives in docs/deploy/branch-registry.md. Triggers on "джоба упала", "деплой не прошёл", "почему не задеплоилось", "доехало ли до прода", "перезапусти джобу", "проверь пайплайн", "фид не собрался", "пустой стенд".
+name: SKILL
+version: 1.0.0
+layer: gj-ci-deploy-map
+platform: Generic
+compatibility: ">=1.0.0,<2.0.0"
+deprecated: false
+reusable: true
 ---
+
 
 # CI и деплой: карта ловушек
 
