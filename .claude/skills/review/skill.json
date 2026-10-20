@@ -1,0 +1,19 @@
+{
+  "id": "review",
+  "version": "1.0.0",
+  "name": "Task Review",
+  "description": "Code review phase",
+  "category": "review",
+  "phase": 4,
+  "agents": ["review-validator"],
+  "dependencies": ["implementation"],
+  "inputs": {
+    "task_id": "string",
+    "mr_url": "string"
+  },
+  "outputs": {
+    "approved": "boolean",
+    "comments": "array",
+    "ready_to_merge": "boolean"
+  }
+}

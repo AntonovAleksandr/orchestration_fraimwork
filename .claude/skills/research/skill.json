@@ -1,0 +1,20 @@
+{
+  "id": "research",
+  "version": "1.0.0",
+  "name": "Task Research",
+  "description": "Research phase analyze requirements",
+  "category": "research",
+  "phase": 1,
+  "agents": [],
+  "dependencies": [],
+  "inputs": {
+    "task_id": "string",
+    "task_description": "string",
+    "task_type": "string"
+  },
+  "outputs": {
+    "findings": "object",
+    "scope": "string",
+    "requirements": "array"
+  }
+}

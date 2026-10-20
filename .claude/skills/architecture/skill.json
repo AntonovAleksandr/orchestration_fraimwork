@@ -1,0 +1,19 @@
+{
+  "id": "architecture",
+  "version": "1.0.0",
+  "name": "Task Architecture",
+  "description": "Architecture phase - design solution",
+  "category": "architecture",
+  "phase": 2,
+  "agents": ["architect"],
+  "dependencies": ["research"],
+  "inputs": {
+    "task_id": "string",
+    "research_findings": "object"
+  },
+  "outputs": {
+    "design": "object",
+    "implementation_plan": "string",
+    "approval": "boolean"
+  }
+}

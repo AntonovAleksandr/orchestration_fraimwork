@@ -1,0 +1,6 @@
+# Скиллы классов дефектов: имя и виды задач, где их «Самопроверка» обязательна.
+# Единственный источник для orchestrate.sh, task.sh, selfcheck.py и хуков.
+retry-safe-writes	back
+fail-loud-boundaries	back
+value-precision	back
+change-hygiene	back front
